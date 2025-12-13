@@ -181,12 +181,6 @@ const Login = ({ mode }) => {
             <img src='/images/logos/logo_imageH.png' alt='Onebby Logo' style={{ height: '90px' }} />
             <Typography variant='h4'> </Typography>
           </div>
-          <Alert icon={false} className='bg-[var(--mui-palette-primary-lightOpacity)]'>
-            <Typography variant='body2' color='primary.main'>
-              Username: <span className='font-medium'>Muthana</span> / Pass:{' '}
-              <span className='font-medium'>Muthana1986</span>
-            </Typography>
-          </Alert>
           <form
             noValidate
             autoComplete='off'
