@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "pnpm run build"
   publish = ".next"
 
 [[plugins]]
@@ -7,7 +7,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NPM_VERSION = "10.9.2"
 
 # إعادة توجيه جميع المسارات إلى Next.js
 [[redirects]]
