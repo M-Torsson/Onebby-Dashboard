@@ -59,7 +59,18 @@ const Logo = ({ color }) => {
 
   return (
     <div className='flex items-center'>
-      <img src='/images/logos/logo_imageH.png' alt='Onebby Logo' style={{ height: '32px' }} />
+      <img
+        src={
+          !isBreakpointReached && layout === 'collapsed' && !isHovered
+            ? '/images/logos/logo.png'
+            : '/images/logos/logo_imageH.png'
+        }
+        alt='Onebby Logo'
+        style={{
+          height: '32px',
+          transition: `all ${transitionDuration}ms ease-in-out`
+        }}
+      />
       <LogoText
         color={color}
         ref={logoTextRef}
