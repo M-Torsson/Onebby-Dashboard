@@ -1182,7 +1182,8 @@ const ProductsAdd = () => {
                                 fullWidth
                                 label='Price'
                                 type='number'
-                                value={variant.price?.list || 0}
+                                placeholder='0'
+                                value={(variant.price?.list || 0) === 0 ? '' : variant.price?.list || 0}
                                 onChange={e =>
                                   updateVariant(index, 'price', {
                                     ...variant.price,
@@ -1196,7 +1197,8 @@ const ProductsAdd = () => {
                                 fullWidth
                                 label='Stock Quantity'
                                 type='number'
-                                value={variant.stock?.quantity || 0}
+                                placeholder='0'
+                                value={(variant.stock?.quantity || 0) === 0 ? '' : variant.stock?.quantity || 0}
                                 onChange={e =>
                                   updateVariant(index, 'stock', {
                                     ...variant.stock,
