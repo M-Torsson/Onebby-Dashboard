@@ -44,6 +44,7 @@ const ProductsAdd = () => {
   const [brands, setBrands] = useState([])
   const [categories, setCategories] = useState([])
   const [taxClasses, setTaxClasses] = useState([])
+  const [expandedCategories, setExpandedCategories] = useState([])
 
   const [formData, setFormData] = useState({
     product_type: 'configurable',
@@ -128,16 +129,18 @@ const ProductsAdd = () => {
         const result = await response.json()
         // Handle both { data: [...] } and [...] response formats
         const data = result.data || result
-        
+
         // Sort categories: parents first, then children
-        const sortedCategories = Array.isArray(data) ? data.sort((a, b) => {
-          // Parents (null parent_id) come first
-          if (a.parent_id === null && b.parent_id !== null) return -1
-          if (a.parent_id !== null && b.parent_id === null) return 1
-          // If both are parents or both are children, sort by name
-          return (a.name || '').localeCompare(b.name || '')
-        }) : []
-        
+        const sortedCategories = Array.isArray(data)
+          ? data.sort((a, b) => {
+              // Parents (null parent_id) come first
+              if (a.parent_id === null && b.parent_id !== null) return -1
+              if (a.parent_id !== null && b.parent_id === null) return 1
+              // If both are parents or both are children, sort by name
+              return (a.name || '').localeCompare(b.name || '')
+            })
+          : []
+
         setCategories(sortedCategories)
       } else {
         console.error('Failed to fetch categories - Status:', response.status)
@@ -1325,29 +1328,137 @@ const ProductsAdd = () => {
                     value={formData.categories}
                     onChange={e => setFormData({ ...formData, categories: e.target.value })}
                     input={<OutlinedInput label='Select Categories' />}
+                    MenuProps={{
+                      PaperProps: {
+                        style: {
+                          maxHeight: 400
+                        }
+                      }
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        height: 'auto !important',
+                        minHeight: '56px !important'
+                      },
+                      '& .MuiSelect-select': {
+                        height: 'auto !important',
+                        minHeight: 'unset !important',
+                        display: 'flex !important',
+                        flexWrap: 'wrap !important',
+                        gap: '4px !important',
+                        paddingTop: '12px !important',
+                        paddingBottom: '12px !important',
+                        paddingRight: '32px !important'
+                      },
+                      '& .MuiSelect-icon': {
+                        top: 'calc(50% - 12px) !important'
+                      }
+                    }}
                     renderValue={selected => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 0.5,
+                          width: '100%'
+                        }}
+                      >
                         {selected.map(value => {
                           const category = Array.isArray(categories) ? categories.find(c => c.id === value) : null
-                          return <Chip key={value} label={category?.name || value} />
+                          return (
+                            <Chip
+                              key={value}
+                              label={category?.name || value}
+                              size='small'
+                              onDelete={e => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                const newCategories = formData.categories.filter(id => id !== value)
+                                setFormData({ ...formData, categories: newCategories })
+                              }}
+                              onMouseDown={e => {
+                                e.stopPropagation()
+                              }}
+                              deleteIcon={
+                                <i
+                                  className='tabler-x'
+                                  style={{ fontSize: '0.875rem', color: '#d32f2f', cursor: 'pointer' }}
+                                  onMouseDown={e => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    const newCategories = formData.categories.filter(id => id !== value)
+                                    setFormData({ ...formData, categories: newCategories })
+                                  }}
+                                />
+                              }
+                            />
+                          )
                         })}
                       </Box>
                     )}
                   >
                     {Array.isArray(categories) &&
-                      categories.map(category => (
-                        <MenuItem 
-                          key={category.id} 
-                          value={category.id}
-                          sx={{ 
-                            pl: category.parent_id !== null ? 4 : 2,
-                            fontWeight: category.parent_id === null ? 600 : 400,
-                            fontSize: category.parent_id === null ? '0.95rem' : '0.875rem'
-                          }}
-                        >
-                          {category.parent_id !== null ? '├─ ' : ''}{category.name}
-                        </MenuItem>
-                      ))}
+                      categories
+                        .filter(cat => cat.parent_id === null)
+                        .map(parentCategory => {
+                          const isExpanded = expandedCategories.includes(parentCategory.id)
+                          const children = categories.filter(c => c.parent_id === parentCategory.id)
+
+                          return [
+                            <MenuItem
+                              key={parentCategory.id}
+                              value={parentCategory.id}
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: '0.95rem',
+                                color: 'text.primary',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
+                              }}
+                            >
+                              {children.length > 0 && (
+                                <IconButton
+                                  size='small'
+                                  onClick={e => {
+                                    e.stopPropagation()
+                                    setExpandedCategories(prev =>
+                                      prev.includes(parentCategory.id)
+                                        ? prev.filter(id => id !== parentCategory.id)
+                                        : [...prev, parentCategory.id]
+                                    )
+                                  }}
+                                  sx={{ p: 0, minWidth: 20 }}
+                                >
+                                  <i
+                                    className={isExpanded ? 'tabler-chevron-down' : 'tabler-chevron-right'}
+                                    style={{ fontSize: '1rem' }}
+                                  />
+                                </IconButton>
+                              )}
+                              {children.length === 0 && <Box sx={{ width: 20 }} />}
+                              {parentCategory.name}
+                            </MenuItem>,
+
+                            ...(isExpanded
+                              ? children.map(child => (
+                                  <MenuItem
+                                    key={child.id}
+                                    value={child.id}
+                                    sx={{
+                                      pl: 6,
+                                      fontWeight: 400,
+                                      fontSize: '0.875rem',
+                                      color: 'text.secondary'
+                                    }}
+                                  >
+                                    {child.name}
+                                  </MenuItem>
+                                ))
+                              : [])
+                          ]
+                        })
+                        .flat()}
                   </Select>
                 </FormControl>
               </CardContent>
