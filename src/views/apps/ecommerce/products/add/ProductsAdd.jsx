@@ -119,7 +119,8 @@ const ProductsAdd = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/categories`, {
+      // Use the v1 endpoint to get all categories (parent + children)
+      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en&active_only=true`, {
         headers: { 'X-API-Key': API_KEY },
         mode: 'cors'
       })
@@ -127,7 +128,17 @@ const ProductsAdd = () => {
         const result = await response.json()
         // Handle both { data: [...] } and [...] response formats
         const data = result.data || result
-        setCategories(Array.isArray(data) ? data : [])
+        
+        // Sort categories: parents first, then children
+        const sortedCategories = Array.isArray(data) ? data.sort((a, b) => {
+          // Parents (null parent_id) come first
+          if (a.parent_id === null && b.parent_id !== null) return -1
+          if (a.parent_id !== null && b.parent_id === null) return 1
+          // If both are parents or both are children, sort by name
+          return (a.name || '').localeCompare(b.name || '')
+        }) : []
+        
+        setCategories(sortedCategories)
       } else {
         console.error('Failed to fetch categories - Status:', response.status)
         // Don't show error on initial load, just log it
@@ -1325,8 +1336,16 @@ const ProductsAdd = () => {
                   >
                     {Array.isArray(categories) &&
                       categories.map(category => (
-                        <MenuItem key={category.id} value={category.id}>
-                          {category.name}
+                        <MenuItem 
+                          key={category.id} 
+                          value={category.id}
+                          sx={{ 
+                            pl: category.parent_id !== null ? 4 : 2,
+                            fontWeight: category.parent_id === null ? 600 : 400,
+                            fontSize: category.parent_id === null ? '0.95rem' : '0.875rem'
+                          }}
+                        >
+                          {category.parent_id !== null ? '├─ ' : ''}{category.name}
                         </MenuItem>
                       ))}
                   </Select>
