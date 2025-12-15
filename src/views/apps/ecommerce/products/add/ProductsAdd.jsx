@@ -1477,7 +1477,8 @@ const ProductsAdd = () => {
                       fullWidth
                       label='Taxes excluded'
                       type='number'
-                      value={formData.price.list}
+                      placeholder='0'
+                      value={formData.price.list === 0 ? '' : formData.price.list}
                       onChange={e => {
                         const priceExcluded = parseFloat(e.target.value) || 0
                         setFormData({
@@ -1497,13 +1498,19 @@ const ProductsAdd = () => {
                       fullWidth
                       label='Taxes included'
                       type='number'
+                      placeholder='0'
                       value={
                         formData.tax.class_id
-                          ? (
-                              formData.price.list *
-                              (1 + (taxClasses.find(t => t.id === formData.tax.class_id)?.rate || 0) / 100)
-                            ).toFixed(2)
-                          : formData.price.list
+                          ? (() => {
+                              const calculated = (
+                                formData.price.list *
+                                (1 + (taxClasses.find(t => t.id === formData.tax.class_id)?.rate || 0) / 100)
+                              ).toFixed(2)
+                              return calculated === '0.00' ? '' : calculated
+                            })()
+                          : formData.price.list === 0
+                            ? ''
+                            : formData.price.list
                       }
                       onChange={e => {
                         const priceIncluded = parseFloat(e.target.value) || 0
@@ -1560,7 +1567,8 @@ const ProductsAdd = () => {
                       fullWidth
                       label='Stock Quantity'
                       type='number'
-                      value={formData.stock.quantity}
+                      placeholder='0'
+                      value={formData.stock.quantity === 0 ? '' : formData.stock.quantity}
                       onChange={e =>
                         setFormData({
                           ...formData,
