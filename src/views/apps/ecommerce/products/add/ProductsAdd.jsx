@@ -25,11 +25,142 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import OutlinedInput from '@mui/material/OutlinedInput'
 
+// Third-party Imports
+import { Bold } from '@tiptap/extension-bold'
+import { Italic } from '@tiptap/extension-italic'
+import { Placeholder } from '@tiptap/extension-placeholder'
+import { Strike } from '@tiptap/extension-strike'
+import { TextAlign } from '@tiptap/extension-text-align'
+import { Underline } from '@tiptap/extension-underline'
+import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import classnames from 'classnames'
+
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
+import CustomIconButton from '@core/components/mui/IconButton'
+
+// Style Imports
+import '@/libs/styles/tiptapEditor.css'
 
 const API_BASE_URL = 'https://onebby-api.onrender.com'
 const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+
+const EditorToolbar = ({ editor }) => {
+  const editorState = useEditorState({
+    editor,
+    selector: ctx => {
+      if (!ctx.editor) {
+        return {
+          isBold: false,
+          isItalic: false,
+          isUnderline: false,
+          isStrike: false,
+          isLeftAligned: true,
+          isCenterAligned: false,
+          isRightAligned: false,
+          isJustified: false
+        }
+      }
+
+      return {
+        isBold: ctx.editor.isActive('bold') ?? false,
+        isItalic: ctx.editor.isActive('italic') ?? false,
+        isUnderline: ctx.editor.isActive('underline') ?? false,
+        isStrike: ctx.editor.isActive('strike') ?? false,
+        isLeftAligned: ctx.editor.isActive({ textAlign: 'left' }) ?? false,
+        isCenterAligned: ctx.editor.isActive({ textAlign: 'center' }) ?? false,
+        isRightAligned: ctx.editor.isActive({ textAlign: 'right' }) ?? false,
+        isJustified: ctx.editor.isActive({ textAlign: 'justify' }) ?? false
+      }
+    }
+  })
+
+  if (!editor || !editorState) {
+    return null
+  }
+
+  return (
+    <div className='flex flex-wrap gap-x-3 gap-y-1 pbs-4 pbe-4 pli-4'>
+      <CustomIconButton
+        {...(editorState.isBold && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().toggleBold().run()}
+      >
+        <i className={classnames('tabler-bold', { 'text-textSecondary': !editorState.isBold })} />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isUnderline && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+      >
+        <i className={classnames('tabler-underline', { 'text-textSecondary': !editorState.isUnderline })} />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isItalic && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+      >
+        <i className={classnames('tabler-italic', { 'text-textSecondary': !editorState.isItalic })} />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isStrike && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+      >
+        <i className={classnames('tabler-strikethrough', { 'text-textSecondary': !editorState.isStrike })} />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isLeftAligned && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+      >
+        <i className={classnames('tabler-align-left', { 'text-textSecondary': !editorState.isLeftAligned })} />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isCenterAligned && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+      >
+        <i
+          className={classnames('tabler-align-center', {
+            'text-textSecondary': !editorState.isCenterAligned
+          })}
+        />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isRightAligned && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+      >
+        <i
+          className={classnames('tabler-align-right', {
+            'text-textSecondary': !editorState.isRightAligned
+          })}
+        />
+      </CustomIconButton>
+      <CustomIconButton
+        {...(editorState.isJustified && { color: 'primary' })}
+        variant='tonal'
+        size='small'
+        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+      >
+        <i
+          className={classnames('tabler-align-justified', {
+            'text-textSecondary': !editorState.isJustified
+          })}
+        />
+      </CustomIconButton>
+    </div>
+  )
+}
 
 const ProductsAdd = () => {
   const router = useRouter()
@@ -82,6 +213,136 @@ const ProductsAdd = () => {
   })
 
   const [imagePreview, setImagePreview] = useState(null)
+
+  // TipTap editors for rich text fields
+  const titleEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+        strike: false,
+        underline: false
+      }),
+      Placeholder.configure({
+        placeholder: 'Product Title'
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      Bold,
+      Italic,
+      Strike,
+      Underline
+    ],
+    immediatelyRender: false,
+    content: formData.translation.title || '',
+    onUpdate: ({ editor }) => {
+      handleTranslationChange('title', editor.getText())
+    }
+  })
+
+  const subTitleEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+        strike: false,
+        underline: false
+      }),
+      Placeholder.configure({
+        placeholder: 'Product Sub Title'
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      Bold,
+      Italic,
+      Strike,
+      Underline
+    ],
+    immediatelyRender: false,
+    content: formData.translation.sub_title || '',
+    onUpdate: ({ editor }) => {
+      handleTranslationChange('sub_title', editor.getText())
+    }
+  })
+
+  const simpleDescEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+        strike: false,
+        underline: false
+      }),
+      Placeholder.configure({
+        placeholder: 'Short description'
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      Bold,
+      Italic,
+      Strike,
+      Underline
+    ],
+    immediatelyRender: false,
+    content: formData.translation.simple_description || '',
+    onUpdate: ({ editor }) => {
+      handleTranslationChange('simple_description', editor.getText())
+    }
+  })
+
+  const metaDescEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+        strike: false,
+        underline: false
+      }),
+      Placeholder.configure({
+        placeholder: 'SEO meta description'
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      Bold,
+      Italic,
+      Strike,
+      Underline
+    ],
+    immediatelyRender: false,
+    content: formData.translation.meta_description || '',
+    onUpdate: ({ editor }) => {
+      handleTranslationChange('meta_description', editor.getText())
+    }
+  })
+
+  // Update editors when formData changes (e.g., when loading existing product)
+  useEffect(() => {
+    if (titleEditor && formData.translation.title !== titleEditor.getText()) {
+      titleEditor.commands.setContent(formData.translation.title || '')
+    }
+  }, [formData.translation.title, titleEditor])
+
+  useEffect(() => {
+    if (subTitleEditor && formData.translation.sub_title !== subTitleEditor.getText()) {
+      subTitleEditor.commands.setContent(formData.translation.sub_title || '')
+    }
+  }, [formData.translation.sub_title, subTitleEditor])
+
+  useEffect(() => {
+    if (simpleDescEditor && formData.translation.simple_description !== simpleDescEditor.getText()) {
+      simpleDescEditor.commands.setContent(formData.translation.simple_description || '')
+    }
+  }, [formData.translation.simple_description, simpleDescEditor])
+
+  useEffect(() => {
+    if (metaDescEditor && formData.translation.meta_description !== metaDescEditor.getText()) {
+      metaDescEditor.commands.setContent(formData.translation.meta_description || '')
+    }
+  }, [formData.translation.meta_description, metaDescEditor])
 
   // Fetch brands and categories on mount
   useEffect(() => {
@@ -818,66 +1079,76 @@ const ProductsAdd = () => {
               <CardHeader title='Product Details' />
               <CardContent>
                 <Grid container spacing={6}>
+                  {/* Title Field */}
                   <Grid size={{ xs: 12 }}>
-                    <CustomTextField
-                      fullWidth
-                      label='Title'
-                      placeholder='Product Title'
-                      value={formData.translation.title}
-                      onChange={e => handleTranslationChange('title', e.target.value)}
-                      required
-                    />
+                    <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
+                      Title <span style={{ color: 'red' }}>*</span>
+                    </Typography>
+                    <Card className='p-0 border shadow-none'>
+                      <CardContent className='p-0'>
+                        <EditorToolbar editor={titleEditor} />
+                        <Divider />
+                        <EditorContent
+                          editor={titleEditor}
+                          className='min-bs-[60px] max-bs-[200px] overflow-y-auto flex resize-y'
+                          style={{ resize: 'vertical' }}
+                        />
+                      </CardContent>
+                    </Card>
                   </Grid>
+
+                  {/* Sub Title Field */}
                   <Grid size={{ xs: 12 }}>
-                    <CustomTextField
-                      fullWidth
-                      multiline
-                      minRows={1}
-                      maxRows={4}
-                      label='Sub Title'
-                      placeholder='Product Sub Title'
-                      value={formData.translation.sub_title}
-                      onChange={e => handleTranslationChange('sub_title', e.target.value)}
-                      slotProps={{
-                        input: {
-                          style: { resize: 'vertical', overflow: 'auto' }
-                        }
-                      }}
-                    />
+                    <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
+                      Sub Title
+                    </Typography>
+                    <Card className='p-0 border shadow-none'>
+                      <CardContent className='p-0'>
+                        <EditorToolbar editor={subTitleEditor} />
+                        <Divider />
+                        <EditorContent
+                          editor={subTitleEditor}
+                          className='min-bs-[60px] max-bs-[200px] overflow-y-auto flex resize-y'
+                          style={{ resize: 'vertical' }}
+                        />
+                      </CardContent>
+                    </Card>
                   </Grid>
+
+                  {/* Simple Description Field */}
                   <Grid size={{ xs: 12 }}>
-                    <CustomTextField
-                      fullWidth
-                      multiline
-                      minRows={3}
-                      maxRows={10}
-                      label='Simple Description'
-                      placeholder='Short description'
-                      value={formData.translation.simple_description}
-                      onChange={e => handleTranslationChange('simple_description', e.target.value)}
-                      slotProps={{
-                        input: {
-                          style: { resize: 'vertical', overflow: 'auto' }
-                        }
-                      }}
-                    />
+                    <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
+                      Simple Description
+                    </Typography>
+                    <Card className='p-0 border shadow-none'>
+                      <CardContent className='p-0'>
+                        <EditorToolbar editor={simpleDescEditor} />
+                        <Divider />
+                        <EditorContent
+                          editor={simpleDescEditor}
+                          className='min-bs-[100px] max-bs-[400px] overflow-y-auto flex resize-y'
+                          style={{ resize: 'vertical' }}
+                        />
+                      </CardContent>
+                    </Card>
                   </Grid>
+
+                  {/* Meta Description Field */}
                   <Grid size={{ xs: 12 }}>
-                    <CustomTextField
-                      fullWidth
-                      multiline
-                      minRows={2}
-                      maxRows={8}
-                      label='Meta Description'
-                      placeholder='SEO meta description'
-                      value={formData.translation.meta_description}
-                      onChange={e => handleTranslationChange('meta_description', e.target.value)}
-                      slotProps={{
-                        input: {
-                          style: { resize: 'vertical', overflow: 'auto' }
-                        }
-                      }}
-                    />
+                    <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
+                      Meta Description
+                    </Typography>
+                    <Card className='p-0 border shadow-none'>
+                      <CardContent className='p-0'>
+                        <EditorToolbar editor={metaDescEditor} />
+                        <Divider />
+                        <EditorContent
+                          editor={metaDescEditor}
+                          className='min-bs-[80px] max-bs-[300px] overflow-y-auto flex resize-y'
+                          style={{ resize: 'vertical' }}
+                        />
+                      </CardContent>
+                    </Card>
                   </Grid>
                 </Grid>
               </CardContent>
@@ -931,9 +1202,11 @@ const ProductsAdd = () => {
                             alt={`Product ${index + 1}`}
                             sx={{
                               width: '100%',
-                              height: 150,
-                              objectFit: 'cover',
-                              display: 'block'
+                              height: 'auto',
+                              aspectRatio: '1',
+                              objectFit: 'contain',
+                              display: 'block',
+                              bgcolor: 'background.paper'
                             }}
                           />
                           <Box

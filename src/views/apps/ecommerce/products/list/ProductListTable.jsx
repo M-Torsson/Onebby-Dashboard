@@ -326,7 +326,20 @@ const ProductListTable = ({ productData }) => {
       }),
       columnHelper.accessor('sku', {
         header: 'SKU',
-        cell: ({ row }) => <Typography>{row.original.sku}</Typography>
+        cell: ({ row }) => (
+          <Typography
+            sx={{
+              maxWidth: '200px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'help'
+            }}
+            title={row.original.sku}
+          >
+            {row.original.sku}
+          </Typography>
+        )
       }),
       columnHelper.accessor('price', {
         header: 'Price',
