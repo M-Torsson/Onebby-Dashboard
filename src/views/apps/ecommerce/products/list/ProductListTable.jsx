@@ -249,23 +249,41 @@ const ProductListTable = ({ productData }) => {
   }
 
   const confirmDeleteProduct = async () => {
+    if (!productToDelete) return
+
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/products/${productToDelete.id}`, {
+      console.log('Deleting product:', productToDelete.id)
+      const deleteUrl = `https://onebby-api.onrender.com/api/admin/products/${productToDelete.id}`
+      console.log('Delete URL:', deleteUrl)
+
+      const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: { 'X-API-Key': API_KEY }
       })
 
+      console.log('Delete response status:', response.status)
+
       if (response.ok) {
+        console.log('Product deleted successfully, refreshing list...')
         setSuccess('Product deleted successfully!')
         setDeleteDialogOpen(false)
-        fetchProducts()
+        setProductToDelete(null)
+        // Add small delay to ensure backend processes the deletion
+        setTimeout(() => {
+          console.log('Fetching updated products...')
+          fetchProducts()
+        }, 500)
         setTimeout(() => setSuccess(''), 3000)
       } else {
-        const errorData = await response.json()
-        setError(errorData.detail || 'Failed to delete product')
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.detail || errorData.message || 'Failed to delete product')
+        setDeleteDialogOpen(false)
+        setProductToDelete(null)
       }
     } catch (err) {
       setError('Network error. Please try again.')
+      setDeleteDialogOpen(false)
+      setProductToDelete(null)
     }
   }
 
