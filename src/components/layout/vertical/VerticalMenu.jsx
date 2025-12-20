@@ -134,7 +134,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
         <SubMenu label={dictionary['navigation'].pages} icon={<i className='tabler-settings' />}>
           <MenuItem href={`/${locale}/pages/user-profile`}>{dictionary['navigation'].userProfile}</MenuItem>
           <MenuItem href={`/${locale}/pages/account-settings`}>{dictionary['navigation'].accountSettings}</MenuItem>
-          <MenuItem href={`/${locale}/pages/faq`}>{dictionary['navigation'].faq}</MenuItem>
         </SubMenu>
       </Menu>
     </ScrollWrapper>

@@ -141,41 +141,63 @@ const ProductListTable = ({ productData }) => {
         // Get products from result.data
         const products = result.data || []
 
-        // Format products data directly without additional API calls
-        const formattedData = products.map(product => {
-          // Get stock info
-          const stockStatus = product.stock_status || 'out_of_stock'
-          const stockQuantity = product.stock_quantity || 0
+        // Fetch stock data for all products in parallel
+        const productsWithStock = await Promise.all(
+          products.map(async product => {
+            try {
+              const stockResponse = await fetch(`https://onebby-api.onrender.com/api/v1/products/${product.id}/stock`, {
+                headers: { 'X-API-Key': API_KEY }
+              })
 
-          // Get image - either from images array or default
+              if (stockResponse.ok) {
+                const stockData = await stockResponse.json()
+                return { ...product, stock_data: stockData }
+              }
+            } catch (error) {
+              console.error(`Failed to fetch stock for product ${product.id}:`, error)
+            }
+            return product
+          })
+        )
+
+        // Format products data with stock information
+        const formattedData = productsWithStock.map(product => {
+          // Get stock quantity from stock_data
+          const stockQuantity = product.stock_data?.stock_quantity || 0
+
+          // Get image
           let productImage = '/images/misc/no-image.png'
-          if (product.images && product.images.length > 0) {
-            productImage = product.images[0].url || product.images[0]
-          } else if (product.image) {
+          if (product.image) {
             productImage = product.image
+          } else if (product.images && product.images.length > 0) {
+            productImage = product.images[0].url || product.images[0]
           }
 
           // Get title from translations or direct title
-          let productTitle = product.title || 'N/A'
+          let productTitle = product.title || product.name || 'N/A'
           if (product.translations && product.translations.length > 0) {
             const enTranslation = product.translations.find(t => t.lang === 'en')
             productTitle = enTranslation?.title || product.translations[0].title || productTitle
           }
 
+          // Get product_type from API
+          const productType = product.product_type || 'N/A'
+
           return {
             id: product.id,
-            productName: product.reference || 'N/A',
-            productBrand: product.brand?.name || product.brand_id || 'N/A',
+            productName: productTitle,
+            productId: `ID: ${product.id}`,
             image: productImage,
-            stock: stockStatus === 'in_stock',
-            stockStatus: stockStatus,
-            sku: productTitle,
+            quantity: stockQuantity,
+            reference: product.reference || '',
+            type: productType.toUpperCase().replace(/ /g, '_'),
             price: `€${product.price || 0}`,
-            qty: stockQuantity,
             isActive: product.is_active !== undefined ? product.is_active : false,
             status: product.is_active ? 'Published' : 'Inactive'
           }
         })
+
+        console.log('Formatted products:', formattedData)
 
         setData(formattedData)
         setFilteredData(formattedData)
@@ -198,15 +220,12 @@ const ProductListTable = ({ productData }) => {
   // Toggle Stock Status
   const handleToggleStock = async product => {
     try {
-      const newStockStatus = product.stock ? 'out_of_stock' : 'in_stock'
-      console.log('Toggling stock for product:', product.id, 'to', newStockStatus)
+      const newIsActive = !product.isActive
+      console.log('Toggling active status for product:', product.id, 'to', newIsActive)
 
-      // Simple stock update - send minimal data
+      // Update active status
       const updateData = {
-        stock: {
-          status: newStockStatus,
-          quantity: product.qty || 0
-        }
+        is_active: newIsActive
       }
 
       console.log('Sending update:', updateData)
@@ -224,20 +243,20 @@ const ProductListTable = ({ productData }) => {
       console.log('Response status:', response.status)
 
       if (response.ok) {
-        console.log('Stock updated successfully')
+        console.log('Status updated successfully')
         fetchProducts()
       } else {
         const errorText = await response.text()
-        console.error('Failed to update stock. Status:', response.status, 'Response:', errorText)
+        console.error('Failed to update status. Status:', response.status, 'Response:', errorText)
         try {
           const errorData = JSON.parse(errorText)
-          alert(`Failed to update stock: ${errorData.detail || 'Unknown error'}`)
+          alert(`Failed to update status: ${errorData.detail || 'Unknown error'}`)
         } catch {
-          alert(`Failed to update stock: ${errorText || 'Unknown error'}`)
+          alert(`Failed to update status: ${errorText || 'Unknown error'}`)
         }
       }
     } catch (err) {
-      console.error('Failed to update stock status:', err)
+      console.error('Failed to update status:', err)
       alert(`Network error: ${err.message}`)
     }
   }
@@ -314,11 +333,16 @@ const ProductListTable = ({ productData }) => {
       columnHelper.accessor('productName', {
         header: 'Product',
         cell: ({ row }) => (
-          <div className='flex items-center gap-4'>
-            <img src={row.original.productImage} className='rounded bg-actionHover' width={38} />
+          <div className='flex items-center gap-4' style={{ minWidth: '200px', maxWidth: '280px' }}>
+            <div
+              className='flex items-center justify-center bg-actionHover rounded'
+              style={{ width: '38px', height: '38px', flexShrink: 0 }}
+            >
+              <i className='tabler-photo text-2xl text-textSecondary' />
+            </div>
             <div
               className='flex flex-col'
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', overflow: 'hidden', flex: 1 }}
               onClick={() =>
                 router.push(getLocalizedUrl(`/apps/ecommerce/products/add?edit=${row.original.id}`, locale))
               }
@@ -329,43 +353,64 @@ const ProductListTable = ({ productData }) => {
                 e.currentTarget.querySelector('.product-name').style.color = ''
               }}
             >
-              <Typography className='font-medium product-name' color='text.primary'>
+              <Typography
+                className='font-medium product-name'
+                color='text.primary'
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%'
+                }}
+                title={row.original.productName}
+              >
                 {row.original.productName}
               </Typography>
-              <Typography variant='body2'>{row.original.productBrand}</Typography>
+              <Typography variant='body2' color='text.secondary'>
+                {row.original.productId}
+              </Typography>
             </div>
           </div>
         )
       }),
-      columnHelper.accessor('stock', {
-        header: 'Stock',
-        cell: ({ row }) => <Switch checked={row.original.stock} onChange={() => handleToggleStock(row.original)} />,
-        enableSorting: false
-      }),
-      columnHelper.accessor('sku', {
-        header: 'SKU',
+      columnHelper.accessor('quantity', {
+        header: 'Quantity',
         cell: ({ row }) => (
           <Typography
             sx={{
-              maxWidth: '200px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              cursor: 'help'
+              color: 'success.main',
+              fontWeight: 500
             }}
-            title={row.original.sku}
           >
-            {row.original.sku}
+            {row.original.quantity}
           </Typography>
         )
+      }),
+      columnHelper.accessor('reference', {
+        header: 'Reference',
+        cell: ({ row }) => (
+          <Typography
+            color='text.secondary'
+            sx={{
+              maxWidth: '180px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+            title={row.original.reference}
+          >
+            {row.original.reference}
+          </Typography>
+        )
+      }),
+      columnHelper.accessor('type', {
+        header: 'Type',
+        cell: ({ row }) => <Typography sx={{ whiteSpace: 'nowrap' }}>{row.original.type}</Typography>
       }),
       columnHelper.accessor('price', {
         header: 'Price',
         cell: ({ row }) => <Typography>{row.original.price}</Typography>
-      }),
-      columnHelper.accessor('qty', {
-        header: 'QTY',
-        cell: ({ row }) => <Typography>{row.original.qty}</Typography>
       }),
       columnHelper.accessor('status', {
         header: 'Status',
@@ -496,8 +541,8 @@ const ProductListTable = ({ productData }) => {
             </Button>
           </div>
         </div>
-        <div className='overflow-x-auto'>
-          <table className={tableStyles.table}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className={tableStyles.table} style={{ minWidth: '100%', width: 'max-content' }}>
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>

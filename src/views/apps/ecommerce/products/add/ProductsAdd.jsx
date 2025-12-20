@@ -24,6 +24,12 @@ import Select from '@mui/material/Select'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import OutlinedInput from '@mui/material/OutlinedInput'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import Drawer from '@mui/material/Drawer'
+import Rating from '@mui/material/Rating'
 
 // Third-party Imports
 import { Bold } from '@tiptap/extension-bold'
@@ -172,6 +178,8 @@ const ProductsAdd = () => {
   const [loading, setLoading] = useState(false)
   const [fetchingData, setFetchingData] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [brands, setBrands] = useState([])
   const [categories, setCategories] = useState([])
   const [taxClasses, setTaxClasses] = useState([])
@@ -988,6 +996,9 @@ const ProductsAdd = () => {
             <Button variant='tonal' color='secondary' onClick={() => router.push('/apps/ecommerce/products/list')}>
               Discard
             </Button>
+            <Button variant='outlined' onClick={() => setPreviewOpen(true)}>
+              Preview
+            </Button>
             <Button variant='contained' onClick={handleSaveProduct} disabled={loading}>
               {loading ? (editId ? 'Updating...' : 'Publishing...') : editId ? 'Update Product' : 'Publish Product'}
             </Button>
@@ -1014,6 +1025,22 @@ const ProductsAdd = () => {
       {/* Main Content - Left Side */}
       <Grid size={{ xs: 12, md: 8 }}>
         <Grid container spacing={6}>
+          {/* Product Name (Title) - Moved to Top */}
+          <Grid size={{ xs: 12 }}>
+            <Card>
+              <CardContent>
+                <CustomTextField
+                  fullWidth
+                  label='Product Name'
+                  placeholder='Product Name'
+                  value={formData.translation.title}
+                  onChange={e => handleTranslationChange('title', e.target.value)}
+                  required
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+
           {/* Basic Information */}
           <Grid size={{ xs: 12 }}>
             <Card>
@@ -1079,24 +1106,6 @@ const ProductsAdd = () => {
               <CardHeader title='Product Details' />
               <CardContent>
                 <Grid container spacing={6}>
-                  {/* Title Field */}
-                  <Grid size={{ xs: 12 }}>
-                    <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
-                      Title <span style={{ color: 'red' }}>*</span>
-                    </Typography>
-                    <Card className='p-0 border shadow-none'>
-                      <CardContent className='p-0'>
-                        <EditorToolbar editor={titleEditor} />
-                        <Divider />
-                        <EditorContent
-                          editor={titleEditor}
-                          className='min-bs-[60px] max-bs-[200px] overflow-y-auto flex resize-y'
-                          style={{ resize: 'vertical' }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
                   {/* Sub Title Field */}
                   <Grid size={{ xs: 12 }}>
                     <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
@@ -1874,6 +1883,340 @@ const ProductsAdd = () => {
           </Grid>
         </Grid>
       </Grid>
+
+      {/* Preview Drawer */}
+      <Drawer
+        anchor='right'
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: { xs: '100%', sm: '500px', md: '600px' },
+            maxWidth: '100%'
+          }
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            p: 4,
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <Typography variant='h5' sx={{ fontWeight: 600 }}>
+            Product Preview
+          </Typography>
+          <IconButton onClick={() => setPreviewOpen(false)} size='small'>
+            <i className='tabler-x' />
+          </IconButton>
+        </Box>
+
+        {/* Content */}
+        <Box sx={{ p: 4, overflowY: 'auto', height: '100%' }}>
+          {!formData.translation.title ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Typography variant='h6' color='text.secondary' sx={{ mb: 1 }}>
+                📝 No Product Data
+              </Typography>
+              <Typography variant='body2' color='text.secondary'>
+                Fill in product details to see preview
+              </Typography>
+            </Box>
+          ) : (
+            <Box>
+              {/* Main Image with Navigation */}
+              <Box sx={{ position: 'relative', mb: 3 }}>
+                <Box
+                  sx={{
+                    width: '100%',
+                    height: '300px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    border: '2px solid',
+                    borderColor: 'divider',
+                    position: 'relative'
+                  }}
+                >
+                  {formData.images.length > 0 ? (
+                    <>
+                      <img
+                        src={formData.images[selectedImageIndex]?.url || formData.images[selectedImageIndex]}
+                        alt={formData.translation.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+
+                      {/* Navigation Arrows */}
+                      {formData.images.length > 1 && (
+                        <>
+                          <IconButton
+                            onClick={() =>
+                              setSelectedImageIndex(prev => (prev > 0 ? prev - 1 : formData.images.length - 1))
+                            }
+                            sx={{
+                              position: 'absolute',
+                              left: 8,
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              backgroundColor: 'rgba(255,255,255,0.9)',
+                              '&:hover': { backgroundColor: 'white' },
+                              boxShadow: 2
+                            }}
+                          >
+                            <i className='tabler-chevron-left' />
+                          </IconButton>
+                          <IconButton
+                            onClick={() =>
+                              setSelectedImageIndex(prev => (prev < formData.images.length - 1 ? prev + 1 : 0))
+                            }
+                            sx={{
+                              position: 'absolute',
+                              right: 8,
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              backgroundColor: 'rgba(255,255,255,0.9)',
+                              '&:hover': { backgroundColor: 'white' },
+                              boxShadow: 2
+                            }}
+                          >
+                            <i className='tabler-chevron-right' />
+                          </IconButton>
+
+                          {/* Image Counter */}
+                          <Chip
+                            label={`${selectedImageIndex + 1} / ${formData.images.length}`}
+                            size='small'
+                            sx={{
+                              position: 'absolute',
+                              bottom: 8,
+                              right: 8,
+                              backgroundColor: 'rgba(0,0,0,0.7)',
+                              color: 'white'
+                            }}
+                          />
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant='h4' sx={{ mb: 1 }}>
+                        📷
+                      </Typography>
+                      <Typography color='text.secondary'>No Image</Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Thumbnail Gallery */}
+                {formData.images.length > 1 && (
+                  <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1 }}>
+                    {formData.images.map((img, idx) => (
+                      <Box
+                        key={idx}
+                        onClick={() => setSelectedImageIndex(idx)}
+                        sx={{
+                          minWidth: '60px',
+                          width: '60px',
+                          height: '60px',
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          border: idx === selectedImageIndex ? '3px solid' : '2px solid',
+                          borderColor: idx === selectedImageIndex ? 'primary.main' : 'divider',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            transform: 'scale(1.05)'
+                          }
+                        }}
+                      >
+                        <img
+                          src={img.url || img}
+                          alt={`thumb-${idx}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              {/* Product Name */}
+              <Typography variant='h5' sx={{ fontWeight: 700, mb: 1, lineHeight: 1.3 }}>
+                {formData.translation.title}
+              </Typography>
+
+              {/* Sub Title */}
+              {formData.translation.sub_title && (
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+                  {formData.translation.sub_title}
+                </Typography>
+              )}
+
+              {/* Brand */}
+              {formData.brand_id && (
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+                  Brand: {brands.find(b => b.id === formData.brand_id)?.name || 'N/A'}
+                </Typography>
+              )}
+
+              {/* Rating */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Rating value={4.5} precision={0.5} readOnly size='small' />
+                <Typography variant='caption' color='text.secondary'>
+                  4.5 (128 reviews)
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Price */}
+              <Box sx={{ mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.5 }}>
+                  <Typography variant='h4' sx={{ color: 'primary.main', fontWeight: 700 }}>
+                    €{formData.price.list || 0}
+                  </Typography>
+                  {formData.tax?.included_in_price && (
+                    <Chip label='Tax Included' size='small' variant='outlined' color='success' />
+                  )}
+                </Box>
+                {/* Price without tax */}
+                {formData.price.list && formData.tax?.included_in_price && (
+                  <Typography variant='body2' sx={{ color: 'error.main', fontWeight: 500 }}>
+                    €{(parseFloat(formData.price.list) * 0.82).toFixed(2)} (excl. tax)
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Stock & Condition */}
+              <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+                <Chip
+                  label={formData.stock.status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
+                  color={formData.stock.status === 'in_stock' ? 'success' : 'error'}
+                  size='small'
+                />
+                {formData.stock.quantity > 0 && (
+                  <Chip label={`${formData.stock.quantity} available`} size='small' variant='outlined' />
+                )}
+                {formData.condition && (
+                  <Chip
+                    label={formData.condition.charAt(0).toUpperCase() + formData.condition.slice(1)}
+                    size='small'
+                    variant='outlined'
+                  />
+                )}
+              </Box>
+
+              {/* Action Buttons */}
+              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                <Button variant='contained' fullWidth size='large' sx={{ fontWeight: 600 }}>
+                  🛒 Add to Cart
+                </Button>
+                <Button variant='outlined' size='large'>
+                  ♡
+                </Button>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Description */}
+              {formData.translation.simple_description && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant='subtitle1' sx={{ fontWeight: 600, mb: 1 }}>
+                    📝 Description
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary' sx={{ lineHeight: 1.7 }}>
+                    {formData.translation.simple_description}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Meta Description */}
+              {formData.translation.meta_description && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant='subtitle1' sx={{ fontWeight: 600, mb: 1 }}>
+                    🔍 Meta Description (SEO)
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary' sx={{ lineHeight: 1.7, fontStyle: 'italic' }}>
+                    {formData.translation.meta_description.substring(0, 160)}
+                    {formData.translation.meta_description.length > 160 ? '...' : ''}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Categories */}
+              {formData.categories.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant='subtitle1' sx={{ fontWeight: 600, mb: 1 }}>
+                    🏷️ Categories
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    {formData.categories.map(catId => {
+                      const category = categories.find(c => c.id === catId)
+                      return category ? (
+                        <Chip key={catId} label={category.name} size='small' sx={{ fontWeight: 500 }} />
+                      ) : null
+                    })}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Additional Info */}
+              <Box sx={{ p: 2, backgroundColor: '#f9f9f9', borderRadius: 1, mt: 2 }}>
+                <Grid container spacing={2}>
+                  {formData.reference && (
+                    <Grid size={{ xs: 6 }}>
+                      <Typography variant='caption' color='text.secondary'>
+                        Reference
+                      </Typography>
+                      <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                        {formData.reference}
+                      </Typography>
+                    </Grid>
+                  )}
+                  {formData.ean13 && (
+                    <Grid size={{ xs: 6 }}>
+                      <Typography variant='caption' color='text.secondary'>
+                        EAN13
+                      </Typography>
+                      <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                        {formData.ean13}
+                      </Typography>
+                    </Grid>
+                  )}
+                  <Grid size={{ xs: 6 }}>
+                    <Typography variant='caption' color='text.secondary'>
+                      Product Type
+                    </Typography>
+                    <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                      {formData.product_type.charAt(0).toUpperCase() + formData.product_type.slice(1)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <Typography variant='caption' color='text.secondary'>
+                      Status
+                    </Typography>
+                    <Chip
+                      label={formData.is_active ? 'Active' : 'Inactive'}
+                      color={formData.is_active ? 'success' : 'error'}
+                      size='small'
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Drawer>
     </Grid>
   )
 }
