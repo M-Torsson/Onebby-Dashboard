@@ -87,7 +87,7 @@ const brandStatusObj = {
 
 const columnHelper = createColumnHelper()
 
-const BrandsList = () => {
+const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [filteredData, setFilteredData] = useState([])
@@ -218,7 +218,7 @@ const BrandsList = () => {
         )
       },
       columnHelper.accessor('brandName', {
-        header: 'Brand',
+        header: dictionary.common?.brand || 'Brand',
         cell: ({ row }) => (
           <div className='flex items-center gap-4' style={{ paddingRight: '200px' }}>
             {row.original.image ? (
@@ -257,7 +257,7 @@ const BrandsList = () => {
         )
       }),
       columnHelper.accessor('stock', {
-        header: 'Stock',
+        header: dictionary.common?.stock || 'Stock',
         cell: ({ row }) => (
           <div style={{ paddingRight: '150px' }}>
             <Switch checked={row.original.stock} onChange={() => handleToggleActive(row.original)} />
@@ -266,7 +266,7 @@ const BrandsList = () => {
         enableSorting: false
       }),
       columnHelper.accessor('sortOrder', {
-        header: 'Sort Order',
+        header: dictionary.common?.sortOrder || 'Sort Order',
         cell: ({ row }) => (
           <div style={{ paddingRight: '150px' }}>
             <Typography>{row.original.sortOrder}</Typography>
@@ -274,7 +274,7 @@ const BrandsList = () => {
         )
       }),
       columnHelper.accessor('status', {
-        header: 'Status',
+        header: dictionary.common?.status || 'Status',
         cell: ({ row }) => (
           <div style={{ paddingRight: '160px' }}>
             <Chip
@@ -287,7 +287,7 @@ const BrandsList = () => {
         )
       }),
       columnHelper.accessor('actions', {
-        header: 'Actions',
+        header: dictionary.common?.actions || 'Actions',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton>
@@ -303,13 +303,13 @@ const BrandsList = () => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Delete',
+                  text: dictionary.common?.delete || 'Delete',
                   icon: 'tabler-trash',
                   menuItemProps: {
                     onClick: () => handleDeleteBrand(row.original)
                   }
                 },
-                { text: 'Duplicate', icon: 'tabler-copy' }
+                { text: dictionary.common?.duplicate || 'Duplicate', icon: 'tabler-copy' }
               ]}
             />
           </div>
@@ -372,14 +372,14 @@ const BrandsList = () => {
       )}
 
       <Card>
-        <CardHeader title='Filters' />
-        <TableFilters setData={setFilteredData} brandData={data} />
+        <CardHeader title={dictionary.common?.filters || 'Filters'} />
+        <TableFilters setData={setFilteredData} brandData={data} dictionary={dictionary} />
         <Divider />
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Brand'
+            placeholder={dictionary.common?.searchBrand || 'Search Brand'}
             className='max-sm:is-full'
           />
           <div className='flex flex-wrap items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
@@ -399,7 +399,7 @@ const BrandsList = () => {
               className='max-sm:is-full is-auto'
               startIcon={<i className='tabler-upload' />}
             >
-              Export
+              {dictionary.common?.export || 'Export'}
             </Button>
             <Button
               variant='contained'
@@ -408,7 +408,7 @@ const BrandsList = () => {
               href={getLocalizedUrl('/apps/ecommerce/brands/add', locale)}
               startIcon={<i className='tabler-plus' />}
             >
-              Add Brand
+              {dictionary.common?.addBrand || 'Add Brand'}
             </Button>
           </div>
         </div>

@@ -25,7 +25,7 @@ import { useForm, Controller } from 'react-hook-form'
 const API_BASE_URL = 'https://onebby-api.onrender.com'
 const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
-const AccountDelete = () => {
+const AccountDelete = ({ dictionary = { common: {} } }) => {
   // States
   const [open, setOpen] = useState(false)
   const [userId, setUserId] = useState(null)
@@ -92,15 +92,15 @@ const AccountDelete = () => {
       })
 
       if (response.ok) {
-        alert('تم حذف الحساب بنجاح')
+        alert(dictionary.common?.accountDeleted || 'Account deleted successfully')
         localStorage.clear()
         window.location.href = '/login'
       } else {
-        alert('فشل حذف الحساب')
+        alert(dictionary.common?.deleteAccountFailed || 'Failed to delete account')
       }
     } catch (error) {
       console.error('Error deleting account:', error)
-      alert('حدث خطأ أثناء حذف الحساب')
+      alert(dictionary.common?.errorDeletingAccount || 'An error occurred while deleting account')
     } finally {
       setDeleting(false)
       setOpen(false)
@@ -109,7 +109,7 @@ const AccountDelete = () => {
 
   return (
     <Card>
-      <CardHeader title='Delete Account' />
+      <CardHeader title={dictionary.common?.deleteAccount || 'Delete Account'} />
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <FormControl error={Boolean(errors.checkbox)} className='is-full mbe-6'>
@@ -118,29 +118,38 @@ const AccountDelete = () => {
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <FormControlLabel control={<Checkbox {...field} />} label='I confirm my account deactivation' />
+                <FormControlLabel
+                  control={<Checkbox {...field} />}
+                  label={dictionary.common?.confirmAccountDeactivation || 'I confirm my account deactivation'}
+                />
               )}
             />
-            {errors.checkbox && <FormHelperText error>Please confirm you want to delete account</FormHelperText>}
+            {errors.checkbox && (
+              <FormHelperText error>
+                {dictionary.common?.pleaseConfirmDelete || 'Please confirm you want to delete account'}
+              </FormHelperText>
+            )}
           </FormControl>
           <Button variant='contained' color='error' type='submit' disabled={!checkboxValue}>
-            Deactivate Account
+            {dictionary.common?.deactivateAccount || 'Deactivate Account'}
           </Button>
         </form>
         <Dialog open={open} onClose={() => setOpen(false)}>
-          <DialogTitle>Confirm Account Deletion</DialogTitle>
+          <DialogTitle>{dictionary.common?.confirmAccountDeletion || 'Confirm Account Deletion'}</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Are you sure you want to delete your account? This action cannot be undone and all your data will be
-              permanently removed.
+              {dictionary.common?.deleteAccountWarning ||
+                'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.'}
             </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpen(false)} disabled={deleting}>
-              Cancel
+              {dictionary.common?.cancel || 'Cancel'}
             </Button>
             <Button onClick={handleDeleteAccount} color='error' variant='contained' disabled={deleting}>
-              {deleting ? 'جاري الحذف...' : 'Delete Account'}
+              {deleting
+                ? dictionary.common?.deleting || 'Deleting...'
+                : dictionary.common?.deleteAccount || 'Delete Account'}
             </Button>
           </DialogActions>
         </Dialog>

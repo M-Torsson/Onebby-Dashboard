@@ -5,14 +5,14 @@ import Grid from '@mui/material/Grid'
 import AccountDetails from './AccountDetails'
 import AccountDelete from './AccountDelete'
 
-const Account = () => {
+const Account = ({ dictionary = { common: {} } }) => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <AccountDetails />
+        <AccountDetails dictionary={dictionary} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <AccountDelete />
+        <AccountDelete dictionary={dictionary} />
       </Grid>
     </Grid>
   )

@@ -26,7 +26,7 @@ import CustomTextField from '@core/components/mui/TextField'
 const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
-const BrandsAdd = () => {
+const BrandsAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -251,19 +251,27 @@ const BrandsAdd = () => {
         <div className='flex flex-wrap sm:items-center justify-between max-sm:flex-col gap-6'>
           <div>
             <Typography variant='h4' className='mbe-1'>
-              {editId ? 'Edit brand' : 'Add a new brand'}
+              {editId
+                ? dictionary.common?.editBrand || 'Edit brand'
+                : dictionary.common?.addNewBrand || 'Add a new brand'}
             </Typography>
-            <Typography>Manage your brand information</Typography>
+            <Typography>{dictionary.common?.manageBrandInfo || 'Manage your brand information'}</Typography>
           </div>
           <div className='flex flex-wrap max-sm:flex-col gap-4'>
             <Button variant='tonal' color='secondary' onClick={() => router.push('/apps/ecommerce/brands/list')}>
-              Discard
+              {dictionary.common?.discard || 'Discard'}
             </Button>
             <Button variant='tonal' onClick={handleSaveBrand} disabled={loading}>
-              Save Draft
+              {dictionary.common?.saveDraft || 'Save Draft'}
             </Button>
             <Button variant='contained' onClick={handleSaveBrand} disabled={loading}>
-              {loading ? (editId ? 'Updating...' : 'Publishing...') : editId ? 'Update Brand' : 'Publish Brand'}
+              {loading
+                ? editId
+                  ? dictionary.common?.updating || 'Updating...'
+                  : dictionary.common?.publishing || 'Publishing...'
+                : editId
+                  ? dictionary.common?.updateBrand || 'Update Brand'
+                  : dictionary.common?.publishBrand || 'Publish Brand'}
             </Button>
           </div>
         </div>
@@ -291,14 +299,14 @@ const BrandsAdd = () => {
           {/* Brand Information */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Brand Information' />
+              <CardHeader title={dictionary.common?.brandInformation || 'Brand Information'} />
               <CardContent>
                 <Grid container spacing={6}>
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       fullWidth
-                      label='Brand Name'
-                      placeholder='Enter brand name'
+                      label={dictionary.common?.brandName || 'Brand Name'}
+                      placeholder={dictionary.common?.enterBrandName || 'Enter brand name'}
                       value={formData.name}
                       onChange={e => {
                         const name = e.target.value
@@ -322,7 +330,7 @@ const BrandsAdd = () => {
                       value={formData.slug}
                       onChange={e => setFormData({ ...formData, slug: e.target.value })}
                       required
-                      helperText='URL-friendly version of the name'
+                      helperText={dictionary.common?.slugHelper || 'URL-friendly version of the name'}
                     />
                   </Grid>
                 </Grid>
@@ -333,7 +341,7 @@ const BrandsAdd = () => {
           {/* Brand Image */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Brand Image' />
+              <CardHeader title={dictionary.common?.brandImage || 'Brand Image'} />
               <CardContent>
                 <Box
                   display='flex'
@@ -372,7 +380,7 @@ const BrandsAdd = () => {
                     <Box display='flex' flexDirection='column' alignItems='center' gap={2}>
                       <CircularProgress />
                       <Typography variant='body2' color='text.secondary'>
-                        Uploading image...
+                        {dictionary.common?.uploadingImages || 'Uploading image...'}
                       </Typography>
                     </Box>
                   ) : imagePreview ? (
@@ -384,10 +392,10 @@ const BrandsAdd = () => {
                         style={{ fontSize: '4rem', color: 'var(--mui-palette-text-secondary)' }}
                       />
                       <Typography variant='h6' color='text.primary'>
-                        Click to upload brand image
+                        {dictionary.common?.clickToUploadBrand || 'Click to upload brand image'}
                       </Typography>
                       <Typography variant='body2' color='text.secondary'>
-                        Upload image in JPEG, PNG, WEBP or SVG format
+                        {dictionary.common?.uploadBrandFormat || 'Upload image in JPEG, PNG, WEBP or SVG format'}
                       </Typography>
                     </Box>
                   )}
@@ -412,13 +420,13 @@ const BrandsAdd = () => {
           {/* Brand Settings */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Settings' />
+              <CardHeader title={dictionary.common?.settings || 'Settings'} />
               <CardContent>
                 <Grid container spacing={6}>
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       fullWidth
-                      label='Sort Order'
+                      label={dictionary.common?.sortOrder || 'Sort Order'}
                       type='number'
                       placeholder='1'
                       value={formData.sort_order}
@@ -436,10 +444,10 @@ const BrandsAdd = () => {
                           onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
                         />
                       }
-                      label='Active Status'
+                      label={dictionary.common?.activeStatus || 'Active Status'}
                     />
                     <Typography variant='body2' color='text.secondary' className='mbs-1'>
-                      Enable to make this brand visible to customers
+                      {dictionary.common?.enableBrandVisible || 'Enable to make this brand visible to customers'}
                     </Typography>
                   </Grid>
                 </Grid>

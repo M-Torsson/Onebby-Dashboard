@@ -1,3 +1,5 @@
+'use client'
+
 // Next Imports
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -17,6 +19,7 @@ import UserDropdown from '@components/layout/shared/UserDropdown'
 
 // Hook Imports
 import useHorizontalNav from '@menu/hooks/useHorizontalNav'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Util Imports
 import { horizontalLayoutClasses } from '@layouts/utils/layoutClasses'
@@ -114,6 +117,7 @@ const NavbarContent = () => {
   // Hooks
   const { isBreakpointReached } = useHorizontalNav()
   const { lang: locale } = useParams()
+  const dictionary = useDictionary()
 
   return (
     <div
@@ -132,10 +136,10 @@ const NavbarContent = () => {
       <div className='flex items-center'>
         <NavSearch />
         <LanguageDropdown />
-        <ModeDropdown />
+        <ModeDropdown dictionary={dictionary} />
         <ShortcutsDropdown shortcuts={shortcuts} />
-        <NotificationsDropdown notifications={notifications} />
-        <UserDropdown />
+        <NotificationsDropdown notifications={notifications} dictionary={dictionary} />
+        <UserDropdown dictionary={dictionary} />
         {/* Language Dropdown, Notification Dropdown, quick access menu dropdown, user dropdown will be placed here */}
       </div>
     </div>

@@ -19,6 +19,8 @@
         "list": "List",
         "add": "Add",
         "category": "Category",
+        "brands": "Brands",
+        "taxClasses": "Tax Classes",
         "orders": "Orders",
         "details": "Details",
         "customers": "Customers",

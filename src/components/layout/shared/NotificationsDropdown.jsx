@@ -66,7 +66,7 @@ const getAvatar = params => {
   }
 }
 
-const NotificationDropdown = ({ notifications }) => {
+const NotificationDropdown = ({ notifications, dictionary = { common: {} } }) => {
   // States
   const [open, setOpen] = useState(false)
   const [notificationsState, setNotificationsState] = useState(notifications)
@@ -178,13 +178,22 @@ const NotificationDropdown = ({ notifications }) => {
                 <div className='bs-full flex flex-col'>
                   <div className='flex items-center justify-between plb-3.5 pli-4 is-full gap-2'>
                     <Typography variant='h6' className='flex-auto'>
-                      Notifications
+                      {dictionary.common?.notifications || 'Notifications'}
                     </Typography>
                     {notificationCount > 0 && (
-                      <Chip size='small' variant='tonal' color='primary' label={`${notificationCount} New`} />
+                      <Chip
+                        size='small'
+                        variant='tonal'
+                        color='primary'
+                        label={`${notificationCount} ${dictionary.common?.newNotifications || 'New'}`}
+                      />
                     )}
                     <Tooltip
-                      title={readAll ? 'Mark all as unread' : 'Mark all as read'}
+                      title={
+                        readAll
+                          ? dictionary.common?.markAllAsUnread || 'Mark all as unread'
+                          : dictionary.common?.markAllAsRead || 'Mark all as read'
+                      }
                       placement={placement === 'bottom-end' ? 'left' : 'right'}
                       slotProps={{
                         popper: {
@@ -262,7 +271,7 @@ const NotificationDropdown = ({ notifications }) => {
                   <Divider />
                   <div className='p-4'>
                     <Button fullWidth variant='contained' size='small'>
-                      View All Notifications
+                      {dictionary.common?.viewAllNotifications || 'View All Notifications'}
                     </Button>
                   </div>
                 </div>

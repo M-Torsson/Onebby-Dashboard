@@ -39,8 +39,8 @@ const languageData = [
     langName: 'French'
   },
   {
-    langCode: 'ar',
-    langName: 'Arabic'
+    langCode: 'it',
+    langName: 'Italian'
   }
 ]
 
@@ -62,6 +62,14 @@ const LanguageDropdown = () => {
 
   const handleToggle = () => {
     setOpen(prevOpen => !prevOpen)
+  }
+
+  const handleLanguageChange = langCode => {
+    // Save selected language to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedLanguage', langCode)
+    }
+    handleClose()
   }
 
   return (
@@ -90,7 +98,7 @@ const LanguageDropdown = () => {
                       key={locale.langCode}
                       component={Link}
                       href={getLocalePath(pathName, locale.langCode)}
-                      onClick={handleClose}
+                      onClick={() => handleLanguageChange(locale.langCode)}
                       selected={lang === locale.langCode}
                     >
                       {locale.langName}

@@ -36,7 +36,7 @@ import { getPricingData, getInvoiceData } from '@/app/server/actions'
 
   return res.json()
 } */
-const BillingPlans = async () => {
+const BillingPlans = async ({ dictionary = { common: {} } }) => {
   // Vars
   const data = await getPricingData()
   const invoiceData = await getInvoiceData()
@@ -44,16 +44,16 @@ const BillingPlans = async () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <CurrentPlan data={data} />
+        <CurrentPlan data={data} dictionary={dictionary} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <PaymentMethod />
+        <PaymentMethod dictionary={dictionary} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <Address />
+        <Address dictionary={dictionary} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <InvoiceListTable invoiceData={invoiceData} />
+        <InvoiceListTable invoiceData={invoiceData} dictionary={dictionary} />
       </Grid>
     </Grid>
   )

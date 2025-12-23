@@ -8,6 +8,12 @@ import ProductCard from '@views/apps/ecommerce/products/list/ProductCard'
 // Data Imports
 import { getEcommerceData } from '@/app/server/actions'
 
+// Config Imports
+import { i18n } from '@configs/i18n'
+
+// Util Imports
+import { getDictionary } from '@/utils/getDictionary'
+
 /**
  * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
  * ! `.env` file found at root of your project and also update the API endpoints like `/apps/ecommerce` in below example.
@@ -24,8 +30,12 @@ import { getEcommerceData } from '@/app/server/actions'
 
   return res.json()
 } */
-const eCommerceProductsList = async () => {
+const eCommerceProductsList = async props => {
+  const params = await props.params
+
   // Vars
+  const lang = i18n.locales.includes(params.lang) ? params.lang : i18n.defaultLocale
+  const dictionary = await getDictionary(lang)
   const data = await getEcommerceData()
 
   return (
@@ -34,7 +44,7 @@ const eCommerceProductsList = async () => {
         <ProductCard />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <ProductListTable productData={data?.products} />
+        <ProductListTable productData={data?.products} dictionary={dictionary} />
       </Grid>
     </Grid>
   )

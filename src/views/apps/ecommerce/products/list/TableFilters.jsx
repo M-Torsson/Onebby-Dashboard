@@ -15,7 +15,7 @@ const productStockObj = {
   'Out of Stock': false
 }
 
-const TableFilters = ({ setData, productData }) => {
+const TableFilters = ({ setData, productData, dictionary = { common: {} } }) => {
   // States
   const [category, setCategory] = useState('')
   const [stock, setStock] = useState('')
@@ -51,10 +51,10 @@ const TableFilters = ({ setData, productData }) => {
               select: { displayEmpty: true }
             }}
           >
-            <MenuItem value=''>Select Status</MenuItem>
-            <MenuItem value='Scheduled'>Scheduled</MenuItem>
-            <MenuItem value='Published'>Publish</MenuItem>
-            <MenuItem value='Inactive'>Inactive</MenuItem>
+            <MenuItem value=''>{dictionary.common?.selectStatus || 'Select Status'}</MenuItem>
+            <MenuItem value='Scheduled'>{dictionary.common?.scheduled || 'Scheduled'}</MenuItem>
+            <MenuItem value='Published'>{dictionary.common?.publish || 'Publish'}</MenuItem>
+            <MenuItem value='Inactive'>{dictionary.common?.inactive || 'Inactive'}</MenuItem>
           </CustomTextField>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
@@ -68,13 +68,13 @@ const TableFilters = ({ setData, productData }) => {
               select: { displayEmpty: true }
             }}
           >
-            <MenuItem value=''>Select Category</MenuItem>
-            <MenuItem value='Accessories'>Accessories</MenuItem>
-            <MenuItem value='Home Decor'>Home Decor</MenuItem>
-            <MenuItem value='Electronics'>Electronics</MenuItem>
-            <MenuItem value='Shoes'>Shoes</MenuItem>
-            <MenuItem value='Office'>Office</MenuItem>
-            <MenuItem value='Games'>Games</MenuItem>
+            <MenuItem value=''>{dictionary.common?.selectCategory || 'Select Category'}</MenuItem>
+            <MenuItem value='Accessories'>{dictionary.common?.accessories || 'Accessories'}</MenuItem>
+            <MenuItem value='Home Decor'>{dictionary.common?.homeDecor || 'Home Decor'}</MenuItem>
+            <MenuItem value='Electronics'>{dictionary.common?.electronics || 'Electronics'}</MenuItem>
+            <MenuItem value='Shoes'>{dictionary.common?.shoes || 'Shoes'}</MenuItem>
+            <MenuItem value='Office'>{dictionary.common?.office || 'Office'}</MenuItem>
+            <MenuItem value='Games'>{dictionary.common?.games || 'Games'}</MenuItem>
           </CustomTextField>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
@@ -88,9 +88,9 @@ const TableFilters = ({ setData, productData }) => {
               select: { displayEmpty: true }
             }}
           >
-            <MenuItem value=''>Select Stock</MenuItem>
-            <MenuItem value='In Stock'>In Stock</MenuItem>
-            <MenuItem value='Out of Stock'>Out of Stock</MenuItem>
+            <MenuItem value=''>{dictionary.common?.selectStock || 'Select Stock'}</MenuItem>
+            <MenuItem value='In Stock'>{dictionary.common?.inStock || 'In Stock'}</MenuItem>
+            <MenuItem value='Out of Stock'>{dictionary.common?.outOfStock || 'Out of Stock'}</MenuItem>
           </CustomTextField>
         </Grid>
       </Grid>

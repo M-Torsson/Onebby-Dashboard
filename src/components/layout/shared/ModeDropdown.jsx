@@ -16,7 +16,7 @@ import MenuItem from '@mui/material/MenuItem'
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
 
-const ModeDropdown = () => {
+const ModeDropdown = ({ dictionary = { common: {} } }) => {
   // States
   const [open, setOpen] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
@@ -57,7 +57,7 @@ const ModeDropdown = () => {
   return (
     <>
       <Tooltip
-        title={settings.mode + ' Mode'}
+        title={`${settings.mode === 'light' ? dictionary.common?.light || 'Light' : settings.mode === 'dark' ? dictionary.common?.dark || 'Dark' : dictionary.common?.system || 'System'} ${dictionary.common?.mode || 'Mode'}`}
         onOpen={() => setTooltipOpen(true)}
         onClose={() => setTooltipOpen(false)}
         open={open ? false : tooltipOpen ? true : false}
@@ -89,7 +89,7 @@ const ModeDropdown = () => {
                     selected={settings.mode === 'light'}
                   >
                     <i className='tabler-sun' />
-                    Light
+                    {dictionary.common?.light || 'Light'}
                   </MenuItem>
                   <MenuItem
                     className='gap-3'
@@ -97,7 +97,7 @@ const ModeDropdown = () => {
                     selected={settings.mode === 'dark'}
                   >
                     <i className='tabler-moon-stars' />
-                    Dark
+                    {dictionary.common?.dark || 'Dark'}
                   </MenuItem>
                   <MenuItem
                     className='gap-3'
@@ -105,7 +105,7 @@ const ModeDropdown = () => {
                     selected={settings.mode === 'system'}
                   >
                     <i className='tabler-device-laptop' />
-                    System
+                    {dictionary.common?.system || 'System'}
                   </MenuItem>
                 </MenuList>
               </ClickAwayListener>

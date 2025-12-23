@@ -31,7 +31,7 @@ const horizontalMenuData = dictionary => [
             href: '/apps/ecommerce/dashboard'
           },
           {
-            label: 'Brands',
+            label: dictionary['navigation'].brands,
             href: '/apps/ecommerce/brands/list'
           },
           {

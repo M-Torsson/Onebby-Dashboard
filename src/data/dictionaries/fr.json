@@ -19,6 +19,8 @@
         "list": "Liste",
         "add": "Ajouter",
         "category": "Catégorie",
+        "brands": "Marques",
+        "taxClasses": "Classes Fiscales",
         "orders": "Ordres",
         "details": "Détails",
         "customers": "Clientes",

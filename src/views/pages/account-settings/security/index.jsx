@@ -4,11 +4,11 @@ import Grid from '@mui/material/Grid'
 // Component Imports
 import ChangePasswordCard from './ChangePasswordCard'
 
-const Security = () => {
+const Security = ({ dictionary = { common: {} } }) => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <ChangePasswordCard />
+        <ChangePasswordCard dictionary={dictionary} />
       </Grid>
     </Grid>
   )

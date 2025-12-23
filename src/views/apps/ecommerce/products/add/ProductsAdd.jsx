@@ -168,7 +168,7 @@ const EditorToolbar = ({ editor }) => {
   )
 }
 
-const ProductsAdd = () => {
+const ProductsAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -988,19 +988,27 @@ const ProductsAdd = () => {
         <div className='flex flex-wrap sm:items-center justify-between max-sm:flex-col gap-6'>
           <div>
             <Typography variant='h4' className='mbe-1'>
-              {editId ? 'Edit Product' : 'Add a new Product'}
+              {editId
+                ? dictionary.common?.editProduct || 'Edit Product'
+                : dictionary.common?.addNewProduct || 'Add a new Product'}
             </Typography>
-            <Typography>Manage your product information</Typography>
+            <Typography>{dictionary.common?.manageProductInfo || 'Manage your product information'}</Typography>
           </div>
           <div className='flex flex-wrap max-sm:flex-col gap-4'>
             <Button variant='tonal' color='secondary' onClick={() => router.push('/apps/ecommerce/products/list')}>
-              Discard
+              {dictionary.common?.discard || 'Discard'}
             </Button>
             <Button variant='outlined' onClick={() => setPreviewOpen(true)}>
-              Preview
+              {dictionary.common?.preview || 'Preview'}
             </Button>
             <Button variant='contained' onClick={handleSaveProduct} disabled={loading}>
-              {loading ? (editId ? 'Updating...' : 'Publishing...') : editId ? 'Update Product' : 'Publish Product'}
+              {loading
+                ? editId
+                  ? dictionary.common?.updating || 'Updating...'
+                  : dictionary.common?.publishing || 'Publishing...'
+                : editId
+                  ? dictionary.common?.updateProduct || 'Update Product'
+                  : dictionary.common?.publishProduct || 'Publish Product'}
             </Button>
           </div>
         </div>
@@ -1031,8 +1039,8 @@ const ProductsAdd = () => {
               <CardContent>
                 <CustomTextField
                   fullWidth
-                  label='Product Name'
-                  placeholder='Product Name'
+                  label={dictionary.common?.productName || 'Product Name'}
+                  placeholder={dictionary.common?.productName || 'Product Name'}
                   value={formData.translation.title}
                   onChange={e => handleTranslationChange('title', e.target.value)}
                   required
@@ -1044,13 +1052,13 @@ const ProductsAdd = () => {
           {/* Basic Information */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Basic Information' />
+              <CardHeader title={dictionary.common?.basicInformation || 'Basic Information'} />
               <CardContent>
                 <Grid container spacing={6}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <CustomTextField
                       fullWidth
-                      label='Reference'
+                      label={dictionary.common?.reference || 'Reference'}
                       placeholder='IPH15-PARENT'
                       value={formData.reference}
                       onChange={e => setFormData({ ...formData, reference: e.target.value })}
@@ -1064,34 +1072,34 @@ const ProductsAdd = () => {
                       placeholder='1234567890123 (13 digits)'
                       value={formData.ean13 || ''}
                       onChange={e => setFormData({ ...formData, ean13: e.target.value })}
-                      helperText='Must be exactly 13 digits or leave empty'
+                      helperText={dictionary.common?.ean13Helper || 'Must be exactly 13 digits or leave empty'}
                       error={formData.ean13 && formData.ean13.length !== 13}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth>
-                      <InputLabel>Product Type</InputLabel>
+                      <InputLabel>{dictionary.common?.productType || 'Product Type'}</InputLabel>
                       <Select
                         value={formData.product_type}
-                        label='Product Type'
+                        label={dictionary.common?.productType || 'Product Type'}
                         onChange={e => setFormData({ ...formData, product_type: e.target.value })}
                       >
-                        <MenuItem value='configurable'>Configurable</MenuItem>
-                        <MenuItem value='simple'>Simple</MenuItem>
+                        <MenuItem value='configurable'>{dictionary.common?.configurable || 'Configurable'}</MenuItem>
+                        <MenuItem value='simple'>{dictionary.common?.simple || 'Simple'}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth>
-                      <InputLabel>Condition</InputLabel>
+                      <InputLabel>{dictionary.common?.condition || 'Condition'}</InputLabel>
                       <Select
                         value={formData.condition}
-                        label='Condition'
+                        label={dictionary.common?.condition || 'Condition'}
                         onChange={e => setFormData({ ...formData, condition: e.target.value })}
                       >
-                        <MenuItem value='new'>New</MenuItem>
-                        <MenuItem value='used'>Used</MenuItem>
-                        <MenuItem value='refurbished'>Refurbished</MenuItem>
+                        <MenuItem value='new'>{dictionary.common?.new || 'New'}</MenuItem>
+                        <MenuItem value='used'>{dictionary.common?.used || 'Used'}</MenuItem>
+                        <MenuItem value='refurbished'>{dictionary.common?.refurbished || 'Refurbished'}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -1103,13 +1111,13 @@ const ProductsAdd = () => {
           {/* Product Details */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Product Details' />
+              <CardHeader title={dictionary.common?.productDetails || 'Product Details'} />
               <CardContent>
                 <Grid container spacing={6}>
                   {/* Sub Title Field */}
                   <Grid size={{ xs: 12 }}>
                     <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
-                      Sub Title
+                      {dictionary.common?.subTitle || 'Sub Title'}
                     </Typography>
                     <Card className='p-0 border shadow-none'>
                       <CardContent className='p-0'>
@@ -1127,7 +1135,7 @@ const ProductsAdd = () => {
                   {/* Simple Description Field */}
                   <Grid size={{ xs: 12 }}>
                     <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
-                      Simple Description
+                      {dictionary.common?.simpleDescription || 'Simple Description'}
                     </Typography>
                     <Card className='p-0 border shadow-none'>
                       <CardContent className='p-0'>
@@ -1145,7 +1153,7 @@ const ProductsAdd = () => {
                   {/* Meta Description Field */}
                   <Grid size={{ xs: 12 }}>
                     <Typography className='mbe-2' sx={{ fontWeight: 500 }}>
-                      Meta Description
+                      {dictionary.common?.metaDescription || 'Meta Description'}
                     </Typography>
                     <Card className='p-0 border shadow-none'>
                       <CardContent className='p-0'>
@@ -1168,7 +1176,7 @@ const ProductsAdd = () => {
           <Grid size={{ xs: 12 }}>
             <Card>
               <CardHeader
-                title='Product Images'
+                title={dictionary.common?.productImages || 'Product Images'}
                 action={
                   <Button
                     size='small'
@@ -1177,7 +1185,7 @@ const ProductsAdd = () => {
                     onClick={() => document.getElementById('product-images-input').click()}
                     disabled={uploadingImage}
                   >
-                    Upload Images
+                    {dictionary.common?.uploadImages || 'Upload Images'}
                   </Button>
                 }
               />
@@ -1186,7 +1194,7 @@ const ProductsAdd = () => {
                   <Box display='flex' alignItems='center' justifyContent='center' gap={2} mb={3}>
                     <CircularProgress size={24} />
                     <Typography variant='body2' color='text.secondary'>
-                      Uploading images...
+                      {dictionary.common?.uploadingImages || 'Uploading images...'}
                     </Typography>
                   </Box>
                 )}
@@ -1276,12 +1284,12 @@ const ProductsAdd = () => {
                       style={{ fontSize: '4rem', color: 'var(--mui-palette-text-secondary)' }}
                     />
                     <Typography variant='h6' color='text.primary'>
-                      No images uploaded
+                      {dictionary.common?.noImagesUploaded || 'No images uploaded'}
                     </Typography>
                     <Typography variant='body2' color='text.secondary' align='center'>
-                      Click to upload multiple images
+                      {dictionary.common?.clickToUploadImages || 'Click to upload multiple images'}
                       <br />
-                      Supported: JPEG, PNG, WEBP (max 5MB each)
+                      {dictionary.common?.supportedFormats || 'Supported: JPEG, PNG, WEBP (max 5MB each)'}
                     </Typography>
                   </Box>
                 )}
@@ -1302,15 +1310,17 @@ const ProductsAdd = () => {
           {/* Variant Attributes Definition */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Variant Attributes' />
+              <CardHeader title={dictionary.common?.variantAttributes || 'Variant Attributes'} />
               <CardContent>
                 <Typography variant='body2' color='text.secondary' className='mbe-4'>
-                  Define which attributes your variants will have (e.g., color, storage, size)
+                  {dictionary.common?.variantAttributesDesc ||
+                    'Define which attributes your variants will have (e.g., color, storage, size)'}
                 </Typography>
                 <Alert severity='info' className='mbe-4'>
                   <Typography variant='body2'>
-                    <strong>Default attributes:</strong> Color and Storage are pre-configured. Each variant must have
-                    these attributes filled.
+                    <strong>{dictionary.common?.defaultAttributes || 'Default attributes'}:</strong>{' '}
+                    {dictionary.common?.colorStoragePreConfig ||
+                      'Color and Storage are pre-configured. Each variant must have these attributes filled.'}
                   </Typography>
                 </Alert>
                 <Grid container spacing={4}>
@@ -1325,10 +1335,11 @@ const ProductsAdd = () => {
                       }}
                     >
                       <Typography variant='subtitle2' className='mbe-1'>
-                        Color
+                        {dictionary.common?.color || 'Color'}
                       </Typography>
                       <Typography variant='body2' color='text.secondary'>
-                        Code: <code>color</code> - Used for variant color identification
+                        {dictionary.common?.colorCodeDesc || 'Code:'} <code>color</code> -{' '}
+                        {dictionary.common?.usedForColorId || 'Used for variant color identification'}
                       </Typography>
                     </Box>
                   </Grid>
@@ -1343,10 +1354,11 @@ const ProductsAdd = () => {
                       }}
                     >
                       <Typography variant='subtitle2' className='mbe-1'>
-                        Storage
+                        {dictionary.common?.storage || 'Storage'}
                       </Typography>
                       <Typography variant='body2' color='text.secondary'>
-                        Code: <code>storage</code> - Used for variant storage capacity
+                        {dictionary.common?.colorCodeDesc || 'Code:'} <code>storage</code> -{' '}
+                        {dictionary.common?.usedForStorageCapacity || 'Used for variant storage capacity'}
                       </Typography>
                     </Box>
                   </Grid>
@@ -1359,10 +1371,10 @@ const ProductsAdd = () => {
           <Grid size={{ xs: 12 }}>
             <Card>
               <CardHeader
-                title='Product Variants'
+                title={dictionary.common?.productVariants || 'Product Variants'}
                 action={
                   <Button size='small' onClick={addVariant} startIcon={<i className='tabler-plus' />}>
-                    Add Variant
+                    {dictionary.common?.addVariant || 'Add Variant'}
                   </Button>
                 }
               />
@@ -1371,7 +1383,8 @@ const ProductsAdd = () => {
                   {formData.variants.length === 0 ? (
                     <Grid size={{ xs: 12 }}>
                       <Typography color='text.secondary' align='center'>
-                        No variants added yet. Click "Add Variant" to create one.
+                        {dictionary.common?.noVariantsMessage ||
+                          'No variants added yet. Click "Add Variant" to create one.'}
                       </Typography>
                     </Grid>
                   ) : (
@@ -1551,7 +1564,7 @@ const ProductsAdd = () => {
           {/* Settings */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Settings' />
+              <CardHeader title={dictionary.common?.settings || 'Settings'} />
               <CardContent>
                 <Grid container spacing={6}>
                   <Grid size={{ xs: 12 }}>
@@ -1576,13 +1589,13 @@ const ProductsAdd = () => {
           {/* Brand */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Brand' />
+              <CardHeader title={dictionary.common?.brand || 'Brand'} />
               <CardContent>
                 <FormControl fullWidth>
-                  <InputLabel>Select Brand</InputLabel>
+                  <InputLabel>{dictionary.common?.selectBrand || 'Select Brand'}</InputLabel>
                   <Select
                     value={formData.brand_id || ''}
-                    label='Select Brand'
+                    label={dictionary.common?.selectBrand || 'Select Brand'}
                     onChange={e => setFormData({ ...formData, brand_id: e.target.value })}
                   >
                     <MenuItem value=''>
@@ -1603,15 +1616,15 @@ const ProductsAdd = () => {
           {/* Categories */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Categories' />
+              <CardHeader title={dictionary.common?.categories || 'Categories'} />
               <CardContent>
                 <FormControl fullWidth>
-                  <InputLabel>Select Categories</InputLabel>
+                  <InputLabel>{dictionary.common?.selectCategories || 'Select Categories'}</InputLabel>
                   <Select
                     multiple
                     value={formData.categories}
                     onChange={e => setFormData({ ...formData, categories: e.target.value })}
-                    input={<OutlinedInput label='Select Categories' />}
+                    input={<OutlinedInput label={dictionary.common?.selectCategories || 'Select Categories'} />}
                     MenuProps={{
                       PaperProps: {
                         style: {
@@ -1752,14 +1765,14 @@ const ProductsAdd = () => {
           {/* Stock & Price */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Stock & Pricing' />
+              <CardHeader title={dictionary.common?.stockAndPricing || 'Stock & Pricing'} />
               <CardContent>
                 <Grid container spacing={6}>
                   {/* Two price fields side by side */}
                   <Grid size={{ xs: 12, md: 6 }}>
                     <CustomTextField
                       fullWidth
-                      label='Taxes excluded'
+                      label={dictionary.common?.taxesExcluded || 'Taxes excluded'}
                       type='number'
                       placeholder='0'
                       value={formData.price.list === 0 ? '' : formData.price.list}
@@ -1780,7 +1793,7 @@ const ProductsAdd = () => {
                   <Grid size={{ xs: 12, md: 6 }}>
                     <CustomTextField
                       fullWidth
-                      label='Taxes included'
+                      label={dictionary.common?.taxesIncluded || 'Taxes included'}
                       type='number'
                       placeholder='0'
                       value={
@@ -1816,10 +1829,10 @@ const ProductsAdd = () => {
                   {/* VAT Regime dropdown */}
                   <Grid size={{ xs: 12 }}>
                     <FormControl fullWidth>
-                      <InputLabel>VAT Regime</InputLabel>
+                      <InputLabel>{dictionary.common?.vatRegime || 'VAT Regime'}</InputLabel>
                       <Select
                         value={taxClasses.find(t => t.id === formData.tax.class_id) ? formData.tax.class_id : ''}
-                        label='VAT Regime'
+                        label={dictionary.common?.vatRegime || 'VAT Regime'}
                         onChange={e =>
                           setFormData({
                             ...formData,
@@ -1849,7 +1862,7 @@ const ProductsAdd = () => {
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       fullWidth
-                      label='Stock Quantity'
+                      label={dictionary.common?.stockQuantity || 'Stock Quantity'}
                       type='number'
                       placeholder='0'
                       value={formData.stock.quantity === 0 ? '' : formData.stock.quantity}
@@ -1863,17 +1876,17 @@ const ProductsAdd = () => {
                   </Grid>
                   <Grid size={{ xs: 12 }}>
                     <FormControl fullWidth>
-                      <InputLabel>Stock Status</InputLabel>
+                      <InputLabel>{dictionary.common?.stockStatus || 'Stock Status'}</InputLabel>
                       <Select
                         value={formData.stock.status}
-                        label='Stock Status'
+                        label={dictionary.common?.stockStatus || 'Stock Status'}
                         onChange={e =>
                           setFormData({ ...formData, stock: { ...formData.stock, status: e.target.value } })
                         }
                       >
-                        <MenuItem value='in_stock'>In Stock</MenuItem>
-                        <MenuItem value='out_of_stock'>Out of Stock</MenuItem>
-                        <MenuItem value='low_stock'>Low Stock</MenuItem>
+                        <MenuItem value='in_stock'>{dictionary.common?.inStock || 'In Stock'}</MenuItem>
+                        <MenuItem value='out_of_stock'>{dictionary.common?.outOfStock || 'Out of Stock'}</MenuItem>
+                        <MenuItem value='low_stock'>{dictionary.common?.lowStock || 'Low Stock'}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>

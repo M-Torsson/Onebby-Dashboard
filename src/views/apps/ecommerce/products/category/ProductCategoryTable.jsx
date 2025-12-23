@@ -81,7 +81,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 
 const columnHelper = createColumnHelper()
 
-const ProductCategoryTable = () => {
+const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
   const { lang: locale } = useParams()
   const [rowSelection, setRowSelection] = useState({})
@@ -231,7 +231,7 @@ const ProductCategoryTable = () => {
         )
       },
       columnHelper.accessor('name', {
-        header: 'Category',
+        header: dictionary.common?.category || 'Category',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             {row.original.has_children && (
@@ -270,14 +270,16 @@ const ProductCategoryTable = () => {
         )
       }),
       columnHelper.accessor('sort_order', {
-        header: 'Sort Order',
+        header: dictionary.common?.sortOrder || 'Sort Order',
         cell: ({ row }) => <Typography>{row.original.sort_order}</Typography>
       }),
       columnHelper.accessor('is_active', {
-        header: 'Status',
+        header: dictionary.common?.status || 'Status',
         cell: ({ row }) => (
           <Chip
-            label={row.original.is_active ? 'Active' : 'Inactive'}
+            label={
+              row.original.is_active ? dictionary.common?.active || 'Active' : dictionary.common?.inactive || 'Inactive'
+            }
             color={row.original.is_active ? 'success' : 'error'}
             size='small'
             variant='tonal'
@@ -285,10 +287,10 @@ const ProductCategoryTable = () => {
         )
       }),
       columnHelper.accessor('has_children', {
-        header: 'Sub Categories',
+        header: dictionary.common?.subCategories || 'Sub Categories',
         cell: ({ row }) => (
           <Chip
-            label={row.original.has_children ? 'Yes' : 'No'}
+            label={row.original.has_children ? dictionary.common?.yes || 'Yes' : dictionary.common?.no || 'No'}
             color={row.original.has_children ? 'primary' : 'default'}
             size='small'
             variant='tonal'
@@ -296,7 +298,7 @@ const ProductCategoryTable = () => {
         )
       }),
       columnHelper.accessor('actions', {
-        header: 'Actions',
+        header: dictionary.common?.actions || 'Actions',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton onClick={() => handleEditCategory(row.original)}>
@@ -307,12 +309,12 @@ const ProductCategoryTable = () => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Add Subcategory',
+                  text: dictionary.common?.addSubcategory || 'Add Subcategory',
                   icon: 'tabler-plus',
                   menuItemProps: { onClick: () => handleAddSubcategory(row.original) }
                 },
                 {
-                  text: 'Delete',
+                  text: dictionary.common?.delete || 'Delete',
                   icon: 'tabler-trash',
                   menuItemProps: { onClick: () => handleDeleteCategory(row.original) }
                 }
@@ -363,7 +365,7 @@ const ProductCategoryTable = () => {
   return (
     <>
       <Card>
-        <CardHeader title='Product Categories' className='pbe-4' />
+        <CardHeader title={dictionary.common?.productCategories || 'Product Categories'} className='pbe-4' />
 
         {error && (
           <Alert severity='error' onClose={() => setError('')} sx={{ mx: 4, mb: 2 }}>
@@ -381,7 +383,7 @@ const ProductCategoryTable = () => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Category'
+            placeholder={dictionary.common?.searchCategory || 'Search Category'}
             className='max-sm:is-full min-is-[200px]'
           />
           <div className='flex items-center gap-4 max-sm:flex-col max-sm:is-full is-auto'>
@@ -401,7 +403,7 @@ const ProductCategoryTable = () => {
               startIcon={<i className='tabler-upload' />}
               className='max-sm:is-full is-auto'
             >
-              Export
+              {dictionary.common?.export || 'Export'}
             </Button>
             <Button
               variant='contained'
@@ -410,7 +412,7 @@ const ProductCategoryTable = () => {
               href={getLocalizedUrl('/apps/ecommerce/category/add', locale)}
               startIcon={<i className='tabler-plus' />}
             >
-              Add Category
+              {dictionary.common?.addCategory || 'Add Category'}
             </Button>
           </div>
         </div>

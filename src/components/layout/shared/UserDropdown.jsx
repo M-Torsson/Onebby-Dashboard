@@ -36,7 +36,7 @@ const BadgeContentSpan = styled('span')({
   boxShadow: '0 0 0 2px var(--mui-palette-background-paper)'
 })
 
-const UserDropdown = () => {
+const UserDropdown = ({ dictionary = { common: {} } }) => {
   // States
   const [open, setOpen] = useState(false)
   const [username, setUsername] = useState('')
@@ -131,11 +131,11 @@ const UserDropdown = () => {
                   <Divider className='mlb-1' />
                   <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pages/user-profile')}>
                     <i className='tabler-user' />
-                    <Typography color='text.primary'>My Profile</Typography>
+                    <Typography color='text.primary'>{dictionary.common?.myProfile || 'My Profile'}</Typography>
                   </MenuItem>
                   <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pages/account-settings')}>
                     <i className='tabler-settings' />
-                    <Typography color='text.primary'>Settings</Typography>
+                    <Typography color='text.primary'>{dictionary.common?.settings || 'Settings'}</Typography>
                   </MenuItem>
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
@@ -147,7 +147,7 @@ const UserDropdown = () => {
                       onClick={handleUserLogout}
                       sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
                     >
-                      Logout
+                      {dictionary.common?.logout || 'Logout'}
                     </Button>
                   </div>
                 </MenuList>

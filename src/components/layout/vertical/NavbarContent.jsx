@@ -1,3 +1,5 @@
+'use client'
+
 // Third-party Imports
 import classnames from 'classnames'
 
@@ -9,6 +11,9 @@ import ModeDropdown from '@components/layout/shared/ModeDropdown'
 import ShortcutsDropdown from '@components/layout/shared/ShortcutsDropdown'
 import NotificationsDropdown from '@components/layout/shared/NotificationsDropdown'
 import UserDropdown from '@components/layout/shared/UserDropdown'
+
+// Hook Imports
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Util Imports
 import { verticalLayoutClasses } from '@layouts/utils/layoutClasses'
@@ -102,6 +107,8 @@ const notifications = [
 ]
 
 const NavbarContent = () => {
+  const dictionary = useDictionary()
+
   return (
     <div className={classnames(verticalLayoutClasses.navbarContent, 'flex items-center justify-between gap-4 is-full')}>
       <div className='flex items-center gap-4'>
@@ -110,9 +117,9 @@ const NavbarContent = () => {
       </div>
       <div className='flex items-center'>
         <LanguageDropdown />
-        <ModeDropdown />
-        <NotificationsDropdown notifications={notifications} />
-        <UserDropdown />
+        <ModeDropdown dictionary={dictionary} />
+        <NotificationsDropdown notifications={notifications} dictionary={dictionary} />
+        <UserDropdown dictionary={dictionary} />
       </div>
     </div>
   )

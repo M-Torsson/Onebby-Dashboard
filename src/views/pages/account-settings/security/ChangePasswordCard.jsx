@@ -16,7 +16,7 @@ import Button from '@mui/material/Button'
 //Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-const ChangePasswordCard = () => {
+const ChangePasswordCard = ({ dictionary = { common: {} } }) => {
   // States
   const [isCurrentPasswordShown, setIsCurrentPasswordShown] = useState(false)
   const [isConfirmPasswordShown, setIsConfirmPasswordShown] = useState(false)
@@ -28,14 +28,14 @@ const ChangePasswordCard = () => {
 
   return (
     <Card>
-      <CardHeader title='Change Password' />
+      <CardHeader title={dictionary.common?.changePassword || 'Change Password'} />
       <CardContent>
         <form>
           <Grid container spacing={6}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='Current Password'
+                label={dictionary.common?.currentPassword || 'Current Password'}
                 type={isCurrentPasswordShown ? 'text' : 'password'}
                 placeholder='············'
                 slotProps={{
@@ -60,7 +60,7 @@ const ChangePasswordCard = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='New Password'
+                label={dictionary.common?.newPassword || 'New Password'}
                 type={isNewPasswordShown ? 'text' : 'password'}
                 placeholder='············'
                 slotProps={{
@@ -83,7 +83,7 @@ const ChangePasswordCard = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='Confirm New Password'
+                label={dictionary.common?.confirmNewPassword || 'Confirm New Password'}
                 type={isConfirmPasswordShown ? 'text' : 'password'}
                 placeholder='············'
                 slotProps={{
@@ -104,26 +104,28 @@ const ChangePasswordCard = () => {
               />
             </Grid>
             <Grid size={{ xs: 12 }} className='flex flex-col gap-4'>
-              <Typography variant='h6'>Password Requirements:</Typography>
+              <Typography variant='h6'>
+                {dictionary.common?.passwordRequirements || 'Password Requirements:'}
+              </Typography>
               <div className='flex flex-col gap-4'>
                 <div className='flex items-center gap-2.5'>
                   <i className='tabler-circle-filled text-[8px]' />
-                  Minimum 8 characters long - the more, the better
+                  {dictionary.common?.passwordReq1 || 'Minimum 8 characters long - the more, the better'}
                 </div>
                 <div className='flex items-center gap-2.5'>
                   <i className='tabler-circle-filled text-[8px]' />
-                  At least one lowercase & one uppercase character
+                  {dictionary.common?.passwordReq2 || 'At least one lowercase & one uppercase character'}
                 </div>
                 <div className='flex items-center gap-2.5'>
                   <i className='tabler-circle-filled text-[8px]' />
-                  At least one number, symbol, or whitespace character
+                  {dictionary.common?.passwordReq3 || 'At least one number, symbol, or whitespace character'}
                 </div>
               </div>
             </Grid>
             <Grid size={{ xs: 12 }} className='flex gap-4'>
-              <Button variant='contained'>Save Changes</Button>
+              <Button variant='contained'>{dictionary.common?.saveChanges || 'Save Changes'}</Button>
               <Button variant='tonal' type='reset' color='secondary'>
-                Reset
+                {dictionary.common?.reset || 'Reset'}
               </Button>
             </Grid>
           </Grid>

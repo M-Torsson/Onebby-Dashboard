@@ -77,7 +77,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 
 const columnHelper = createColumnHelper()
 
-const TaxClassTable = () => {
+const TaxClassTable = ({ dictionary = { common: {} } }) => {
   const { lang: locale } = useParams()
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
@@ -218,7 +218,7 @@ const TaxClassTable = () => {
         )
       },
       columnHelper.accessor('name', {
-        header: 'Tax Name',
+        header: dictionary.common?.taxName || 'Tax Name',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <div className='flex flex-col'>
@@ -230,15 +230,19 @@ const TaxClassTable = () => {
         )
       }),
       columnHelper.accessor('rate', {
-        header: 'Tax Rate (%)',
+        header: dictionary.common?.taxRate || 'Tax Rate (%)',
         cell: ({ row }) => <Typography color='text.primary'>{row.original.rate}%</Typography>
       }),
       columnHelper.accessor('is_active', {
-        header: 'Status',
+        header: dictionary.common?.status || 'Status',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <Chip
-              label={row.original.is_active ? 'Active' : 'Inactive'}
+              label={
+                row.original.is_active
+                  ? dictionary.common?.active || 'Active'
+                  : dictionary.common?.inactive || 'Inactive'
+              }
               variant='tonal'
               color={row.original.is_active ? 'success' : 'error'}
               size='small'
@@ -247,7 +251,7 @@ const TaxClassTable = () => {
         )
       }),
       columnHelper.accessor('created_at', {
-        header: 'Created At',
+        header: dictionary.common?.createdAt || 'Created At',
         cell: ({ row }) => (
           <Typography>
             {row.original.created_at ? new Date(row.original.created_at).toLocaleDateString() : '-'}
@@ -255,7 +259,7 @@ const TaxClassTable = () => {
         )
       }),
       columnHelper.accessor('action', {
-        header: 'Action',
+        header: dictionary.common?.action || 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton onClick={() => handleEditTax(row.original)}>
@@ -303,7 +307,7 @@ const TaxClassTable = () => {
   if (loading) {
     return (
       <Card>
-        <CardHeader title='Tax Classes' />
+        <CardHeader title={dictionary.common?.taxClasses || 'Tax Classes'} />
         <div className='flex justify-center items-center min-h-[400px]'>
           <CircularProgress />
         </div>
@@ -314,7 +318,7 @@ const TaxClassTable = () => {
   return (
     <>
       <Card>
-        <CardHeader title='Tax Classes' />
+        <CardHeader title={dictionary.common?.taxClasses || 'Tax Classes'} />
         {error && (
           <Alert severity='error' onClose={() => setError('')} className='m-6'>
             {error}
@@ -329,7 +333,7 @@ const TaxClassTable = () => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Tax Classes'
+            placeholder={dictionary.common?.searchTaxClasses || 'Search Tax Classes'}
             className='is-full sm:is-auto'
           />
           <div className='flex gap-4'>
@@ -344,7 +348,7 @@ const TaxClassTable = () => {
               <MenuItem value='50'>50</MenuItem>
             </CustomTextField>
             <Button variant='contained' onClick={handleAddTax} startIcon={<i className='tabler-plus' />}>
-              Add Tax Class
+              {dictionary.common?.addTaxClass || 'Add Tax Class'}
             </Button>
           </div>
         </div>
@@ -379,7 +383,7 @@ const TaxClassTable = () => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                    No tax classes available
+                    {dictionary.common?.noTaxClassesAvailable || 'No tax classes available'}
                   </td>
                 </tr>
               </tbody>

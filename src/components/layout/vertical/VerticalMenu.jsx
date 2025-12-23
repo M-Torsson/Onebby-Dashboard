@@ -63,7 +63,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
 
         {/* eCommerce */}
         <SubMenu label={dictionary['navigation'].eCommerce} icon={<i className='tabler-shopping-cart' />}>
-          <SubMenu label='Brands'>
+          <SubMenu label={dictionary['navigation'].brands}>
             <MenuItem href={`/${locale}/apps/ecommerce/brands/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem href={`/${locale}/apps/ecommerce/brands/add`}>{dictionary['navigation'].add}</MenuItem>
           </SubMenu>
@@ -75,7 +75,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             <MenuItem href={`/${locale}/apps/ecommerce/category/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem href={`/${locale}/apps/ecommerce/category/add`}>{dictionary['navigation'].add}</MenuItem>
           </SubMenu>
-          <SubMenu label='Tax Classes'>
+          <SubMenu label={dictionary['navigation'].taxClasses}>
             <MenuItem href={`/${locale}/apps/ecommerce/tax/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem href={`/${locale}/apps/ecommerce/tax/add`}>{dictionary['navigation'].add}</MenuItem>
           </SubMenu>

@@ -219,7 +219,7 @@ const ProfileTab = () => {
         <Card>
           <CardContent>
             <div className='flex justify-between items-center mbe-4'>
-              <Typography variant='h5'>User Information</Typography>
+              <Typography variant='h5'>Informazioni Utente</Typography>
               {!editMode && (
                 <Button
                   variant='contained'
@@ -227,7 +227,7 @@ const ProfileTab = () => {
                   startIcon={<i className='tabler-edit' />}
                   onClick={handleEdit}
                 >
-                  Edit Profile
+                  Modifica Profilo
                 </Button>
               )}
             </div>
@@ -236,7 +236,7 @@ const ProfileTab = () => {
               <div className='flex flex-col gap-4'>
                 <TextField
                   fullWidth
-                  label='Username'
+                  label='Nome Utente'
                   value={editData.username}
                   onChange={e => setEditData({ ...editData, username: e.target.value })}
                 />
@@ -249,23 +249,23 @@ const ProfileTab = () => {
                 />
                 <TextField
                   fullWidth
-                  label='Full Name'
+                  label='Nome Completo'
                   value={editData.full_name}
                   onChange={e => setEditData({ ...editData, full_name: e.target.value })}
                 />
                 <TextField
                   fullWidth
-                  label='New Password (leave empty to keep current)'
+                  label='Nuova Password (lascia vuoto per mantenere quella attuale)'
                   type='password'
                   value={editData.password}
                   onChange={e => setEditData({ ...editData, password: e.target.value })}
                 />
                 <div className='flex gap-2 justify-end'>
                   <Button variant='outlined' color='secondary' onClick={handleCancelEdit}>
-                    Cancel
+                    Annulla
                   </Button>
                   <Button variant='contained' color='primary' onClick={handleSaveEdit}>
-                    Save Changes
+                    Salva Modifiche
                   </Button>
                 </div>
               </div>
@@ -275,7 +275,7 @@ const ProfileTab = () => {
                   <i className='tabler-user text-xl' />
                   <div>
                     <Typography variant='body2' color='text.secondary'>
-                      Username
+                      Nome Utente
                     </Typography>
                     <Typography variant='body1'>{userData.username}</Typography>
                   </div>
@@ -286,23 +286,23 @@ const ProfileTab = () => {
                     <Typography variant='body2' color='text.secondary'>
                       Email
                     </Typography>
-                    <Typography variant='body1'>{userData.email || 'Not provided'}</Typography>
+                    <Typography variant='body1'>{userData.email || 'Non fornito'}</Typography>
                   </div>
                 </div>
                 <div className='flex items-center gap-2'>
                   <i className='tabler-id text-xl' />
                   <div>
                     <Typography variant='body2' color='text.secondary'>
-                      Full Name
+                      Nome Completo
                     </Typography>
-                    <Typography variant='body1'>{userData.full_name || 'Not provided'}</Typography>
+                    <Typography variant='body1'>{userData.full_name || 'Non fornito'}</Typography>
                   </div>
                 </div>
                 <div className='flex items-center gap-2'>
                   <i className='tabler-calendar text-xl' />
                   <div>
                     <Typography variant='body2' color='text.secondary'>
-                      Member Since
+                      Membro Dal
                     </Typography>
                     <Typography variant='body1'>
                       {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'N/A'}
@@ -320,10 +320,10 @@ const ProfileTab = () => {
           <Card>
             <CardContent>
               <Typography variant='h6' color='error' className='mbe-2'>
-                Danger Zone
+                Zona Pericolosa
               </Typography>
               <Typography variant='body2' color='text.secondary' className='mbe-4'>
-                Once you delete your account, there is no going back. Please be certain.
+                Una volta eliminato il tuo account, non si può tornare indietro. Assicurati di essere certo.
               </Typography>
               <Button
                 variant='contained'
@@ -331,7 +331,7 @@ const ProfileTab = () => {
                 startIcon={<i className='tabler-trash' />}
                 onClick={handleDeleteAccount}
               >
-                Delete Account
+                Elimina Account
               </Button>
             </CardContent>
           </Card>
@@ -340,13 +340,13 @@ const ProfileTab = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Account Deletion</DialogTitle>
+        <DialogTitle>Conferma Eliminazione Account</DialogTitle>
         <DialogContent>
           <Typography variant='body1' className='mbe-4'>
-            Are you sure you want to delete your account? This action cannot be undone.
+            Sei sicuro di voler eliminare il tuo account? Questa azione non può essere annullata.
           </Typography>
           <Typography variant='body2' color='text.secondary' className='mbe-4'>
-            Please enter your password to confirm:
+            Inserisci la tua password per confermare:
           </Typography>
           <TextField
             fullWidth
@@ -360,10 +360,10 @@ const ProfileTab = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
-            Cancel
+            Annulla
           </Button>
           <Button onClick={handleConfirmDelete} color='error' variant='contained'>
-            Delete Account
+            Elimina Account
           </Button>
         </DialogActions>
       </Dialog>

@@ -12,7 +12,7 @@ const verticalMenuData = dictionary => [
     icon: 'tabler-shopping-cart',
     children: [
       {
-        label: 'Brands',
+        label: dictionary['navigation'].brands,
         href: '/apps/ecommerce/brands/list'
       },
       {
@@ -24,7 +24,7 @@ const verticalMenuData = dictionary => [
         href: '/apps/ecommerce/category/list'
       },
       {
-        label: 'Tax Classes',
+        label: dictionary['navigation'].taxClasses,
         href: '/apps/ecommerce/tax/list'
       },
       {

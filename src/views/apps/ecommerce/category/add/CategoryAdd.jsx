@@ -27,7 +27,7 @@ import CustomTextField from '@core/components/mui/TextField'
 const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
-const CategoryAdd = () => {
+const CategoryAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -307,16 +307,24 @@ const CategoryAdd = () => {
         <div className='flex flex-wrap sm:items-center justify-between max-sm:flex-col gap-6'>
           <div>
             <Typography variant='h4' className='mbe-1'>
-              {editId ? 'Edit category' : 'Add a new category'}
+              {editId
+                ? dictionary.common?.editCategory || 'Edit category'
+                : dictionary.common?.addNewCategory || 'Add a new category'}
             </Typography>
-            <Typography>Manage your category information</Typography>
+            <Typography>{dictionary.common?.manageCategoryInfo || 'Manage your category information'}</Typography>
           </div>
           <div className='flex flex-wrap max-sm:flex-col gap-4'>
             <Button variant='tonal' color='secondary' onClick={() => router.push('/apps/ecommerce/category/list')}>
-              Discard
+              {dictionary.common?.discard || 'Discard'}
             </Button>
             <Button variant='contained' onClick={handleSaveCategory} disabled={loading}>
-              {loading ? (editId ? 'Updating...' : 'Publishing...') : editId ? 'Update Category' : 'Publish Category'}
+              {loading
+                ? editId
+                  ? dictionary.common?.updating || 'Updating...'
+                  : dictionary.common?.publishing || 'Publishing...'
+                : editId
+                  ? dictionary.common?.updateCategory || 'Update Category'
+                  : dictionary.common?.publishCategory || 'Publish Category'}
             </Button>
           </div>
         </div>
@@ -344,14 +352,14 @@ const CategoryAdd = () => {
           {/* Category Information */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Category Information' />
+              <CardHeader title={dictionary.common?.categoryInformation || 'Category Information'} />
               <CardContent>
                 <Grid container spacing={6}>
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       fullWidth
-                      label='Category Name'
-                      placeholder='Enter category name'
+                      label={dictionary.common?.categoryName || 'Category Name'}
+                      placeholder={dictionary.common?.enterCategoryName || 'Enter category name'}
                       value={formData.name}
                       onChange={e => {
                         const name = e.target.value
@@ -375,19 +383,19 @@ const CategoryAdd = () => {
                       value={formData.slug}
                       onChange={e => setFormData({ ...formData, slug: e.target.value })}
                       required
-                      helperText='URL-friendly version of the name'
+                      helperText={dictionary.common?.slugHelper || 'URL-friendly version of the name'}
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       select
                       fullWidth
-                      label='Parent Category'
+                      label={dictionary.common?.parentCategory || 'Parent Category'}
                       value={formData.parent_id || ''}
                       onChange={e => setFormData({ ...formData, parent_id: e.target.value || null })}
-                      helperText='Leave empty for main category'
+                      helperText={dictionary.common?.leaveEmptyMainCategory || 'Leave empty for main category'}
                     >
-                      <MenuItem value=''>None (Main Category)</MenuItem>
+                      <MenuItem value=''>{dictionary.common?.noneMainCategory || 'None (Main Category)'}</MenuItem>
                       {parents.map(parent => (
                         <MenuItem key={parent.id} value={parent.id}>
                           {parent.name}
@@ -403,7 +411,7 @@ const CategoryAdd = () => {
           {/* Category Image */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Category Image' />
+              <CardHeader title={dictionary.common?.categoryImage || 'Category Image'} />
               <CardContent>
                 <Box
                   display='flex'
@@ -442,7 +450,7 @@ const CategoryAdd = () => {
                     <Box display='flex' flexDirection='column' alignItems='center' gap={2}>
                       <CircularProgress />
                       <Typography variant='body2' color='text.secondary'>
-                        Uploading image...
+                        {dictionary.common?.uploadingImages || 'Uploading image...'}
                       </Typography>
                     </Box>
                   ) : imagePreview ? (
@@ -459,10 +467,10 @@ const CategoryAdd = () => {
                         style={{ fontSize: '4rem', color: 'var(--mui-palette-text-secondary)' }}
                       />
                       <Typography variant='h6' color='text.primary'>
-                        Click to upload category image
+                        {dictionary.common?.clickToUploadCategoryImage || 'Click to upload category image'}
                       </Typography>
                       <Typography variant='body2' color='text.secondary'>
-                        Upload image in JPEG, PNG, WEBP or SVG format
+                        {dictionary.common?.uploadBrandFormat || 'Upload image in JPEG, PNG, WEBP or SVG format'}
                       </Typography>
                     </Box>
                   )}
@@ -482,7 +490,7 @@ const CategoryAdd = () => {
           {/* Category Icon */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Category Icon (Optional)' />
+              <CardHeader title={dictionary.common?.categoryIconOptional || 'Category Icon (Optional)'} />
               <CardContent>
                 <Box
                   display='flex'
@@ -521,7 +529,7 @@ const CategoryAdd = () => {
                     <Box display='flex' flexDirection='column' alignItems='center' gap={2}>
                       <CircularProgress />
                       <Typography variant='body2' color='text.secondary'>
-                        Uploading icon...
+                        {dictionary.common?.uploadingIcon || 'Uploading icon...'}
                       </Typography>
                     </Box>
                   ) : iconPreview ? (
@@ -533,10 +541,10 @@ const CategoryAdd = () => {
                         style={{ fontSize: '3rem', color: 'var(--mui-palette-text-secondary)' }}
                       />
                       <Typography variant='h6' color='text.primary'>
-                        Click to upload category icon
+                        {dictionary.common?.clickToUploadCategoryIcon || 'Click to upload category icon'}
                       </Typography>
                       <Typography variant='body2' color='text.secondary'>
-                        Upload icon in JPEG, PNG, WEBP or SVG format
+                        {dictionary.common?.uploadBrandFormat || 'Upload icon in JPEG, PNG, WEBP or SVG format'}
                       </Typography>
                     </Box>
                   )}
@@ -561,13 +569,13 @@ const CategoryAdd = () => {
           {/* Category Settings */}
           <Grid size={{ xs: 12 }}>
             <Card>
-              <CardHeader title='Settings' />
+              <CardHeader title={dictionary.common?.settings || 'Settings'} />
               <CardContent>
                 <Grid container spacing={6}>
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       fullWidth
-                      label='Sort Order'
+                      label={dictionary.common?.sortOrder || 'Sort Order'}
                       type='number'
                       placeholder='1'
                       value={formData.sort_order}
@@ -585,10 +593,10 @@ const CategoryAdd = () => {
                           onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
                         />
                       }
-                      label='Active Status'
+                      label={dictionary.common?.activeStatus || 'Active Status'}
                     />
                     <Typography variant='body2' color='text.secondary' className='mbs-1'>
-                      Enable to make this category visible to customers
+                      {dictionary.common?.enableCategoryVisible || 'Enable to make this category visible to customers'}
                     </Typography>
                   </Grid>
                 </Grid>

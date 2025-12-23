@@ -122,7 +122,7 @@ const countries = [
   { code: 'YE', name: 'Yemen' }
 ]
 
-const AccountDetails = () => {
+const AccountDetails = ({ dictionary = { common: {} } }) => {
   // States
   const [formData, setFormData] = useState(initialData)
   const [fileInput, setFileInput] = useState('')
@@ -215,13 +215,13 @@ const AccountDetails = () => {
       })
 
       if (response.ok) {
-        alert('تم حفظ التغييرات بنجاح')
+        alert(dictionary.common?.changesSaved || 'Changes saved successfully')
       } else {
-        alert('فشل حفظ التغييرات')
+        alert(dictionary.common?.saveChangesFailed || 'Failed to save changes')
       }
     } catch (error) {
       console.error('Error saving user data:', error)
-      alert('حدث خطأ أثناء حفظ التغييرات')
+      alert(dictionary.common?.errorSavingChanges || 'An error occurred while saving changes')
     } finally {
       setSaving(false)
     }
@@ -245,10 +245,10 @@ const AccountDetails = () => {
           <div className='flex grow flex-col gap-4'>
             <div className='flex flex-col sm:flex-row gap-4'>
               <Button variant='tonal' color='secondary' onClick={handleFileInputReset}>
-                Reset
+                {dictionary.common?.reset || 'Reset'}
               </Button>
             </div>
-            <Typography>Profile photo from static source</Typography>
+            <Typography>{dictionary.common?.profilePhotoStatic || 'Profile photo from static source'}</Typography>
           </div>
         </div>
       </CardContent>
@@ -258,7 +258,7 @@ const AccountDetails = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='First Name'
+                label={dictionary.common?.firstName || 'First Name'}
                 value={formData.firstName}
                 placeholder='John'
                 onChange={e => handleFormChange('firstName', e.target.value)}
@@ -267,7 +267,7 @@ const AccountDetails = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='Last Name'
+                label={dictionary.common?.lastName || 'Last Name'}
                 value={formData.lastName}
                 placeholder='Doe'
                 onChange={e => handleFormChange('lastName', e.target.value)}
@@ -285,7 +285,7 @@ const AccountDetails = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='Organization'
+                label={dictionary.common?.organization || 'Organization'}
                 value={formData.organization}
                 placeholder='Pixinvent'
                 onChange={e => handleFormChange('organization', e.target.value)}
@@ -294,7 +294,7 @@ const AccountDetails = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='Phone Number'
+                label={dictionary.common?.phoneNumber || 'Phone Number'}
                 value={formData.phoneNumber}
                 placeholder='+1 (234) 567-8901'
                 onChange={e => handleFormChange('phoneNumber', e.target.value)}
@@ -303,7 +303,7 @@ const AccountDetails = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='Address'
+                label={dictionary.common?.address || 'Address'}
                 value={formData.address}
                 placeholder='Address'
                 onChange={e => handleFormChange('address', e.target.value)}
@@ -312,7 +312,7 @@ const AccountDetails = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
-                label='State'
+                label={dictionary.common?.state || 'State'}
                 value={formData.state}
                 placeholder='New York'
                 onChange={e => handleFormChange('state', e.target.value)}
@@ -322,7 +322,7 @@ const AccountDetails = () => {
               <CustomTextField
                 fullWidth
                 type='number'
-                label='Zip Code'
+                label={dictionary.common?.zipCode || 'Zip Code'}
                 value={formData.zipCode}
                 placeholder='123456'
                 onChange={e => handleFormChange('zipCode', e.target.value)}
@@ -332,7 +332,7 @@ const AccountDetails = () => {
               <CustomTextField
                 select
                 fullWidth
-                label='Country'
+                label={dictionary.common?.country || 'Country'}
                 value={formData.country}
                 onChange={e => handleFormChange('country', e.target.value)}
                 slotProps={{
@@ -350,7 +350,7 @@ const AccountDetails = () => {
               <CustomTextField
                 select
                 fullWidth
-                label='Language'
+                label={dictionary.common?.language || 'Language'}
                 value={language}
                 slotProps={{
                   select: {
@@ -384,7 +384,7 @@ const AccountDetails = () => {
               <CustomTextField
                 select
                 fullWidth
-                label='TimeZone'
+                label={dictionary.common?.timezone || 'TimeZone'}
                 value={formData.timezone}
                 onChange={e => handleFormChange('timezone', e.target.value)}
                 slotProps={{
@@ -414,7 +414,7 @@ const AccountDetails = () => {
               <CustomTextField
                 select
                 fullWidth
-                label='Currency'
+                label={dictionary.common?.currency || 'Currency'}
                 value={formData.currency}
                 onChange={e => handleFormChange('currency', e.target.value)}
               >
@@ -426,10 +426,10 @@ const AccountDetails = () => {
             </Grid>
             <Grid size={{ xs: 12 }} className='flex gap-4 flex-wrap'>
               <Button variant='contained' type='submit' disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? dictionary.common?.saving || 'Saving...' : dictionary.common?.saveChanges || 'Save Changes'}
               </Button>
               <Button variant='tonal' type='reset' color='secondary' onClick={() => setFormData(initialData)}>
-                Reset
+                {dictionary.common?.reset || 'Reset'}
               </Button>
             </Grid>
           </Grid>

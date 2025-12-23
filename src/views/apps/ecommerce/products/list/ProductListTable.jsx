@@ -109,7 +109,7 @@ const productStatusObj = {
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const ProductListTable = ({ productData }) => {
+const ProductListTable = ({ productData, dictionary = { navigation: {}, common: {} } }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
@@ -331,7 +331,7 @@ const ProductListTable = ({ productData }) => {
         )
       },
       columnHelper.accessor('productName', {
-        header: 'Product',
+        header: dictionary.common?.product || 'Product',
         cell: ({ row }) => (
           <div className='flex items-center gap-4' style={{ minWidth: '200px', maxWidth: '280px' }}>
             <div
@@ -374,7 +374,7 @@ const ProductListTable = ({ productData }) => {
         )
       }),
       columnHelper.accessor('quantity', {
-        header: 'Quantity',
+        header: dictionary.common?.quantity || 'Quantity',
         cell: ({ row }) => (
           <Typography
             sx={{
@@ -388,7 +388,7 @@ const ProductListTable = ({ productData }) => {
         )
       }),
       columnHelper.accessor('reference', {
-        header: 'Reference',
+        header: dictionary.common?.reference || 'Reference',
         cell: ({ row }) => (
           <Typography
             color='text.secondary'
@@ -405,15 +405,15 @@ const ProductListTable = ({ productData }) => {
         )
       }),
       columnHelper.accessor('type', {
-        header: 'Type',
+        header: dictionary.common?.type || 'Type',
         cell: ({ row }) => <Typography sx={{ whiteSpace: 'nowrap' }}>{row.original.type}</Typography>
       }),
       columnHelper.accessor('price', {
-        header: 'Price',
+        header: dictionary.common?.price || 'Price',
         cell: ({ row }) => <Typography>{row.original.price}</Typography>
       }),
       columnHelper.accessor('status', {
-        header: 'Status',
+        header: dictionary.common?.status || 'Status',
         cell: ({ row }) => (
           <Chip
             label={productStatusObj[row.original.status].title}
@@ -424,7 +424,7 @@ const ProductListTable = ({ productData }) => {
         )
       }),
       columnHelper.accessor('actions', {
-        header: 'Actions',
+        header: dictionary.common?.actions || 'Actions',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton>
@@ -440,13 +440,13 @@ const ProductListTable = ({ productData }) => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Delete',
+                  text: dictionary.common?.delete || 'Delete',
                   icon: 'tabler-trash',
                   menuItemProps: {
                     onClick: () => handleDeleteProduct(row.original)
                   }
                 },
-                { text: 'Duplicate', icon: 'tabler-copy' }
+                { text: dictionary.common?.duplicate || 'Duplicate', icon: 'tabler-copy' }
               ]}
             />
           </div>
@@ -490,7 +490,7 @@ const ProductListTable = ({ productData }) => {
   return (
     <>
       <Card>
-        <CardHeader title='Filters' />
+        <CardHeader title={dictionary.common?.filters || 'Filters'} />
         {/* Alerts */}
         {error && (
           <Alert severity='error' onClose={() => setError('')} sx={{ mx: 6, mt: 2 }}>
@@ -502,13 +502,13 @@ const ProductListTable = ({ productData }) => {
             {success}
           </Alert>
         )}
-        <TableFilters setData={setFilteredData} productData={data} />
+        <TableFilters setData={setFilteredData} productData={data} dictionary={dictionary} />
         <Divider />
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Product'
+            placeholder={dictionary.common?.searchProduct || 'Search Product'}
             className='max-sm:is-full'
           />
           <div className='flex flex-wrap items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
@@ -528,7 +528,7 @@ const ProductListTable = ({ productData }) => {
               className='max-sm:is-full is-auto'
               startIcon={<i className='tabler-upload' />}
             >
-              Export
+              {dictionary.common?.export || 'Export'}
             </Button>
             <Button
               variant='contained'
@@ -537,7 +537,7 @@ const ProductListTable = ({ productData }) => {
               href={getLocalizedUrl('/apps/ecommerce/products/add', locale)}
               startIcon={<i className='tabler-plus' />}
             >
-              Add Product
+              {dictionary.common?.addProduct || 'Add Product'}
             </Button>
           </div>
         </div>
