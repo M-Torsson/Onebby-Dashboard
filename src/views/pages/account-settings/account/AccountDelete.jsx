@@ -51,7 +51,7 @@ const AccountDelete = ({ dictionary = { common: {} } }) => {
         const response = await fetch(`${API_BASE_URL}/api/users/me`, {
           method: 'GET',
           headers: {
-            'X-API-Key': API_KEY,
+            'X-API-KEY': API_KEY,
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
@@ -85,7 +85,7 @@ const AccountDelete = ({ dictionary = { common: {} } }) => {
       const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
-          'X-API-Key': API_KEY,
+          'X-API-KEY': API_KEY,
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }

@@ -59,7 +59,7 @@ const ProfileTab = () => {
         const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'X-API-Key': API_KEY
+            'X-API-KEY': API_KEY
           }
         })
 
@@ -126,7 +126,7 @@ const ProfileTab = () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
-          'X-API-Key': API_KEY
+          'X-API-KEY': API_KEY
         },
         body: JSON.stringify(body)
       })
@@ -176,7 +176,7 @@ const ProfileTab = () => {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'X-API-Key': API_KEY
+          'X-API-KEY': API_KEY
         }
       })
 

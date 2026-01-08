@@ -77,60 +77,38 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
     try {
       setFetchingData(true)
 
-      // Fetch from list endpoint
-      const response = await fetch(`${API_BASE_URL}/admin/categories`, {
-        headers: { 'X-API-Key': API_KEY }
+      // Fetch specific category by ID using new endpoint
+      const response = await fetch(`${API_BASE_URL}/admin/categories/${editId}`, {
+        headers: { 'X-API-KEY': API_KEY }
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        let categories = result.data || []
-
-        // Search in parent categories first
-        let data = categories.find(cat => cat.id === parseInt(editId))
-
-        // If not found in parent categories, fetch children for each parent
-        if (!data) {
-          for (const parent of categories) {
-            try {
-              const childResponse = await fetch(`${API_BASE_URL}/categories/${parent.id}/children`, {
-                headers: { 'X-API-Key': API_KEY }
-              })
-
-              if (childResponse.ok) {
-                const childResult = await childResponse.json()
-                const children = childResult.data || []
-                data = children.find(child => child.id === parseInt(editId))
-                if (data) break
-              }
-            } catch (err) {
-              console.error('Failed to fetch children for category:', parent.id)
-            }
-          }
-        }
-
-        if (!data) {
+      if (!response.ok) {
+        if (response.status === 404) {
           setError('Category not found')
-          setFetchingData(false)
-          return
+        } else {
+          setError(`Failed to load category data (${response.status})`)
         }
-
-        // Set the form data
-        setFormData({
-          name: data.name || '',
-          slug: data.slug || '',
-          image: data.image || '',
-          icon: data.icon || '',
-          parent_id: data.parent_id || null,
-          is_active: data.is_active ?? true,
-          sort_order: data.sort_order || 1
-        })
-        setImagePreview(data.image || '')
-        setIconPreview(data.icon || '')
-      } else {
-        setError('Failed to load category data')
+        setFetchingData(false)
+        return
       }
+
+      const result = await response.json()
+      const data = result.data || result
+
+      // Set the form data
+      setFormData({
+        name: data.name || '',
+        slug: data.slug || '',
+        image: data.image || '',
+        icon: data.icon || '',
+        parent_id: data.parent_id || null,
+        is_active: data.is_active ?? true,
+        sort_order: data.sort_order || 1
+      })
+      setImagePreview(data.image || '')
+      setIconPreview(data.icon || '')
     } catch (err) {
+      console.error('Error fetching category:', err)
       setError('Network error. Please try again.')
     } finally {
       setFetchingData(false)

@@ -38,7 +38,6 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 
@@ -98,19 +97,29 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [brandToDelete, setBrandToDelete] = useState(null)
 
+  // Server-side pagination states
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalCount, setTotalCount] = useState(0)
+
   const { lang: locale } = useParams()
   const router = useRouter()
 
-  // Fetch brands
-  const fetchBrands = async () => {
+  // Fetch brands with server-side pagination
+  const fetchBrands = async (currentPage = 0, currentPageSize = 10) => {
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE_URL}/admin/brands`, {
-        headers: { 'X-API-Key': API_KEY }
+      const skip = currentPage * currentPageSize
+      const response = await fetch(`${API_BASE_URL}/admin/brands?skip=${skip}&limit=${currentPageSize}`, {
+        headers: { 'X-API-KEY': API_KEY }
       })
 
       if (response.ok) {
-        const fetchedBrands = await response.json()
+        const result = await response.json()
+        const fetchedBrands = result.data || result
+        const total = result.meta?.total || fetchedBrands.length
+
+        setTotalCount(total)
         const formattedData = fetchedBrands.map(brand => ({
           id: brand.id,
           brandName: brand.name,
@@ -134,8 +143,8 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
   }
 
   useEffect(() => {
-    fetchBrands()
-  }, [])
+    fetchBrands(page, pageSize)
+  }, [page, pageSize])
 
   // Toggle Active Status
   const handleToggleActive = async brand => {
@@ -144,7 +153,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': API_KEY
+          'X-API-KEY': API_KEY
         },
         body: JSON.stringify({
           id: brand.id,
@@ -159,7 +168,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
       })
 
       if (response.ok) {
-        fetchBrands()
+        fetchBrands(page, pageSize)
       }
     } catch (err) {
       console.error('Failed to update brand status')
@@ -176,13 +185,13 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/brands/${brandToDelete.id}`, {
         method: 'DELETE',
-        headers: { 'X-API-Key': API_KEY }
+        headers: { 'X-API-KEY': API_KEY }
       })
 
       if (response.ok) {
         setSuccess('Brand deleted successfully!')
         setDeleteDialogOpen(false)
-        fetchBrands()
+        fetchBrands(page, pageSize)
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json()
@@ -328,11 +337,19 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
     },
     state: {
       rowSelection,
-      globalFilter
-    },
-    initialState: {
+      globalFilter,
       pagination: {
-        pageSize: 10
+        pageIndex: page,
+        pageSize: pageSize
+      }
+    },
+    pageCount: Math.ceil(totalCount / pageSize),
+    manualPagination: true,
+    onPaginationChange: updater => {
+      if (typeof updater === 'function') {
+        const newState = updater({ pageIndex: page, pageSize: pageSize })
+        setPage(newState.pageIndex)
+        setPageSize(newState.pageSize)
       }
     },
     enableRowSelection: true,
@@ -342,7 +359,6 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues()
@@ -385,8 +401,11 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
           <div className='flex flex-wrap items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
             <CustomTextField
               select
-              value={table.getState().pagination.pageSize}
-              onChange={e => table.setPageSize(Number(e.target.value))}
+              value={pageSize}
+              onChange={e => {
+                setPageSize(Number(e.target.value))
+                setPage(0)
+              }}
               className='flex-auto is-[70px] max-sm:is-full'
             >
               <MenuItem value='10'>10</MenuItem>
@@ -468,12 +487,12 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
           </table>
         </div>
         <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={table.getFilteredRowModel().rows.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => {
-            table.setPageIndex(page)
+          component={() => <TablePaginationComponent table={table} totalCount={totalCount} />}
+          count={totalCount}
+          rowsPerPage={pageSize}
+          page={page}
+          onPageChange={(_, newPage) => {
+            setPage(newPage)
           }}
         />
       </Card>

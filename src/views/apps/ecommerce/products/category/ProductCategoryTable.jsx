@@ -37,7 +37,6 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 
@@ -96,29 +95,37 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
   const [expanded, setExpanded] = useState({})
   const [childrenData, setChildrenData] = useState({})
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
+  // Server-side pagination states
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalCount, setTotalCount] = useState(0)
 
-  const fetchCategories = async () => {
+  useEffect(() => {
+    fetchCategories(page, pageSize)
+  }, [page, pageSize])
+
+  const fetchCategories = async (currentPage = 0, currentPageSize = 10) => {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en`, {
-        headers: { 'X-API-Key': API_KEY }
-      })
+      const skip = currentPage * currentPageSize
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/categories?lang=en&parent_only=true&skip=${skip}&limit=${currentPageSize}`,
+        { headers: { 'X-API-KEY': API_KEY } }
+      )
 
       if (response.ok) {
         const result = await response.json()
-        // Filter only main categories (parent_id === null)
-        const mainCategories = result.data.filter(cat => cat.parent_id === null)
-        setData(mainCategories)
+        const categories = result.data || []
+        const total = result.meta?.total || categories.length
+
+        setTotalCount(total)
+        setData(categories)
       } else {
         setError('Failed to load categories')
       }
     } catch (err) {
       setError('Network error. Please try again.')
-      console.error('Fetch error:', err)
     } finally {
       setLoading(false)
     }
@@ -127,16 +134,14 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
   const fetchChildren = async parentId => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/categories/${parentId}/children?lang=en`, {
-        headers: { 'X-API-Key': API_KEY }
+        headers: { 'X-API-KEY': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
         setChildrenData(prev => ({ ...prev, [parentId]: result.data }))
       }
-    } catch (err) {
-      console.error(`Failed to fetch children for category ${parentId}:`, err)
-    }
+    } catch (err) {}
   }
 
   const handleToggleExpand = (categoryId, hasChildren) => {
@@ -166,7 +171,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: { 'X-API-Key': API_KEY }
+        headers: { 'X-API-KEY': API_KEY }
       })
 
       if (response.ok) {
@@ -180,7 +185,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         }
 
         setSuccess('Category deleted successfully!')
-        fetchCategories()
+        fetchCategories(page, pageSize)
         setDeleteDialogOpen(false)
         setCategoryToDelete(null)
         setDeleteWithChildren(false)
@@ -334,10 +339,20 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
     filterFns: { fuzzy: fuzzyFilter },
     state: {
       rowSelection,
-      globalFilter
+      globalFilter,
+      pagination: {
+        pageIndex: page,
+        pageSize: pageSize
+      }
     },
-    initialState: {
-      pagination: { pageSize: 10 }
+    pageCount: Math.ceil(totalCount / pageSize),
+    manualPagination: true,
+    onPaginationChange: updater => {
+      if (typeof updater === 'function') {
+        const newState = updater({ pageIndex: page, pageSize: pageSize })
+        setPage(newState.pageIndex)
+        setPageSize(newState.pageSize)
+      }
     },
     enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
@@ -346,7 +361,6 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues()
@@ -389,8 +403,11 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
           <div className='flex items-center gap-4 max-sm:flex-col max-sm:is-full is-auto'>
             <CustomTextField
               select
-              value={table.getState().pagination.pageSize}
-              onChange={e => table.setPageSize(Number(e.target.value))}
+              value={pageSize}
+              onChange={e => {
+                setPageSize(Number(e.target.value))
+                setPage(0)
+              }}
               className='is-[70px]'
             >
               <MenuItem value='10'>10</MenuItem>
@@ -542,7 +559,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
             )}
           </table>
         </div>
-        <TablePaginationComponent table={table} />
+        <TablePaginationComponent table={table} totalCount={totalCount} />
       </Card>
 
       {/* Delete Confirmation Dialog */}

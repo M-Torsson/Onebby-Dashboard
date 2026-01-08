@@ -18,7 +18,7 @@ import Box from '@mui/material/Box'
 // Components Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com'
+const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
 const AddTaxDrawer = props => {
@@ -65,9 +65,7 @@ const AddTaxDrawer = props => {
         return
       }
 
-      const url = taxData
-        ? `${API_BASE_URL}/api/admin/tax-classes/${taxData.id}`
-        : `${API_BASE_URL}/api/admin/tax-classes`
+      const url = taxData ? `${API_BASE_URL}/v1/tax-classes/${taxData.id}` : `${API_BASE_URL}/v1/tax-classes`
       const method = taxData ? 'PUT' : 'POST'
 
       const bodyData = {
@@ -79,8 +77,7 @@ const AddTaxDrawer = props => {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': API_KEY
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(bodyData)
       })

@@ -86,8 +86,6 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
       formDataUpload.append('file', file)
       formDataUpload.append('folder', 'brands')
 
-      console.log('Uploading image:', file.name, file.type, file.size) // Debug
-
       const response = await fetch(`${API_BASE_URL}/admin/upload/image`, {
         method: 'POST',
         headers: {
@@ -97,19 +95,14 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
         body: formDataUpload
       })
 
-      console.log('Upload response status:', response.status) // Debug
-
       if (response.ok) {
         const result = await response.json()
-        console.log('Upload result:', result) // Debug
         return result.url
       } else {
         const errorData = await response.json()
-        console.error('Upload error:', response.status, errorData) // Debug
         throw new Error(errorData.detail || `Upload failed: ${response.status}`)
       }
     } catch (err) {
-      console.error('Upload exception:', err) // Debug
       throw err
     }
   }
@@ -118,8 +111,6 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
   const handleImageChange = async e => {
     const file = e.target.files?.[0]
     if (file) {
-      console.log('Selected file:', file.name, file.type, file.size) // Debug
-
       // Validate file type
       const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
       if (!validTypes.includes(file.type)) {

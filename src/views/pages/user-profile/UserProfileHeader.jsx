@@ -41,7 +41,7 @@ const UserProfileHeader = () => {
         const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'X-API-Key': API_KEY
+            'X-API-KEY': API_KEY
           }
         })
 

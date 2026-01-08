@@ -38,7 +38,6 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 
@@ -121,32 +120,42 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState(null)
 
+  // Server-side pagination states
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalCount, setTotalCount] = useState(0)
+
   // Hooks
   const { lang: locale } = useParams()
   const router = useRouter()
 
-  // Fetch products from API
-  const fetchProducts = async () => {
+  // Fetch products from API with server-side pagination
+  const fetchProducts = async (currentPage = 0, currentPageSize = 10) => {
     try {
       setLoading(true)
       setError('')
 
-      const response = await fetch(`https://onebby-api.onrender.com/api/v1/products?active_only=false&limit=100`, {
-        headers: { 'X-API-Key': API_KEY }
-      })
+      const skip = currentPage * currentPageSize
+      const response = await fetch(
+        `https://onebby-api.onrender.com/api/v1/products?active_only=false&skip=${skip}&limit=${currentPageSize}`,
+        { headers: { 'X-API-KEY': API_KEY } }
+      )
 
       if (response.ok) {
         const result = await response.json()
 
-        // Get products from result.data
+        // Get products and total count from result
         const products = result.data || []
+        const total = result.meta?.total || products.length
+
+        setTotalCount(total)
 
         // Fetch stock data for all products in parallel
         const productsWithStock = await Promise.all(
           products.map(async product => {
             try {
               const stockResponse = await fetch(`https://onebby-api.onrender.com/api/v1/products/${product.id}/stock`, {
-                headers: { 'X-API-Key': API_KEY }
+                headers: { 'X-API-KEY': API_KEY }
               })
 
               if (stockResponse.ok) {
@@ -183,6 +192,26 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
           // Get product_type from API
           const productType = product.product_type || 'N/A'
 
+          // Get price with NULL handling
+          // API returns price as object { list: number, currency: string } or direct number
+          let productPrice = 'Price not available'
+          if (product.price !== null && product.price !== undefined) {
+            if (typeof product.price === 'object' && product.price.list !== undefined) {
+              productPrice = `€${product.price.list}`
+            } else if (typeof product.price === 'number') {
+              productPrice = `€${product.price}`
+            }
+          }
+
+          // Get brand with NULL handling
+          // API returns brand as object { id, name } or brand_id separately
+          let brandName = 'No brand'
+          if (product.brand && product.brand.name) {
+            brandName = product.brand.name
+          } else if (product.brand_name) {
+            brandName = product.brand_name
+          }
+
           return {
             id: product.id,
             productName: productTitle,
@@ -191,13 +220,12 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
             quantity: stockQuantity,
             reference: product.reference || '',
             type: productType.toUpperCase().replace(/ /g, '_'),
-            price: `€${product.price || 0}`,
+            price: productPrice,
+            brand: brandName,
             isActive: product.is_active !== undefined ? product.is_active : false,
             status: product.is_active ? 'Published' : 'Inactive'
           }
         })
-
-        console.log('Formatted products:', formattedData)
 
         setData(formattedData)
         setFilteredData(formattedData)
@@ -214,36 +242,30 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
   }
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    fetchProducts(page, pageSize)
+  }, [page, pageSize])
 
   // Toggle Stock Status
   const handleToggleStock = async product => {
     try {
       const newIsActive = !product.isActive
-      console.log('Toggling active status for product:', product.id, 'to', newIsActive)
 
       // Update active status
       const updateData = {
         is_active: newIsActive
       }
 
-      console.log('Sending update:', updateData)
-
       // Send PUT request to admin endpoint
       const response = await fetch(`${API_BASE_URL}/admin/products/${product.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': API_KEY
+          'X-API-KEY': API_KEY
         },
         body: JSON.stringify(updateData)
       })
 
-      console.log('Response status:', response.status)
-
       if (response.ok) {
-        console.log('Status updated successfully')
         fetchProducts()
       } else {
         const errorText = await response.text()
@@ -271,25 +293,19 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
     if (!productToDelete) return
 
     try {
-      console.log('Deleting product:', productToDelete.id)
       const deleteUrl = `https://onebby-api.onrender.com/api/admin/products/${productToDelete.id}`
-      console.log('Delete URL:', deleteUrl)
 
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: { 'X-API-Key': API_KEY }
       })
 
-      console.log('Delete response status:', response.status)
-
       if (response.ok) {
-        console.log('Product deleted successfully, refreshing list...')
         setSuccess('Product deleted successfully!')
         setDeleteDialogOpen(false)
         setProductToDelete(null)
         // Add small delay to ensure backend processes the deletion
         setTimeout(() => {
-          console.log('Fetching updated products...')
           fetchProducts()
         }, 500)
         setTimeout(() => setSuccess(''), 3000)
@@ -408,9 +424,27 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
         header: dictionary.common?.type || 'Type',
         cell: ({ row }) => <Typography sx={{ whiteSpace: 'nowrap' }}>{row.original.type}</Typography>
       }),
+      columnHelper.accessor('brand', {
+        header: dictionary.common?.brand || 'Brand',
+        cell: ({ row }) => (
+          <Typography
+            color={row.original.brand === 'No brand' ? 'text.secondary' : 'text.primary'}
+            sx={{ fontStyle: row.original.brand === 'No brand' ? 'italic' : 'normal' }}
+          >
+            {row.original.brand}
+          </Typography>
+        )
+      }),
       columnHelper.accessor('price', {
         header: dictionary.common?.price || 'Price',
-        cell: ({ row }) => <Typography>{row.original.price}</Typography>
+        cell: ({ row }) => (
+          <Typography
+            color={row.original.price === 'Price not available' ? 'text.secondary' : 'text.primary'}
+            sx={{ fontStyle: row.original.price === 'Price not available' ? 'italic' : 'normal' }}
+          >
+            {row.original.price}
+          </Typography>
+        )
       }),
       columnHelper.accessor('status', {
         header: dictionary.common?.status || 'Status',
@@ -466,22 +500,28 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
     },
     state: {
       rowSelection,
-      globalFilter
-    },
-    initialState: {
+      globalFilter,
       pagination: {
-        pageSize: 10
+        pageIndex: page,
+        pageSize: pageSize
       }
     },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+    pageCount: Math.ceil(totalCount / pageSize),
+    manualPagination: true,
+    onPaginationChange: updater => {
+      if (typeof updater === 'function') {
+        const newState = updater({ pageIndex: page, pageSize: pageSize })
+        setPage(newState.pageIndex)
+        setPageSize(newState.pageSize)
+      }
+    },
+    enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues()
@@ -514,8 +554,11 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
           <div className='flex flex-wrap items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
             <CustomTextField
               select
-              value={table.getState().pagination.pageSize}
-              onChange={e => table.setPageSize(Number(e.target.value))}
+              value={pageSize}
+              onChange={e => {
+                setPageSize(Number(e.target.value))
+                setPage(0) // Reset to first page when changing page size
+              }}
               className='flex-auto is-[70px] max-sm:is-full'
             >
               <MenuItem value='10'>10</MenuItem>
@@ -588,29 +631,26 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
               </tbody>
             ) : (
               <tbody>
-                {table
-                  .getRowModel()
-                  .rows.slice(0, table.getState().pagination.pageSize)
-                  .map(row => {
-                    return (
-                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    )
-                  })}
+                {table.getRowModel().rows.map(row => {
+                  return (
+                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                      ))}
+                    </tr>
+                  )
+                })}
               </tbody>
             )}
           </table>
         </div>
         <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={table.getFilteredRowModel().rows.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => {
-            table.setPageIndex(page)
+          component={() => <TablePaginationComponent table={table} totalCount={totalCount} />}
+          count={totalCount}
+          rowsPerPage={pageSize}
+          page={page}
+          onPageChange={(_, newPage) => {
+            setPage(newPage)
           }}
         />
       </Card>

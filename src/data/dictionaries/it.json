@@ -133,7 +133,7 @@
         "productImages": "Immagini Prodotto",
         "uploadImages": "Carica Immagini",
         "uploadingImages": "Caricamento immagini...",
-        "ean13Helper": "Deve essere esattamente di 13 cifre o lasciare vuoto",
+        "eanHelper": "Inserisci il codice EAN del prodotto (massimo 255 caratteri)",
         "simple": "Semplice",
         "noImagesUploaded": "Nessuna immagine caricata",
         "clickToUploadImages": "Clicca per caricare più immagini",

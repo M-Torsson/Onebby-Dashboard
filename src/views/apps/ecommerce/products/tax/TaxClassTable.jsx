@@ -48,7 +48,7 @@ import AddTaxDrawer from './AddTaxDrawer'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com'
+const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
@@ -98,13 +98,13 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${API_BASE_URL}/api/admin/tax-classes`, {
-        headers: { 'X-API-Key': API_KEY }
-      })
+      const response = await fetch(`${API_BASE_URL}/v1/tax-classes`)
 
       if (response.ok) {
         const result = await response.json()
-        setData(result)
+        // New format: { data: [], meta: {} }
+        const taxClasses = result.data || []
+        setData(taxClasses)
       } else {
         setError('Failed to load tax classes')
       }
@@ -125,9 +125,8 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     if (!taxToDelete) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/tax-classes/${taxToDelete.id}`, {
-        method: 'DELETE',
-        headers: { 'X-API-Key': API_KEY }
+      const response = await fetch(`${API_BASE_URL}/v1/tax-classes/${taxToDelete.id}`, {
+        method: 'DELETE'
       })
 
       if (response.ok) {
@@ -138,7 +137,6 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        console.log('Delete error:', response.status, errorData)
         let errorMessage = 'Failed to delete tax class'
 
         // Check if error is related to products using this tax class
@@ -167,7 +165,6 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         setDeleteDialogOpen(false)
       }
     } catch (err) {
-      console.log('Delete exception:', err)
       setError('Network error. Please try again.')
       setDeleteDialogOpen(false)
     }

@@ -188,7 +188,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   const [formData, setFormData] = useState({
     product_type: 'configurable',
     reference: '',
-    ean13: '',
+    ean: '',
     is_active: true,
     brand_id: null,
     tax: {
@@ -369,7 +369,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   const fetchBrands = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/brands`, {
-        headers: { 'X-API-Key': API_KEY },
+        headers: { 'X-API-KEY': API_KEY },
         mode: 'cors'
       })
       if (response.ok) {
@@ -378,20 +378,20 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         const data = result.data || result
         setBrands(Array.isArray(data) ? data : [])
       } else {
-        console.error('Failed to fetch brands - Status:', response.status)
-        // Don't show error on initial load, just log it
+        setBrands([])
+        // Don't show error to user, just log it
       }
     } catch (err) {
-      console.error('Failed to fetch brands:', err)
-      // Don't show error on initial load
+      setBrands([])
+      // Don't show error to user
     }
   }
 
   const fetchCategories = async () => {
     try {
       // Use the v1 endpoint to get all categories (parent + children)
-      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en&active_only=true`, {
-        headers: { 'X-API-Key': API_KEY },
+      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en`, {
+        headers: { 'X-API-KEY': API_KEY },
         mode: 'cors'
       })
       if (response.ok) {
@@ -412,31 +412,32 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
 
         setCategories(sortedCategories)
       } else {
-        console.error('Failed to fetch categories - Status:', response.status)
-        // Don't show error on initial load, just log it
+        // Set empty categories array to prevent errors
+        setCategories([])
+        // Don't show error to user, just log it
       }
     } catch (err) {
-      console.error('Failed to fetch categories:', err)
-      // Don't show error on initial load
+      // Set empty categories array to prevent errors
+      setCategories([])
+      // Don't show error to user
     }
   }
 
   const fetchTaxClasses = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/tax-classes`, {
-        headers: { 'X-API-Key': API_KEY },
+        headers: { 'X-API-KEY': API_KEY },
         mode: 'cors'
       })
       if (response.ok) {
         const result = await response.json()
         const data = result.data || result
-        console.log('Tax classes loaded:', data)
         setTaxClasses(Array.isArray(data) ? data : [])
       } else {
-        console.error('Failed to fetch tax classes - Status:', response.status)
+        setTaxClasses([])
       }
     } catch (err) {
-      console.error('Failed to fetch tax classes:', err)
+      setTaxClasses([])
     }
   }
 
@@ -445,20 +446,15 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       setFetchingData(true)
       setError('')
 
-      console.log('Fetching product ID:', editId)
-
       // Try fetching individual product first
       let response = await fetch(`${API_BASE_URL}/api/v1/products/${editId}`, {
-        headers: { 'X-API-Key': API_KEY }
+        headers: { 'X-API-KEY': API_KEY }
       })
-
-      console.log('Response status:', response.status)
 
       // If 404, try fetching from list with active_only=false (for inactive products)
       if (response.status === 404) {
-        console.log('Product not found in individual endpoint, trying list endpoint...')
         const listResponse = await fetch(`${API_BASE_URL}/api/v1/products?active_only=false&limit=100`, {
-          headers: { 'X-API-Key': API_KEY }
+          headers: { 'X-API-KEY': API_KEY }
         })
 
         if (listResponse.ok) {
@@ -467,14 +463,12 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           const product = products.find(p => p.id === parseInt(editId))
 
           if (product) {
-            console.log('Found product in list:', product)
             // Create a mock response with the product data
             response = {
               ok: true,
               json: async () => product
             }
           } else {
-            console.error('Product not found in list either')
           }
         }
       }
@@ -482,7 +476,6 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       if (response.ok) {
         const result = await response.json()
         const product = result.data || result
-        console.log('Product data loaded:', product)
 
         // Check if this is basic data from list (no variants/translations array)
         const isBasicData = !product.variants && !product.translations
@@ -509,7 +502,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         setFormData({
           product_type: product.product_type || 'configurable',
           reference: product.reference || '',
-          ean13: product.ean13 || '',
+          ean: product.ean || product.ean13 || '',
           is_active: product.is_active !== undefined ? product.is_active : true,
           brand_id: product.brand?.id || product.brand_id || null,
           tax: {
@@ -546,7 +539,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           variant_attributes: product.variant_attributes || [],
           variants: (product.variants || []).map(v => ({
             reference: v.reference || '',
-            ean13: v.ean13 || '',
+            ean: v.ean || v.ean13 || '',
             is_active: v.is_active !== undefined ? v.is_active : true,
             condition: v.condition || 'new',
             attributes: v.attributes || {},
@@ -564,7 +557,6 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         })
       } else {
         const errorData = await response.json().catch(() => ({}))
-        console.error('Failed to load product. Status:', response.status, 'Error:', errorData)
 
         if (response.status === 404) {
           setError(`Product ID ${editId} not found. It may have been deleted or does not exist.`)
@@ -573,7 +565,6 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         }
       }
     } catch (err) {
-      console.error('Network error loading product:', err)
       setError(`Network error: ${err.message}`)
     } finally {
       setFetchingData(false)
@@ -589,7 +580,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
 
       const response = await fetch(`${API_BASE_URL}/api/admin/upload/image`, {
         method: 'POST',
-        headers: { 'X-API-Key': API_KEY },
+        headers: { 'X-API-KEY': API_KEY },
         body: formDataUpload
       })
 
@@ -680,7 +671,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   const addVariant = () => {
     const newVariant = {
       reference: '',
-      ean13: '',
+      ean: '',
       is_active: true,
       condition: 'new',
       attributes: {},
@@ -711,24 +702,25 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       setSuccess('')
       setLoading(true)
 
-      if (!formData.reference || !formData.translation.title) {
-        setError('Reference and Title are required')
+      // Validate required fields: EAN and Title
+      if (!formData.ean || !formData.translation.title) {
+        setError('EAN and Title are required')
         setLoading(false)
         return
       }
 
-      // Validate EAN13 if provided
-      if (formData.ean13 && formData.ean13.length !== 13) {
-        setError('EAN13 must be exactly 13 digits or leave it empty')
+      // Validate EAN length
+      if (formData.ean && formData.ean.length > 255) {
+        setError('EAN must not exceed 255 characters')
         setLoading(false)
         return
       }
 
-      // Validate variants EAN13
+      // Validate variants EAN
       for (let i = 0; i < formData.variants.length; i++) {
         const variant = formData.variants[i]
-        if (variant.ean13 && variant.ean13.length !== 13) {
-          setError(`Variant #${i + 1}: EAN13 must be exactly 13 digits or leave it empty`)
+        if (variant.ean && variant.ean.length > 255) {
+          setError(`Variant #${i + 1}: EAN must not exceed 255 characters`)
           setLoading(false)
           return
         }
@@ -742,10 +734,10 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
 
       if (editId) {
         // For edit mode - send full data structure
+        // Note: reference is auto-populated by backend from EAN
         bodyData = {
           product_type: formData.product_type,
-          reference: formData.reference,
-          ean13: formData.ean13 || null,
+          ean: formData.ean || null,
           is_active: formData.is_active,
           brand_id: formData.brand_id,
           tax: {
@@ -805,7 +797,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           ],
           variants: formData.variants.map(v => ({
             reference: v.reference,
-            ean13: v.ean13 || null,
+            ean: v.ean || null,
             is_active: v.is_active !== undefined ? v.is_active : true,
             condition: v.condition || 'new',
             attributes: v.attributes || {},
@@ -823,10 +815,10 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         }
       } else {
         // For create mode - full structure matching API
+        // Note: reference is auto-populated by backend from EAN
         bodyData = {
           product_type: formData.product_type,
-          reference: formData.reference,
-          ean13: formData.ean13 || null,
+          ean: formData.ean || null,
           is_active: formData.is_active,
           brand_id: formData.brand_id,
           tax: {
@@ -886,7 +878,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           ],
           variants: formData.variants.map(v => ({
             reference: v.reference,
-            ean13: v.ean13 || null,
+            ean: v.ean || null,
             is_active: v.is_active !== undefined ? v.is_active : true,
             condition: v.condition || 'new',
             attributes: v.attributes || {},
@@ -908,7 +900,6 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       try {
         bodyString = JSON.stringify(bodyData)
       } catch (jsonError) {
-        console.error('JSON stringify error:', jsonError)
         setError('Invalid data format. Please check your inputs.')
         setLoading(false)
         return
@@ -919,7 +910,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': API_KEY
+          'X-API-KEY': API_KEY
         },
         body: bodyString
       })
@@ -932,17 +923,11 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         }, 1500)
       } else {
         const responseText = await response.text()
-        console.error('Error Response Text:', responseText)
 
         let errorData = {}
         try {
           errorData = JSON.parse(responseText)
-        } catch (e) {
-          console.error('Could not parse error response as JSON')
-        }
-
-        console.error('Error Response:', errorData)
-        console.error('Response Status Code:', response.status)
+        } catch (e) {}
 
         // Handle validation errors from Pydantic
         let errorMessage = ''
@@ -961,10 +946,6 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         setError(errorMessage)
       }
     } catch (err) {
-      console.error('=== CATCH ERROR ===')
-      console.error('Error:', err)
-      console.error('Error message:', err.message)
-      console.error('Error stack:', err.stack)
       setError(`Network error: ${err.message}`)
     } finally {
       setLoading(false)
@@ -1055,25 +1036,16 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
               <CardHeader title={dictionary.common?.basicInformation || 'Basic Information'} />
               <CardContent>
                 <Grid container spacing={6}>
+                  {/* Reference field removed - auto-populated by backend from EAN */}
                   <Grid size={{ xs: 12, md: 6 }}>
                     <CustomTextField
                       fullWidth
-                      label={dictionary.common?.reference || 'Reference'}
-                      placeholder='IPH15-PARENT'
-                      value={formData.reference}
-                      onChange={e => setFormData({ ...formData, reference: e.target.value })}
-                      required
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <CustomTextField
-                      fullWidth
-                      label='EAN13'
-                      placeholder='1234567890123 (13 digits)'
-                      value={formData.ean13 || ''}
-                      onChange={e => setFormData({ ...formData, ean13: e.target.value })}
-                      helperText={dictionary.common?.ean13Helper || 'Must be exactly 13 digits or leave empty'}
-                      error={formData.ean13 && formData.ean13.length !== 13}
+                      label='EAN'
+                      placeholder='Product EAN code'
+                      value={formData.ean || ''}
+                      onChange={e => setFormData({ ...formData, ean: e.target.value })}
+                      helperText={dictionary.common?.eanHelper || 'Enter product EAN code (max 255 characters)'}
+                      error={formData.ean && formData.ean.length > 255}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -1422,12 +1394,12 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                             <Grid size={{ xs: 12, md: 6 }}>
                               <CustomTextField
                                 fullWidth
-                                label='EAN13'
-                                placeholder='1234567890123 (13 digits)'
-                                value={variant.ean13 || ''}
-                                onChange={e => updateVariant(index, 'ean13', e.target.value)}
-                                helperText='Must be exactly 13 digits or leave empty'
-                                error={variant.ean13 && variant.ean13.length !== 13}
+                                label='EAN'
+                                placeholder='Product EAN code'
+                                value={variant.ean || ''}
+                                onChange={e => updateVariant(index, 'ean', e.target.value)}
+                                helperText='Enter product EAN code (max 255 characters)'
+                                error={variant.ean && variant.ean.length > 255}
                               />
                             </Grid>
 
@@ -2076,11 +2048,10 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
               )}
 
               {/* Brand */}
-              {formData.brand_id && (
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
-                  Brand: {brands.find(b => b.id === formData.brand_id)?.name || 'N/A'}
-                </Typography>
-              )}
+              <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+                Brand:{' '}
+                {formData.brand_id ? brands.find(b => b.id === formData.brand_id)?.name || 'No brand' : 'No brand'}
+              </Typography>
 
               {/* Rating */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -2096,7 +2067,9 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.5 }}>
                   <Typography variant='h4' sx={{ color: 'primary.main', fontWeight: 700 }}>
-                    €{formData.price.list || 0}
+                    {formData.price.list !== null && formData.price.list !== undefined
+                      ? `€${formData.price.list}`
+                      : 'Price not available'}
                   </Typography>
                   {formData.tax?.included_in_price && (
                     <Chip label='Tax Included' size='small' variant='outlined' color='success' />
@@ -2196,13 +2169,13 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                       </Typography>
                     </Grid>
                   )}
-                  {formData.ean13 && (
+                  {formData.ean && (
                     <Grid size={{ xs: 6 }}>
                       <Typography variant='caption' color='text.secondary'>
-                        EAN13
+                        EAN
                       </Typography>
                       <Typography variant='body2' sx={{ fontWeight: 600 }}>
-                        {formData.ean13}
+                        {formData.ean}
                       </Typography>
                     </Grid>
                   )}

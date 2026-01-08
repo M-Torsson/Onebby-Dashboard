@@ -10,7 +10,7 @@ const CongratulationsJohn = () => {
     <Card>
       <CardContent>
         <Typography variant='h5' className='mbe-0.5'>
-          Congratulations John 🎉
+          Congratulations!
         </Typography>
         <Typography variant='subtitle1' className='mbe-2'>
           Best seller of the month
