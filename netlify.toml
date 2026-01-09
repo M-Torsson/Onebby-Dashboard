@@ -2,12 +2,33 @@
   command = "pnpm run build"
   publish = ".next"
 
+# تمكين Build Cache لتسريع عمليات البناء
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.images]
+  compress = true
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_VERSION = "10.9.2"
+  # Enable Netlify Build Cache
+  NETLIFY_USE_BUILD_CACHE = "true"
+  # Cache Next.js build output
+  NEXT_TELEMETRY_DISABLED = "1"
+  # تمكين pnpm cache
+  PNPM_FLAGS = "--frozen-lockfile"
 
 # إعادة توجيه جميع المسارات إلى Next.js
 [[redirects]]
