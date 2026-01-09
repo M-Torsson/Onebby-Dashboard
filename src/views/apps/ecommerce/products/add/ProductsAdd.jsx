@@ -1048,7 +1048,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                       error={formData.ean && formData.ean.length > 255}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  {/* <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>{dictionary.common?.productType || 'Product Type'}</InputLabel>
                       <Select
@@ -1060,20 +1060,19 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                         <MenuItem value='simple'>{dictionary.common?.simple || 'Simple'}</MenuItem>
                       </Select>
                     </FormControl>
-                  </Grid>
+                  </Grid> */}
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>{dictionary.common?.condition || 'Condition'}</InputLabel>
-                      <Select
-                        value={formData.condition}
-                        label={dictionary.common?.condition || 'Condition'}
-                        onChange={e => setFormData({ ...formData, condition: e.target.value })}
-                      >
-                        <MenuItem value='new'>{dictionary.common?.new || 'New'}</MenuItem>
-                        <MenuItem value='used'>{dictionary.common?.used || 'Used'}</MenuItem>
-                        <MenuItem value='refurbished'>{dictionary.common?.refurbished || 'Refurbished'}</MenuItem>
-                      </Select>
-                    </FormControl>
+                    <CustomTextField
+                      select
+                      fullWidth
+                      label={dictionary.common?.condition || 'Condition'}
+                      value={formData.condition}
+                      onChange={e => setFormData({ ...formData, condition: e.target.value })}
+                    >
+                      <MenuItem value='new'>{dictionary.common?.new || 'New'}</MenuItem>
+                      <MenuItem value='used'>{dictionary.common?.used || 'Used'}</MenuItem>
+                      <MenuItem value='refurbished'>{dictionary.common?.refurbished || 'Refurbished'}</MenuItem>
+                    </CustomTextField>
                   </Grid>
                 </Grid>
               </CardContent>
@@ -2179,14 +2178,14 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                       </Typography>
                     </Grid>
                   )}
-                  <Grid size={{ xs: 6 }}>
+                  {/* <Grid size={{ xs: 6 }}>
                     <Typography variant='caption' color='text.secondary'>
                       Product Type
                     </Typography>
                     <Typography variant='body2' sx={{ fontWeight: 600 }}>
                       {formData.product_type.charAt(0).toUpperCase() + formData.product_type.slice(1)}
                     </Typography>
-                  </Grid>
+                  </Grid> */}
                   <Grid size={{ xs: 6 }}>
                     <Typography variant='caption' color='text.secondary'>
                       Status
