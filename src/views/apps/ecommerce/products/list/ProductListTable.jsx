@@ -420,10 +420,10 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
           </Typography>
         )
       }),
-      columnHelper.accessor('type', {
-        header: dictionary.common?.type || 'Type',
-        cell: ({ row }) => <Typography sx={{ whiteSpace: 'nowrap' }}>{row.original.type}</Typography>
-      }),
+      // columnHelper.accessor('type', {
+      //   header: dictionary.common?.type || 'Type',
+      //   cell: ({ row }) => <Typography sx={{ whiteSpace: 'nowrap' }}>{row.original.type}</Typography>
+      // }),
       columnHelper.accessor('brand', {
         header: dictionary.common?.brand || 'Brand',
         cell: ({ row }) => (
