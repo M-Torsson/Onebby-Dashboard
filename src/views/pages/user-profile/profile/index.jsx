@@ -18,10 +18,8 @@ import DialogActions from '@mui/material/DialogActions'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
-// API Config
-import { API_KEY } from '@/configs/apiConfig'
-
 const API_BASE_URL = 'https://onebby-api.onrender.com/api'
+const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
 const ProfileTab = () => {
   const router = useRouter()

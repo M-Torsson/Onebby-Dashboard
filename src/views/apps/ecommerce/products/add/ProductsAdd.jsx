@@ -49,10 +49,8 @@ import CustomIconButton from '@core/components/mui/IconButton'
 // Style Imports
 import '@/libs/styles/tiptapEditor.css'
 
-// API Config
-import { API_KEY } from '@/configs/apiConfig'
-
 const API_BASE_URL = 'https://onebby-api.onrender.com'
+const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
 const EditorToolbar = ({ editor }) => {
   const editorState = useEditorState({

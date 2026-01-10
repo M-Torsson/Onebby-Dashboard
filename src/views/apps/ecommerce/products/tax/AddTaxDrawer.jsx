@@ -18,10 +18,8 @@ import Box from '@mui/material/Box'
 // Components Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-// API Config
-import { API_KEY } from '@/configs/apiConfig'
-
 const API_BASE_URL = 'https://onebby-api.onrender.com/api'
+const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
 
 const AddTaxDrawer = props => {
   const { open, handleClose, taxData, onSuccess } = props
