@@ -17,7 +17,6 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Switch from '@mui/material/Switch'
 import MenuItem from '@mui/material/MenuItem'
-import TablePagination from '@mui/material/TablePagination'
 import Typography from '@mui/material/Typography'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -33,6 +32,7 @@ import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable,
   getFilteredRowModel,
   getFacetedRowModel,
@@ -53,13 +53,25 @@ import { getLocalizedUrl } from '@/utils/i18n'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com/api'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
+const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
   addMeta({ itemRank })
   return itemRank.passed
+}
+
+const brandGlobalFilter = (row, _columnId, value) => {
+  const query = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  if (!query) return true
+
+  const original = row.original || {}
+  const haystack = [original.id, original.brandName, original.brandSlug].map(v => String(v ?? '').toLowerCase())
+
+  return haystack.some(v => v.includes(query))
 }
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -91,35 +103,27 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
   const [data, setData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [brandToDelete, setBrandToDelete] = useState(null)
 
-  // Server-side pagination states
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
-  const [totalCount, setTotalCount] = useState(0)
-
   const { lang: locale } = useParams()
   const router = useRouter()
 
-  // Fetch brands with server-side pagination
-  const fetchBrands = async (currentPage = 0, currentPageSize = 10) => {
+  // Fetch all brands once, then do pagination + search client-side
+  const fetchBrands = async () => {
     try {
       setLoading(true)
-      const skip = currentPage * currentPageSize
-      const response = await fetch(`${API_BASE_URL}/admin/brands?skip=${skip}&limit=${currentPageSize}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/brands`, {
         headers: { 'X-API-KEY': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
         const fetchedBrands = result.data || result
-        const total = result.meta?.total || fetchedBrands.length
-
-        setTotalCount(total)
         const formattedData = fetchedBrands.map(brand => ({
           id: brand.id,
           brandName: brand.name,
@@ -143,8 +147,8 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
   }
 
   useEffect(() => {
-    fetchBrands(page, pageSize)
-  }, [page, pageSize])
+    fetchBrands()
+  }, [])
 
   // Toggle Active Status
   const handleToggleActive = async brand => {
@@ -168,7 +172,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
       })
 
       if (response.ok) {
-        fetchBrands(page, pageSize)
+        fetchBrands()
       }
     } catch (err) {
       console.error('Failed to update brand status')
@@ -191,7 +195,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
       if (response.ok) {
         setSuccess('Brand deleted successfully!')
         setDeleteDialogOpen(false)
-        fetchBrands(page, pageSize)
+        fetchBrands()
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json()
@@ -338,26 +342,16 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
     state: {
       rowSelection,
       globalFilter,
-      pagination: {
-        pageIndex: page,
-        pageSize: pageSize
-      }
+      pagination
     },
-    pageCount: Math.ceil(totalCount / pageSize),
-    manualPagination: true,
-    onPaginationChange: updater => {
-      if (typeof updater === 'function') {
-        const newState = updater({ pageIndex: page, pageSize: pageSize })
-        setPage(newState.pageIndex)
-        setPageSize(newState.pageSize)
-      }
-    },
+    onPaginationChange: setPagination,
     enableRowSelection: true,
-    globalFilterFn: fuzzyFilter,
+    globalFilterFn: brandGlobalFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
@@ -394,17 +388,20 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <DebouncedInput
             value={globalFilter ?? ''}
-            onChange={value => setGlobalFilter(String(value))}
+            onChange={value => {
+              setGlobalFilter(String(value))
+              table.setPageIndex(0)
+            }}
             placeholder={dictionary.common?.searchBrand || 'Search Brand'}
             className='max-sm:is-full'
           />
           <div className='flex flex-wrap items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
             <CustomTextField
               select
-              value={pageSize}
+              value={table.getState().pagination.pageSize}
               onChange={e => {
-                setPageSize(Number(e.target.value))
-                setPage(0)
+                table.setPageSize(Number(e.target.value))
+                table.setPageIndex(0)
               }}
               className='flex-auto is-[70px] max-sm:is-full'
             >
@@ -470,31 +467,18 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
               </tbody>
             ) : (
               <tbody>
-                {table
-                  .getRowModel()
-                  .rows.slice(0, table.getState().pagination.pageSize)
-                  .map(row => {
-                    return (
-                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    )
-                  })}
+                {table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             )}
           </table>
         </div>
-        <TablePagination
-          component={() => <TablePaginationComponent table={table} totalCount={totalCount} />}
-          count={totalCount}
-          rowsPerPage={pageSize}
-          page={page}
-          onPageChange={(_, newPage) => {
-            setPage(newPage)
-          }}
-        />
+        <TablePaginationComponent table={table} />
       </Card>
 
       {/* Delete Confirmation Dialog */}

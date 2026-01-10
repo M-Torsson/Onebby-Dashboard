@@ -32,6 +32,7 @@ import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable,
   getFilteredRowModel,
   getFacetedRowModel,
@@ -51,13 +52,25 @@ import { getLocalizedUrl } from '@/utils/i18n'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
+const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
   addMeta({ itemRank })
   return itemRank.passed
+}
+
+const categoryGlobalFilter = (row, _columnId, value) => {
+  const query = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  if (!query) return true
+
+  const original = row.original || {}
+  const haystack = [original.id, original.name, original.slug].map(v => String(v ?? '').toLowerCase())
+
+  return haystack.some(v => v.includes(query))
 }
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -86,6 +99,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -95,31 +109,23 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
   const [expanded, setExpanded] = useState({})
   const [childrenData, setChildrenData] = useState({})
 
-  // Server-side pagination states
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
-  const [totalCount, setTotalCount] = useState(0)
-
   useEffect(() => {
-    fetchCategories(page, pageSize)
-  }, [page, pageSize])
+    fetchCategories()
+  }, [])
 
-  const fetchCategories = async (currentPage = 0, currentPageSize = 10) => {
+  const fetchCategories = async () => {
     try {
       setLoading(true)
       setError('')
-      const skip = currentPage * currentPageSize
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/categories?lang=en&parent_only=true&skip=${skip}&limit=${currentPageSize}`,
-        { headers: { 'X-API-KEY': API_KEY } }
-      )
+      // Fetch all categories once, then do pagination + search client-side.
+      // NOTE: /api/v1/categories includes the categories created via the dashboard.
+      const response = await fetch(`${API_BASE_URL}/v1/categories?lang=en&parent_only=false&skip=0&limit=500`, {
+        headers: { 'X-API-KEY': API_KEY }
+      })
 
       if (response.ok) {
         const result = await response.json()
         const categories = result.data || []
-        const total = result.meta?.total || categories.length
-
-        setTotalCount(total)
         setData(categories)
       } else {
         setError('Failed to load categories')
@@ -133,7 +139,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
   const fetchChildren = async parentId => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/categories/${parentId}/children?lang=en`, {
+      const response = await fetch(`${API_BASE_URL}/categories/${parentId}/children?lang=en`, {
         headers: { 'X-API-KEY': API_KEY }
       })
 
@@ -166,8 +172,8 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
     try {
       const url = deleteWithChildren
-        ? `${API_BASE_URL}/api/admin/categories/${categoryToDelete.id}?force=true`
-        : `${API_BASE_URL}/api/admin/categories/${categoryToDelete.id}`
+        ? `${API_BASE_URL}/admin/categories/${categoryToDelete.id}?force=true`
+        : `${API_BASE_URL}/admin/categories/${categoryToDelete.id}`
 
       const response = await fetch(url, {
         method: 'DELETE',
@@ -185,7 +191,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         }
 
         setSuccess('Category deleted successfully!')
-        fetchCategories(page, pageSize)
+        fetchCategories()
         setDeleteDialogOpen(false)
         setCategoryToDelete(null)
         setDeleteWithChildren(false)
@@ -340,30 +346,17 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
     state: {
       rowSelection,
       globalFilter,
-      pagination: {
-        pageIndex: page,
-        pageSize: pageSize
-      }
+      pagination
     },
-    pageCount: Math.ceil(totalCount / pageSize),
-    manualPagination: true,
-    onPaginationChange: updater => {
-      if (typeof updater === 'function') {
-        const newState = updater({ pageIndex: page, pageSize: pageSize })
-        setPage(newState.pageIndex)
-        setPageSize(newState.pageSize)
-      }
-    },
+    onPaginationChange: setPagination,
     enableRowSelection: true,
-    globalFilterFn: fuzzyFilter,
+    globalFilterFn: categoryGlobalFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues()
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel()
   })
 
   if (loading) {
@@ -396,17 +389,20 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         <div className='flex justify-between gap-4 p-6 flex-col items-start sm:flex-row sm:items-center'>
           <DebouncedInput
             value={globalFilter ?? ''}
-            onChange={value => setGlobalFilter(String(value))}
+            onChange={value => {
+              setGlobalFilter(String(value))
+              table.setPageIndex(0)
+            }}
             placeholder={dictionary.common?.searchCategory || 'Search Category'}
             className='max-sm:is-full min-is-[200px]'
           />
           <div className='flex items-center gap-4 max-sm:flex-col max-sm:is-full is-auto'>
             <CustomTextField
               select
-              value={pageSize}
+              value={table.getState().pagination.pageSize}
               onChange={e => {
-                setPageSize(Number(e.target.value))
-                setPage(0)
+                table.setPageSize(Number(e.target.value))
+                table.setPageIndex(0)
               }}
               className='is-[70px]'
             >
@@ -559,7 +555,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
             )}
           </table>
         </div>
-        <TablePaginationComponent table={table} totalCount={totalCount} />
+        <TablePaginationComponent table={table} />
       </Card>
 
       {/* Delete Confirmation Dialog */}
