@@ -52,8 +52,10 @@ import { getLocalizedUrl } from '@/utils/i18n'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
-const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
+// API Config
+import { API_KEY } from '@/configs/apiConfig'
+
+const API_BASE_URL = 'https://onebby-api.onrender.com'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -119,7 +121,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
       setError('')
       // Fetch all categories once, then do pagination + search client-side.
       // NOTE: /api/v1/categories includes the categories created via the dashboard.
-      const response = await fetch(`${API_BASE_URL}/v1/categories?lang=en&parent_only=false&skip=0&limit=500`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en&parent_only=false&skip=0&limit=500`, {
         headers: { 'X-API-KEY': API_KEY }
       })
 
@@ -139,7 +141,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
   const fetchChildren = async parentId => {
     try {
-      const response = await fetch(`${API_BASE_URL}/categories/${parentId}/children?lang=en`, {
+      const response = await fetch(`${API_BASE_URL}/api/categories/${parentId}/children?lang=en`, {
         headers: { 'X-API-KEY': API_KEY }
       })
 
@@ -172,8 +174,8 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
     try {
       const url = deleteWithChildren
-        ? `${API_BASE_URL}/admin/categories/${categoryToDelete.id}?force=true`
-        : `${API_BASE_URL}/admin/categories/${categoryToDelete.id}`
+        ? `${API_BASE_URL}/api/admin/categories/${categoryToDelete.id}?force=true`
+        : `${API_BASE_URL}/api/admin/categories/${categoryToDelete.id}`
 
       const response = await fetch(url, {
         method: 'DELETE',

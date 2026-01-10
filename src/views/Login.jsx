@@ -121,15 +121,12 @@ const Login = ({ mode }) => {
     try {
       setErrorState(null)
 
-      const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
-      const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
-
       // Call Onebby API
-      const response = await fetch(`${API_BASE_URL}/users/login`, {
+      const response = await fetch('https://onebby-api.onrender.com/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': API_KEY
+          'X-API-KEY': 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
         },
         body: JSON.stringify({
           username: data.username,

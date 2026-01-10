@@ -48,8 +48,10 @@ import AddTaxDrawer from './AddTaxDrawer'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
-const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
+// API Config
+import { API_KEY } from '@/configs/apiConfig'
+
+const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)

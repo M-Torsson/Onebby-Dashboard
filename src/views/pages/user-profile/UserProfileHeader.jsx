@@ -10,8 +10,10 @@ import Typography from '@mui/material/Typography'
 import Avatar from '@mui/material/Avatar'
 import CircularProgress from '@mui/material/CircularProgress'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
-const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
+// API Config
+import { API_KEY } from '@/configs/apiConfig'
+
+const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 
 const UserProfileHeader = () => {
   const [loading, setLoading] = useState(true)

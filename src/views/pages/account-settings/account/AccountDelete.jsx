@@ -21,12 +21,11 @@ import DialogActions from '@mui/material/DialogActions'
 // Third-party Imports
 import { useForm, Controller } from 'react-hook-form'
 
+// API Config
+import { API_KEY } from '@/configs/apiConfig'
+
 // API Configuration
-const API_BASE_URL = (process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api').replace(
-  /\/api\/?$/,
-  ''
-)
-const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
+const API_BASE_URL = 'https://onebby-api.onrender.com'
 
 const AccountDelete = ({ dictionary = { common: {} } }) => {
   // States

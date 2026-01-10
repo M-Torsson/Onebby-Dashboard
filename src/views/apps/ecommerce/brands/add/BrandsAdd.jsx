@@ -23,8 +23,10 @@ import IconButton from '@mui/material/IconButton'
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api'
-const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
+// API Config
+import { API_KEY } from '@/configs/apiConfig'
+
+const API_BASE_URL = 'https://onebby-api.onrender.com/api'
 
 const BrandsAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()

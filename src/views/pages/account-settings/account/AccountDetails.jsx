@@ -16,12 +16,11 @@ import CircularProgress from '@mui/material/CircularProgress'
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 
+// API Config
+import { API_KEY } from '@/configs/apiConfig'
+
 // API Configuration
-const API_BASE_URL = (process.env.NEXT_PUBLIC_ONEBBY_API_BASE_URL || 'https://onebby-api.onrender.com/api').replace(
-  /\/api\/?$/,
-  ''
-)
-const API_KEY = process.env.NEXT_PUBLIC_ONEBBY_API_KEY
+const API_BASE_URL = 'https://onebby-api.onrender.com'
 
 // Vars
 const initialData = {
