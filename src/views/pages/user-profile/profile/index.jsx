@@ -18,8 +18,8 @@ import DialogActions from '@mui/material/DialogActions'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com/api'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const ProfileTab = () => {
   const router = useRouter()
@@ -56,7 +56,7 @@ const ProfileTab = () => {
           return
         }
 
-        const response = await fetch(`${API_BASE_URL}/users/me`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'X-API-KEY': API_KEY
@@ -121,7 +121,7 @@ const ProfileTab = () => {
         body.password = editData.password
       }
 
-      const response = await fetch(`${API_BASE_URL}/users/${userData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ const ProfileTab = () => {
 
       const accessToken = localStorage.getItem('accessToken')
 
-      const response = await fetch(`${API_BASE_URL}/users/${userData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userData.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,

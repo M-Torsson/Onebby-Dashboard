@@ -45,11 +45,13 @@ import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import AddTaxDrawer from './AddTaxDrawer'
 
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com/api'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+const V1_BASE_URL = `${API_BASE_URL}/api/v1`
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -98,7 +100,9 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${API_BASE_URL}/v1/tax-classes`)
+      const response = await fetch(`${V1_BASE_URL}/tax-classes`, {
+        headers: { 'X-API-KEY': API_KEY }
+      })
 
       if (response.ok) {
         const result = await response.json()
@@ -125,9 +129,9 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     if (!taxToDelete) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/tax-classes/${taxToDelete.id}`, {
+      const response = await fetch(`${V1_BASE_URL}/tax-classes/${taxToDelete.id}`, {
         method: 'DELETE'
-      })
+        headers: { 'X-API-KEY': API_KEY }
 
       if (response.ok) {
         setSuccess('Tax class deleted successfully!')

@@ -32,6 +32,7 @@ import CustomTextField from '@core/components/mui/TextField'
 
 // Config Imports
 import themeConfig from '@configs/themeConfig'
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 // Hook Imports
 import { useImageVariant } from '@core/hooks/useImageVariant'
@@ -122,11 +123,11 @@ const Login = ({ mode }) => {
       setErrorState(null)
 
       // Call Onebby API
-      const response = await fetch('https://onebby-api.onrender.com/api/users/login', {
+      const response = await fetch(`${API_BASE_URL}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+          'X-API-Key': API_KEY
         },
         body: JSON.stringify({
           username: data.username,

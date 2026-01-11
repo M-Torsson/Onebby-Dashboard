@@ -49,15 +49,19 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
 
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+const CATEGORIES_BASE_URL = `${API_BASE_URL}/api/v1/categories`
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
+
   addMeta({ itemRank })
+
   return itemRank.passed
 }
 
@@ -65,6 +69,7 @@ const categoryGlobalFilter = (row, _columnId, value) => {
   const query = String(value ?? '')
     .trim()
     .toLowerCase()
+
   if (!query) return true
 
   const original = row.original || {}
@@ -117,16 +122,18 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
     try {
       setLoading(true)
       setError('')
+
       // Fetch all categories once, then do pagination + search client-side.
       // NOTE: /api/v1/categories includes the categories created via the dashboard.
-      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en&parent_only=false&skip=0&limit=500`, {
-        headers: { 'X-API-KEY': API_KEY }
+      const response = await fetch(`${CATEGORIES_BASE_URL}`, {
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
-        const categories = result.data || []
-        setData(categories)
+        const categories = result.data || result || []
+
+        setData(Array.isArray(categories) ? categories : [])
       } else {
         setError('Failed to load categories')
       }
@@ -139,21 +146,27 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
   const fetchChildren = async parentId => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/categories/${parentId}/children?lang=en`, {
-        headers: { 'X-API-KEY': API_KEY }
+      const response = await fetch(`${CATEGORIES_BASE_URL}/${parentId}/children`, {
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
-        setChildrenData(prev => ({ ...prev, [parentId]: result.data }))
+        const children = result.data || result || []
+
+        setChildrenData(prev => ({ ...prev, [parentId]: Array.isArray(children) ? children : [] }))
       }
     } catch (err) {}
   }
 
   const handleToggleExpand = (categoryId, hasChildren) => {
-    if (!hasChildren) return
+    const category = data.find(c => Number(c.id) === Number(categoryId))
+    const isParent = !category || category.parent_id === null || category.parent_id === undefined
+
+    if (!hasChildren || !isParent) return
 
     const newExpanded = { ...expanded, [categoryId]: !expanded[categoryId] }
+
     setExpanded(newExpanded)
 
     // Fetch children if not already loaded
@@ -171,13 +184,11 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
     if (!categoryToDelete) return
 
     try {
-      const url = deleteWithChildren
-        ? `${API_BASE_URL}/api/admin/categories/${categoryToDelete.id}?force=true`
-        : `${API_BASE_URL}/api/admin/categories/${categoryToDelete.id}`
+      const url = `${CATEGORIES_BASE_URL}/${categoryToDelete.id}?force=${deleteWithChildren ? 'true' : 'false'}`
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: { 'X-API-KEY': API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
@@ -185,7 +196,9 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         if (categoryToDelete.id) {
           setChildrenData(prev => {
             const newData = { ...prev }
+
             delete newData[categoryToDelete.id]
+
             return newData
           })
         }
@@ -198,6 +211,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
+
         setError(errorData.detail || errorData.message || 'Failed to delete category')
         setDeleteDialogOpen(false)
         setDeleteWithChildren(false)
@@ -322,7 +336,10 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                 {
                   text: dictionary.common?.addSubcategory || 'Add Subcategory',
                   icon: 'tabler-plus',
-                  menuItemProps: { onClick: () => handleAddSubcategory(row.original) }
+                  menuItemProps: {
+                    onClick: () => handleAddSubcategory(row.original),
+                    disabled: row.original.parent_id !== null && row.original.parent_id !== undefined
+                  }
                 },
                 {
                   text: dictionary.common?.delete || 'Delete',
@@ -569,7 +586,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         <DialogTitle>Delete Category</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete "{categoryToDelete?.name}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{categoryToDelete?.name}&quot;? This action cannot be undone.
           </DialogContentText>
           {categoryToDelete?.has_children && (
             <>

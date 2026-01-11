@@ -23,8 +23,10 @@ import IconButton from '@mui/material/IconButton'
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com/api'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+
+const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
 
 const BrandsAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
@@ -55,7 +57,7 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
   const fetchBrandData = async () => {
     try {
       setFetchingData(true)
-      const response = await fetch(`${API_BASE_URL}/admin/brands/${editId}`, {
+      const response = await fetch(`${ADMIN_BASE_URL}/brands/${editId}`, {
         headers: { 'X-API-Key': API_KEY }
       })
 
@@ -165,7 +167,7 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
         return
       }
 
-      const url = editId ? `${API_BASE_URL}/admin/brands/${editId}` : `${API_BASE_URL}/admin/brands`
+      const url = editId ? `${ADMIN_BASE_URL}/brands/${editId}` : `${ADMIN_BASE_URL}/brands`
       const method = editId ? 'PUT' : 'POST'
 
       // Prepare body data

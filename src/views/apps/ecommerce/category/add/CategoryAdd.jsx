@@ -2,6 +2,7 @@
 
 // React Imports
 import { useState, useEffect } from 'react'
+
 import { useRouter, useSearchParams } from 'next/navigation'
 
 // MUI Imports
@@ -24,16 +25,20 @@ import MenuItem from '@mui/material/MenuItem'
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com/api'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+
+const CATEGORIES_BASE_URL = `${API_BASE_URL}/api/v1/categories`
 
 const CategoryAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
+  const parentIdParam = searchParams.get('parent')
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -43,6 +48,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
     is_active: true,
     sort_order: 1
   })
+
   const [imagePreview, setImagePreview] = useState('')
   const [iconPreview, setIconPreview] = useState('')
   const [parents, setParents] = useState([])
@@ -53,20 +59,32 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   useEffect(() => {
     fetchParentCategories()
+
     if (editId) {
       fetchCategoryData()
     }
-  }, [editId])
+  }, [editId, parentIdParam])
 
   const fetchParentCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+      const response = await fetch(`${CATEGORIES_BASE_URL}?parent_only=true`, {
         headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
-        setParents(result.data || [])
+        const parentsData = result.data || result || []
+
+        setParents(Array.isArray(parentsData) ? parentsData : [])
+
+        if (parentIdParam && !editId) {
+          const requestedParentId = Number(parentIdParam)
+          const isValidParent = Array.isArray(parentsData) && parentsData.some(p => Number(p.id) === requestedParentId)
+
+          if (Number.isFinite(requestedParentId) && isValidParent) {
+            setFormData(prev => ({ ...prev, parent_id: requestedParentId }))
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch parent categories:', err)
@@ -77,23 +95,44 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
     try {
       setFetchingData(true)
 
-      // Fetch specific category by ID using new endpoint
-      const response = await fetch(`${API_BASE_URL}/admin/categories/${editId}`, {
-        headers: { 'X-API-KEY': API_KEY }
-      })
+      // Prefer direct GET if supported; otherwise, fall back to listing + filtering.
+      let category = null
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError('Category not found')
-        } else {
-          setError(`Failed to load category data (${response.status})`)
+      const directResponse = await fetch(`${CATEGORIES_BASE_URL}/${editId}`, {
+        headers: { 'X-API-Key': API_KEY }
+      }).catch(() => null)
+
+      if (directResponse?.ok) {
+        const directResult = await directResponse.json()
+
+        category = directResult.data || directResult
+      } else {
+        const listResponse = await fetch(`${CATEGORIES_BASE_URL}`, {
+          headers: { 'X-API-Key': API_KEY }
+        })
+
+        if (!listResponse.ok) {
+          setError(`Failed to load category data (${listResponse.status})`)
+          setFetchingData(false)
+
+          return
         }
+
+        const listResult = await listResponse.json()
+        const listData = listResult.data || listResult
+        const asArray = Array.isArray(listData) ? listData : []
+
+        category = asArray.find(c => Number(c.id) === Number(editId)) || null
+      }
+
+      if (!category) {
+        setError('Category not found')
         setFetchingData(false)
+
         return
       }
 
-      const result = await response.json()
-      const data = result.data || result
+      const data = category
 
       // Set the form data
       setFormData({
@@ -101,7 +140,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         slug: data.slug || '',
         image: data.image || '',
         icon: data.icon || '',
-        parent_id: data.parent_id || null,
+        parent_id: data.parent_id ?? null,
         is_active: data.is_active ?? true,
         sort_order: data.sort_order || 1
       })
@@ -118,10 +157,11 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
   const uploadImageToCloudinary = async (file, folder) => {
     try {
       const formDataUpload = new FormData()
+
       formDataUpload.append('file', file)
       formDataUpload.append('folder', folder)
 
-      const response = await fetch(`${API_BASE_URL}/admin/upload/image`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/upload/image`, {
         method: 'POST',
         headers: { 'X-API-Key': API_KEY },
         body: formDataUpload
@@ -129,9 +169,11 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
       if (response.ok) {
         const result = await response.json()
+
         return result.url
       } else {
         const errorData = await response.json()
+
         throw new Error(errorData.detail || `Upload failed: ${response.status}`)
       }
     } catch (err) {
@@ -141,22 +183,28 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   const handleImageChange = async (e, type) => {
     const file = e.target.files?.[0]
+
     if (!file) return
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+
     if (!validTypes.includes(file.type)) {
       setError('Please upload a valid image (JPEG, PNG, WEBP, SVG)')
+
       return
     }
 
     const maxSize = 5 * 1024 * 1024
+
     if (file.size > maxSize) {
       setError('Image size must be less than 5MB')
+
       return
     }
 
     // Show preview
     const reader = new FileReader()
+
     reader.onloadend = () => {
       if (type === 'image') {
         setImagePreview(reader.result)
@@ -164,6 +212,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         setIconPreview(reader.result)
       }
     }
+
     reader.readAsDataURL(file)
 
     // Upload
@@ -173,14 +222,17 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
       } else {
         setUploadingIcon(true)
       }
+
       setError('')
 
       const imageUrl = await uploadImageToCloudinary(file, 'categories')
+
       setFormData(prev => ({ ...prev, [type]: imageUrl }))
       setSuccess(`${type === 'image' ? 'Image' : 'Icon'} uploaded successfully!`)
       setTimeout(() => setSuccess(''), 2000)
     } catch (err) {
       setError(`Failed to upload ${type}: ${err.message}`)
+
       if (type === 'image') {
         setImagePreview('')
       } else {
@@ -204,44 +256,28 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
       if (!formData.name || !formData.slug) {
         setError('Name and Slug are required')
         setLoading(false)
+
         return
       }
 
-      const url = editId ? `${API_BASE_URL}/admin/categories/${editId}` : `${API_BASE_URL}/admin/categories`
+      const url = editId ? `${CATEGORIES_BASE_URL}/${editId}` : `${CATEGORIES_BASE_URL}`
       const method = editId ? 'PUT' : 'POST'
+
+      const normalizedParentId =
+        formData.parent_id === '' || formData.parent_id === null ? null : Number(formData.parent_id)
 
       let bodyData
 
-      if (editId) {
-        bodyData = {
-          id: parseInt(editId),
-          name: formData.name,
-          slug: formData.slug,
-          sort_order: formData.sort_order,
-          is_active: formData.is_active,
-          parent_id: formData.parent_id === '' ? null : formData.parent_id,
-          created_at: null,
-          updated_at: null
-        }
-
-        bodyData.image = formData.image || null
-        bodyData.icon = formData.icon || null
-      } else {
-        bodyData = {
-          name: formData.name,
-          slug: formData.slug,
-          sort_order: formData.sort_order,
-          is_active: formData.is_active,
-          parent_id: formData.parent_id === '' ? null : formData.parent_id
-        }
-
-        if (formData.image) {
-          bodyData.image = formData.image
-        }
-        if (formData.icon) {
-          bodyData.icon = formData.icon
-        }
+      bodyData = {
+        name: formData.name,
+        slug: formData.slug,
+        sort_order: formData.sort_order,
+        is_active: formData.is_active,
+        parent_id: Number.isFinite(normalizedParentId) ? normalizedParentId : null
       }
+
+      if (formData.image) bodyData.image = formData.image
+      if (formData.icon) bodyData.icon = formData.icon
 
       const response = await fetch(url, {
         method,
@@ -259,6 +295,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         }, 1500)
       } else {
         const errorData = await response.json()
+
         setError(errorData.detail || `Failed to ${editId ? 'update' : 'create'} category`)
       }
     } catch (err) {
@@ -341,6 +378,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
                       value={formData.name}
                       onChange={e => {
                         const name = e.target.value
+
                         setFormData({
                           ...formData,
                           name,
@@ -370,7 +408,11 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
                       fullWidth
                       label={dictionary.common?.parentCategory || 'Parent Category'}
                       value={formData.parent_id || ''}
-                      onChange={e => setFormData({ ...formData, parent_id: e.target.value || null })}
+                      onChange={e => {
+                        const value = e.target.value
+
+                        setFormData({ ...formData, parent_id: value ? Number(value) : null })
+                      }}
                       helperText={dictionary.common?.leaveEmptyMainCategory || 'Leave empty for main category'}
                     >
                       <MenuItem value=''>{dictionary.common?.noneMainCategory || 'None (Main Category)'}</MenuItem>

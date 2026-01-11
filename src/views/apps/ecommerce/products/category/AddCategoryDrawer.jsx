@@ -22,8 +22,10 @@ import Box from '@mui/material/Box'
 // Components Imports
 import CustomTextField from '@core/components/mui/TextField'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+
+const CATEGORIES_BASE_URL = `${API_BASE_URL}/api/v1/categories`
 
 const AddCategoryDrawer = props => {
   const { open, handleClose, categoryData, parentCategory, onSuccess } = props
@@ -37,6 +39,7 @@ const AddCategoryDrawer = props => {
     is_active: true,
     parent_id: null
   })
+
   const [parents, setParents] = useState([])
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -47,6 +50,7 @@ const AddCategoryDrawer = props => {
   useEffect(() => {
     if (open) {
       fetchParentCategories()
+
       if (categoryData) {
         setFormData({
           name: categoryData.name || '',
@@ -58,7 +62,9 @@ const AddCategoryDrawer = props => {
           parent_id: categoryData.parent_id || null
         })
       } else if (parentCategory) {
-        // When adding subcategory, set parent_id automatically
+        // When adding subcategory, set parent_id automatically (only under a parent).
+        const canUseAsParent = parentCategory.parent_id === null || parentCategory.parent_id === undefined
+
         setFormData({
           name: '',
           slug: '',
@@ -66,9 +72,11 @@ const AddCategoryDrawer = props => {
           icon: '',
           sort_order: 1,
           is_active: true,
-          parent_id: parentCategory.id
+          parent_id: canUseAsParent ? parentCategory.id : null
         })
-        setError('')
+        setError(
+          canUseAsParent ? '' : 'You can only add a subcategory under a parent category (no grandchildren allowed).'
+        )
         setSuccess('')
       } else {
         setFormData({
@@ -88,13 +96,15 @@ const AddCategoryDrawer = props => {
 
   const fetchParentCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/categories?lang=en`, {
+      const response = await fetch(`${CATEGORIES_BASE_URL}?parent_only=true`, {
         headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
-        setParents(result.data)
+        const data = result.data || result
+
+        setParents(Array.isArray(data) ? data : [])
       }
     } catch (err) {
       console.error('Failed to fetch parent categories:', err)
@@ -104,6 +114,7 @@ const AddCategoryDrawer = props => {
   const uploadImageToCloudinary = async (file, folder) => {
     try {
       const formDataUpload = new FormData()
+
       formDataUpload.append('file', file)
       formDataUpload.append('folder', folder)
 
@@ -115,9 +126,11 @@ const AddCategoryDrawer = props => {
 
       if (response.ok) {
         const result = await response.json()
+
         return result.url
       } else {
         const errorText = await response.text()
+
         console.error('Upload error:', response.status, errorText)
         throw new Error(`Upload failed: ${response.status}`)
       }
@@ -129,17 +142,22 @@ const AddCategoryDrawer = props => {
 
   const handleImageChange = async (e, type) => {
     const file = e.target.files?.[0]
+
     if (!file) return
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+
     if (!validTypes.includes(file.type)) {
       setError('Please upload a valid image (JPEG, PNG, WEBP, SVG)')
+
       return
     }
 
     const maxSize = 5 * 1024 * 1024
+
     if (file.size > maxSize) {
       setError('Image size must be less than 5MB')
+
       return
     }
 
@@ -149,9 +167,11 @@ const AddCategoryDrawer = props => {
       } else {
         setUploadingIcon(true)
       }
+
       setError('')
 
       const imageUrl = await uploadImageToCloudinary(file, 'categories')
+
       setFormData(prev => ({ ...prev, [type]: imageUrl }))
       setSuccess(`${type === 'image' ? 'Image' : 'Icon'} uploaded successfully!`)
       setTimeout(() => setSuccess(''), 2000)
@@ -175,12 +195,11 @@ const AddCategoryDrawer = props => {
       if (!formData.name || !formData.slug) {
         setError('Name and Slug are required')
         setLoading(false)
+
         return
       }
 
-      const url = categoryData
-        ? `${API_BASE_URL}/api/admin/categories/${categoryData.id}`
-        : `${API_BASE_URL}/api/admin/categories`
+      const url = categoryData ? `${CATEGORIES_BASE_URL}/${categoryData.id}` : `${CATEGORIES_BASE_URL}`
       const method = categoryData ? 'PUT' : 'POST'
 
       let bodyData
@@ -188,14 +207,11 @@ const AddCategoryDrawer = props => {
       if (categoryData) {
         // For edit mode
         bodyData = {
-          id: categoryData.id,
           name: formData.name,
           slug: formData.slug,
           sort_order: formData.sort_order,
           is_active: formData.is_active,
-          parent_id: formData.parent_id === '' || formData.parent_id === 'null' ? null : formData.parent_id,
-          created_at: categoryData.created_at || null,
-          updated_at: categoryData.updated_at || null
+          parent_id: formData.parent_id === '' || formData.parent_id === 'null' ? null : Number(formData.parent_id)
         }
 
         if (formData.image) {
@@ -216,12 +232,13 @@ const AddCategoryDrawer = props => {
           slug: formData.slug,
           sort_order: formData.sort_order,
           is_active: formData.is_active,
-          parent_id: formData.parent_id === '' || formData.parent_id === 'null' ? null : formData.parent_id
+          parent_id: formData.parent_id === '' || formData.parent_id === 'null' ? null : Number(formData.parent_id)
         }
 
         if (formData.image) {
           bodyData.image = formData.image
         }
+
         if (formData.icon) {
           bodyData.icon = formData.icon
         }
@@ -244,6 +261,7 @@ const AddCategoryDrawer = props => {
         }, 500)
       } else {
         const errorData = await response.json()
+
         setError(errorData.detail || errorData.message || 'Failed to save category')
       }
     } catch (err) {

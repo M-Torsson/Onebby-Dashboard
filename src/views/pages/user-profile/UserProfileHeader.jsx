@@ -10,8 +10,8 @@ import Typography from '@mui/material/Typography'
 import Avatar from '@mui/material/Avatar'
 import CircularProgress from '@mui/material/CircularProgress'
 
-const API_BASE_URL = 'https://onebby-api.onrender.com/api'
-const API_KEY = 'X9$eP!7wQ@3nZ8^tF#uL2rC6*mH1yB0_dV4+KpS%aGfJ5$qWzR!N7sT#hU9&bE'
+// Config Imports
+import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const UserProfileHeader = () => {
   const [loading, setLoading] = useState(true)
@@ -38,7 +38,7 @@ const UserProfileHeader = () => {
           return
         }
 
-        const response = await fetch(`${API_BASE_URL}/users/me`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'X-API-KEY': API_KEY
