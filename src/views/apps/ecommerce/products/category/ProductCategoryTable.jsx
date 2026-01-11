@@ -103,6 +103,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
   const { lang: locale } = useParams()
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [globalFilter, setGlobalFilter] = useState('')
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
   const [loading, setLoading] = useState(true)
@@ -125,14 +126,16 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
       // Fetch all categories once, then do pagination + search client-side.
       // NOTE: /api/v1/categories includes the categories created via the dashboard.
-      const response = await fetch(`${CATEGORIES_BASE_URL}`, {
+      const response = await fetch(`${CATEGORIES_BASE_URL}?lang=en&limit=500`, {
         headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
         const categories = result.data || result || []
+        const total = result.meta?.total || categories.length
 
+        setTotalCount(total)
         setData(Array.isArray(categories) ? categories : [])
       } else {
         setError('Failed to load categories')
