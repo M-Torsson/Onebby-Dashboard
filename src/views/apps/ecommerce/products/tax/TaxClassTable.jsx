@@ -130,8 +130,9 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
 
     try {
       const response = await fetch(`${V1_BASE_URL}/tax-classes/${taxToDelete.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
         headers: { 'X-API-KEY': API_KEY }
+      })
 
       if (response.ok) {
         setSuccess('Tax class deleted successfully!')
