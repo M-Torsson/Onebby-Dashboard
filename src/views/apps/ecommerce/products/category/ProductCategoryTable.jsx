@@ -281,20 +281,34 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
             <div className='flex items-center gap-3'>
               {row.original.image || row.original.icon ? (
                 <div
-                  className='flex items-center justify-center rounded bg-actionHover'
-                  style={{ width: 38, height: 38, minWidth: 38, minHeight: 38 }}
+                  className='flex items-center justify-center rounded'
+                  style={{
+                    width: 38,
+                    height: 38,
+                    minWidth: 38,
+                    minHeight: 38,
+                    backgroundColor: 'var(--mui-palette-customColors-tableHeaderBg)'
+                  }}
                 >
                   <img
                     src={row.original.image || row.original.icon}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    className='rounded'
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain'
+                    }}
+                    className='rounded category-icon'
                     alt={row.original.name}
                   />
                 </div>
               ) : (
                 <div
-                  className='flex items-center justify-center rounded bg-actionHover'
-                  style={{ width: 38, height: 38 }}
+                  className='flex items-center justify-center rounded'
+                  style={{
+                    width: 38,
+                    height: 38,
+                    backgroundColor: 'var(--mui-palette-customColors-tableHeaderBg)'
+                  }}
                 >
                   <i className='tabler-category text-xl text-textSecondary' />
                 </div>
@@ -568,26 +582,40 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                         <>
                           {childrenData[key].map(child => (
                             <React.Fragment key={`child-fragment-${child.id}`}>
-                              <tr style={{ backgroundColor: '#f5f5f5' }}>
+                              <tr style={{ backgroundColor: 'var(--mui-palette-action-hover)' }}>
                                 <td></td>
                                 <td>
                                   <div className='flex items-center gap-3'>
                                     {child.image || child.icon ? (
                                       <div
-                                        className='flex items-center justify-center rounded bg-actionHover'
-                                        style={{ width: 32, height: 32, minWidth: 32, minHeight: 32 }}
+                                        className='flex items-center justify-center rounded'
+                                        style={{
+                                          width: 32,
+                                          height: 32,
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                          backgroundColor: 'var(--mui-palette-customColors-tableHeaderBg)'
+                                        }}
                                       >
                                         <img
                                           src={child.image || child.icon}
-                                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                          className='rounded'
+                                          style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'contain'
+                                          }}
+                                          className='rounded category-icon'
                                           alt={child.name}
                                         />
                                       </div>
                                     ) : (
                                       <div
-                                        className='flex items-center justify-center rounded bg-actionHover'
-                                        style={{ width: 32, height: 32 }}
+                                        className='flex items-center justify-center rounded'
+                                        style={{
+                                          width: 32,
+                                          height: 32,
+                                          backgroundColor: 'var(--mui-palette-customColors-tableHeaderBg)'
+                                        }}
                                       >
                                         <i className='tabler-category text-lg text-textSecondary' />
                                       </div>
@@ -688,19 +716,47 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                               })() && (
                                 <>
                                   {childrenData[String(child.id)].map(grandchild => (
-                                    <tr key={`grandchild-${grandchild.id}`} style={{ backgroundColor: '#ebebeb' }}>
+                                    <tr
+                                      key={`grandchild-${grandchild.id}`}
+                                      style={{ backgroundColor: 'var(--mui-palette-action-selected)' }}
+                                    >
                                       <td></td>
                                       <td>
                                         <div className='flex items-center gap-3'>
                                           <div style={{ width: '80px' }}></div>
-                                          {(grandchild.image || grandchild.icon) && (
-                                            <img
-                                              src={grandchild.image || grandchild.icon}
-                                              width={28}
-                                              height={28}
-                                              className='rounded bg-actionHover'
-                                              alt={grandchild.name}
-                                            />
+                                          {grandchild.image || grandchild.icon ? (
+                                            <div
+                                              className='flex items-center justify-center rounded'
+                                              style={{
+                                                width: 28,
+                                                height: 28,
+                                                minWidth: 28,
+                                                minHeight: 28,
+                                                backgroundColor: 'var(--mui-palette-customColors-tableHeaderBg)'
+                                              }}
+                                            >
+                                              <img
+                                                src={grandchild.image || grandchild.icon}
+                                                style={{
+                                                  width: '100%',
+                                                  height: '100%',
+                                                  objectFit: 'contain'
+                                                }}
+                                                className='rounded category-icon'
+                                                alt={grandchild.name}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div
+                                              className='flex items-center justify-center rounded'
+                                              style={{
+                                                width: 28,
+                                                height: 28,
+                                                backgroundColor: 'var(--mui-palette-customColors-tableHeaderBg)'
+                                              }}
+                                            >
+                                              <i className='tabler-category text-sm text-textSecondary' />
+                                            </div>
                                           )}
                                           <div
                                             className='flex flex-col items-start'

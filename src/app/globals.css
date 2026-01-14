@@ -218,3 +218,14 @@ code {
   background-color: rgb(var(--mui-palette-info-mainChannel) / 0.08);
   border: 0;
 }
+
+/* Category icons - invert colors in dark mode */
+[data-mui-color-scheme='dark'] .category-icon,
+[data-mui-color-scheme='dark'] img[alt*='category'] {
+  filter: brightness(0) invert(1);
+}
+
+[data-mui-color-scheme='light'] .category-icon,
+[data-mui-color-scheme='light'] img[alt*='category'] {
+  filter: none;
+}
