@@ -28,8 +28,9 @@ const StatisticsCard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        console.log('🔍 Fetching categories with parent_only=true...')
         const [categoriesRes, brandsRes, productsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/v1/categories`, {
+          fetch(`${API_BASE_URL}/api/v1/categories?parent_only=true`, {
             headers: { 'X-API-Key': API_KEY }
           }),
           fetch(`${API_BASE_URL}/api/admin/brands?skip=0&limit=1`, {
@@ -44,14 +45,23 @@ const StatisticsCard = () => {
         const brandsData = await brandsRes.json()
         const productsData = await productsRes.json()
 
+        console.log('📊 Categories Response:', categoriesData)
+        console.log('📊 Categories Meta:', categoriesData.meta)
+        console.log('📊 Categories Data Length:', categoriesData.data?.length)
+        console.log('📊 First 3 Categories:', categoriesData.data?.slice(0, 3))
+
+        const categoryCount = categoriesData.meta?.total || categoriesData.data?.length || 0
+
+        console.log('✅ Final Category Count:', categoryCount)
+
         setStats({
-          categories: categoriesData.meta?.total || categoriesData.data?.length || 0,
+          categories: categoryCount,
           brands: brandsData.meta?.total || 0,
           products: productsData.meta?.total || 0,
           loading: false
         })
       } catch (error) {
-        console.error('Failed to fetch statistics:', error)
+        console.error('❌ Failed to fetch statistics:', error)
         setStats(prev => ({ ...prev, loading: false }))
       }
     }

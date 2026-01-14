@@ -131,7 +131,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
       // Fetch all categories once, then do pagination + search client-side.
       // NOTE: GET لا يحتاج X-API-Key حسب التحديثات الجديدة
-      const response = await fetch(`${CATEGORIES_BASE_URL}?lang=en&limit=500`)
+      const response = await fetch(`${CATEGORIES_BASE_URL}?lang=en&limit=500&parent_only=true`)
 
       if (response.ok) {
         const result = await response.json()
@@ -340,6 +340,15 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
           )
         }
       }),
+      columnHelper.accessor('id', {
+        header: 'ID',
+        cell: ({ row }) => (
+          <Typography variant='body2' color='text.secondary' sx={{ minWidth: '80px' }}>
+            {row.original.id}
+          </Typography>
+        ),
+        size: 100
+      }),
       columnHelper.accessor('sort_order', {
         header: dictionary.common?.sortOrder || 'Sort Order',
         cell: ({ row }) => <Typography>{row.original.sort_order}</Typography>
@@ -535,7 +544,7 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
             ) : (
               <tbody>
                 {(() => {
-                  const currentRows = table.getRowModel().rows
+                  const currentRows = table.getPaginationRowModel().rows
                   console.log('🔷 Current Page:', pagination.pageIndex + 1)
                   console.log(
                     '🔷 Rows in current page:',
@@ -653,6 +662,11 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                                       </Typography>
                                     </div>
                                   </div>
+                                </td>
+                                <td style={{ minWidth: '80px' }}>
+                                  <Typography variant='caption' color='text.secondary'>
+                                    {child.id}
+                                  </Typography>
                                 </td>
                                 <td>
                                   <Typography variant='body2'>{child.sort_order}</Typography>
@@ -782,6 +796,15 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                                             </Typography>
                                           </div>
                                         </div>
+                                      </td>
+                                      <td style={{ minWidth: '80px' }}>
+                                        <Typography
+                                          variant='caption'
+                                          color='text.secondary'
+                                          sx={{ fontSize: '0.7rem' }}
+                                        >
+                                          {grandchild.id}
+                                        </Typography>
                                       </td>
                                       <td>
                                         <Typography variant='caption'>{grandchild.sort_order}</Typography>
