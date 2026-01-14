@@ -122,25 +122,79 @@ const Login = ({ mode }) => {
     try {
       setErrorState(null)
 
-      // Call Onebby API
-      const response = await fetch(`${API_BASE_URL}/api/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': API_KEY
-        },
-        body: JSON.stringify({
-          username: data.username,
-          password: data.password
+      console.log('🔐 Attempting login:', { username: data.username })
+
+      // Strip accidental wrapping quotes from .env (e.g., 'key' or "key")
+      const apiKey = (API_KEY || '').trim().replace(/^['"]|['"]$/g, '')
+      console.log('🔑 API_KEY length:', apiKey.length)
+      console.log('🔑 API_KEY preview:', apiKey ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}` : 'MISSING')
+      console.log('🔑 API_KEY full value:', apiKey)
+      console.log('🔑 API_BASE_URL:', API_BASE_URL)
+
+      // Validate API Key before making request
+      if (!apiKey) {
+        setErrorState({
+          message: ['API Key is not configured. Please check your .env.local file and restart the server.']
         })
+        return
+      }
+
+      // Call Onebby API (X-API-Key is required)
+      // Login endpoint (no /v1 prefix)
+      const requestUrl = `${API_BASE_URL}/api/users/login`
+      const requestHeaders = {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey
+      }
+      const requestBody = {
+        username: data.username,
+        password: data.password
+      }
+
+      console.log('📤 Sending request:', {
+        url: requestUrl,
+        headers: requestHeaders,
+        body: requestBody
       })
+
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody)
+      })
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '')
+        console.error('❌ Login failed: raw response', {
+          status: response.status,
+          statusText: response.statusText,
+          body: text
+        })
+        const parsed = (() => {
+          try {
+            return text ? JSON.parse(text) : {}
+          } catch (e) {
+            return {}
+          }
+        })()
+        setErrorState({
+          message: [parsed.detail || parsed.message || parsed.error || `Invalid API Key (status ${response.status})`]
+        })
+        return
+      }
+
+      console.log('📡 Response status:', response.status)
 
       const result = await response.json()
 
+      console.log('📦 Response data:', result)
+
       // Check if login was successful
       if (response.ok && result.access_token) {
-        // Store authentication data
-        localStorage.setItem('accessToken', result.access_token)
+        console.log('✅ Login successful!')
+
+        // Store authentication data with Bearer prefix
+        localStorage.setItem('accessToken', `Bearer ${result.access_token}`)
         localStorage.setItem('tokenType', result.token_type)
         localStorage.setItem('username', data.username)
         localStorage.setItem('email', data.username + '@onebby.com')
@@ -152,10 +206,11 @@ const Login = ({ mode }) => {
 
         router.push(getLocalizedUrl(redirectURL, locale))
       } else {
-        setErrorState({ message: [result.message || result.error || 'Invalid username or password'] })
+        console.error('❌ Login failed:', result)
+        setErrorState({ message: [result.detail || result.message || result.error || 'Invalid username or password'] })
       }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('💥 Login error:', error)
       setErrorState({ message: ['Network error. Please check your connection and try again.'] })
     }
   }

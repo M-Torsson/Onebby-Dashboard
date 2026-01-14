@@ -368,6 +368,13 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
 
   const fetchBrands = async () => {
     try {
+      if (!API_KEY) {
+        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        setBrands([])
+        return
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/brands`, {
         headers: { 'X-API-KEY': API_KEY },
         mode: 'cors'
@@ -377,18 +384,29 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         // Handle both { data: [...] } and [...] response formats
         const data = result.data || result
         setBrands(Array.isArray(data) ? data : [])
+      } else if (response.status === 401 || response.status === 403) {
+        console.error('Invalid API Key')
+        setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+        setBrands([])
       } else {
         setBrands([])
-        // Don't show error to user, just log it
+        // Don't show error to user for other errors
       }
     } catch (err) {
       setBrands([])
-      // Don't show error to user
+      console.error('Error fetching brands:', err)
     }
   }
 
   const fetchCategories = async () => {
     try {
+      if (!API_KEY) {
+        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        setCategories([])
+        return
+      }
+
       // Use the v1 endpoint to get all categories (parent + children)
       const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en`, {
         headers: { 'X-API-KEY': API_KEY },
@@ -411,20 +429,31 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           : []
 
         setCategories(sortedCategories)
+      } else if (response.status === 401 || response.status === 403) {
+        console.error('Invalid API Key')
+        setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+        setCategories([])
       } else {
         // Set empty categories array to prevent errors
         setCategories([])
-        // Don't show error to user, just log it
+        // Don't show error to user for other errors
       }
     } catch (err) {
       // Set empty categories array to prevent errors
       setCategories([])
-      // Don't show error to user
+      console.error('Error fetching categories:', err)
     }
   }
 
   const fetchTaxClasses = async () => {
     try {
+      if (!API_KEY) {
+        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        setTaxClasses([])
+        return
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/tax-classes`, {
         headers: { 'X-API-KEY': API_KEY },
         mode: 'cors'
@@ -433,11 +462,16 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         const result = await response.json()
         const data = result.data || result
         setTaxClasses(Array.isArray(data) ? data : [])
+      } else if (response.status === 401 || response.status === 403) {
+        console.error('Invalid API Key')
+        setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+        setTaxClasses([])
       } else {
         setTaxClasses([])
       }
     } catch (err) {
       setTaxClasses([])
+      console.error('Error fetching tax classes:', err)
     }
   }
 
@@ -445,6 +479,13 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
     try {
       setFetchingData(true)
       setError('')
+
+      if (!API_KEY) {
+        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        setFetchingData(false)
+        return
+      }
 
       // Try fetching individual product first
       let response = await fetch(`${API_BASE_URL}/api/v1/products/${editId}`, {
@@ -560,6 +601,9 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
 
         if (response.status === 404) {
           setError(`Product ID ${editId} not found. It may have been deleted or does not exist.`)
+        } else if (response.status === 401 || response.status === 403) {
+          console.error('Invalid API Key')
+          setError('Invalid API Key: Please check your API configuration or contact the administrator.')
         } else {
           setError(`Failed to load product: ${errorData.detail || response.statusText}`)
         }
@@ -574,6 +618,10 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   // Upload Image to Cloudinary
   const uploadImageToCloudinary = async file => {
     try {
+      if (!API_KEY) {
+        throw new Error('API Key is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+      }
+
       const formDataUpload = new FormData()
       formDataUpload.append('file', file)
       formDataUpload.append('folder', 'products')
@@ -587,6 +635,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       if (response.ok) {
         const result = await response.json()
         return result.url
+      } else if (response.status === 401 || response.status === 403) {
+        throw new Error('Invalid API Key: Please check your API configuration or contact the administrator.')
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || `Upload failed: ${response.status}`)
@@ -701,6 +751,12 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       setError('')
       setSuccess('')
       setLoading(true)
+
+      if (!API_KEY) {
+        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        setLoading(false)
+        return
+      }
 
       // Validate required fields: EAN and Title
       if (!formData.ean || !formData.translation.title) {
@@ -928,6 +984,12 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         try {
           errorData = JSON.parse(responseText)
         } catch (e) {}
+
+        // Handle API Key errors first
+        if (response.status === 401 || response.status === 403) {
+          setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+          return
+        }
 
         // Handle validation errors from Pydantic
         let errorMessage = ''

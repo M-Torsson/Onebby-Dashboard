@@ -27,38 +27,53 @@ export const authOptions = {
         /*
          * You need to provide your own logic here that takes the credentials submitted and returns either
          * an object representing a user or value that is false/null if the credentials are invalid.
-         * For e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
-         * You can also use the `req` object to obtain additional parameters (i.e., the request IP address)
          */
         const { email, password } = credentials
 
         try {
-          // ** Login API Call to match the user credentials and receive user data in response along with his role
-          const res = await fetch(`${process.env.API_URL}/login`, {
+          // ** Login API Call to Onebby API
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://onebby-api.onrender.com'
+
+          const loginData = {
+            username: email,
+            password
+          }
+
+          console.log('🔐 Login attempt:', { username: email, url: `${API_BASE_URL}/api/users/login` })
+
+          const res = await fetch(`${API_BASE_URL}/api/users/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify(loginData)
           })
 
-          const data = await res.json()
+          console.log('📡 Response status:', res.status)
 
-          if (res.status === 401) {
-            throw new Error(JSON.stringify(data))
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ detail: 'Invalid credentials' }))
+            console.error('❌ Login failed:', errorData)
+            throw new Error(errorData.detail || 'Invalid username or password')
           }
 
-          if (res.status === 200) {
-            /*
-             * Please unset all the sensitive information of the user either from API response or before returning
-             * user data below. Below return statement will set the user object in the token and the same is set in
-             * the session which will be accessible all over the app.
-             */
-            return data
+          const data = await res.json()
+          console.log('✅ Login success:', { hasToken: !!data.access_token })
+
+          if (data.access_token) {
+            // Return user object with token
+            return {
+              id: '1',
+              name: email,
+              email: email,
+              accessToken: data.access_token,
+              tokenType: data.token_type
+            }
           }
 
           return null
         } catch (e) {
+          console.error('💥 Login error:', e.message)
           throw new Error(e.message)
         }
       }
@@ -108,6 +123,9 @@ export const authOptions = {
          * in token which then will be available in the `session()` callback
          */
         token.name = user.name
+        token.email = user.email
+        token.accessToken = user.accessToken
+        token.tokenType = user.tokenType
       }
 
       return token
@@ -116,6 +134,9 @@ export const authOptions = {
       if (session.user) {
         // ** Add custom params to user in session which are added in `jwt()` callback via `token` parameter
         session.user.name = token.name
+        session.user.email = token.email
+        session.user.accessToken = token.accessToken
+        session.user.tokenType = token.tokenType
       }
 
       return session

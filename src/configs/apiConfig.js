@@ -8,8 +8,24 @@ const getApiConfig = () => {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://onebby-api.onrender.com'
   const apiKey = process.env.NEXT_PUBLIC_API_KEY || ''
 
+  // Debug logging
+  if (typeof window !== 'undefined') {
+    console.log('🔑 API Configuration Debug:')
+    console.log('API_KEY length:', apiKey.length)
+    console.log('API_KEY first 10 chars:', apiKey.substring(0, 10))
+    console.log('API_KEY last 10 chars:', apiKey.substring(apiKey.length - 10))
+    console.log('API_KEY is empty:', !apiKey)
+  }
+
   if (!apiKey && typeof window !== 'undefined') {
-    console.warn('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+    console.error('⚠️ API_KEY is not configured!')
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('Please follow these steps to fix the issue:')
+    console.error('1. Open .env.local file in the root directory')
+    console.error('2. Add your API key: NEXT_PUBLIC_API_KEY=your-key-here')
+    console.error('3. Save the file and restart the development server')
+    console.error("4. Contact your administrator if you don't have an API key")
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   }
 
   return {

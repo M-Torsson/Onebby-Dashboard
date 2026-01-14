@@ -70,11 +70,16 @@ const categoryGlobalFilter = (row, _columnId, value) => {
     .trim()
     .toLowerCase()
 
+  // إذا لا يوجد بحث، إرجاع كل الصفوف
   if (!query) return true
 
   const original = row.original || {}
-  const haystack = [original.id, original.name, original.slug].map(v => String(v ?? '').toLowerCase())
+  // البحث في: ID، الاسم، الـ Slug
+  const haystack = [String(original.id ?? ''), String(original.name ?? ''), String(original.slug ?? '')].map(v =>
+    v.toLowerCase()
+  )
 
+  // إرجاع true إذا وجدنا match في أي حقل
   return haystack.some(v => v.includes(query))
 }
 
@@ -125,10 +130,8 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
       setError('')
 
       // Fetch all categories once, then do pagination + search client-side.
-      // NOTE: /api/v1/categories includes the categories created via the dashboard.
-      const response = await fetch(`${CATEGORIES_BASE_URL}?lang=en&limit=500`, {
-        headers: { 'X-API-Key': API_KEY }
-      })
+      // NOTE: GET لا يحتاج X-API-Key حسب التحديثات الجديدة
+      const response = await fetch(`${CATEGORIES_BASE_URL}?lang=en&limit=500`)
 
       if (response.ok) {
         const result = await response.json()
@@ -149,31 +152,42 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
 
   const fetchChildren = async parentId => {
     try {
-      const response = await fetch(`${CATEGORIES_BASE_URL}/${parentId}/children`, {
-        headers: { 'X-API-Key': API_KEY }
-      })
+      const url = `${CATEGORIES_BASE_URL}/${parentId}/children`
+      const response = await fetch(url)
 
       if (response.ok) {
         const result = await response.json()
         const children = result.data || result || []
+        const key = String(parentId)
 
-        setChildrenData(prev => ({ ...prev, [parentId]: Array.isArray(children) ? children : [] }))
+        console.log('🔍 Fetched children for parent ID:', parentId)
+        console.log('🔍 Children data:', children)
+        console.log('🔍 Sample child has_children:', children[0]?.has_children)
+
+        setChildrenData(prev => ({
+          ...prev,
+          [key]: Array.isArray(children) ? children : []
+        }))
+      } else {
+        setChildrenData(prev => ({ ...prev, [String(parentId)]: [] }))
       }
-    } catch (err) {}
+    } catch (err) {
+      setChildrenData(prev => ({ ...prev, [String(parentId)]: [] }))
+    }
   }
 
   const handleToggleExpand = (categoryId, hasChildren) => {
-    const category = data.find(c => Number(c.id) === Number(categoryId))
-    const isParent = !category || category.parent_id === null || category.parent_id === undefined
+    const key = String(categoryId)
+    const canExpand = hasChildren || childrenData[key]?.length > 0 || !childrenData[key]
 
-    if (!hasChildren || !isParent) return
+    if (!canExpand) return
 
-    const newExpanded = { ...expanded, [categoryId]: !expanded[categoryId] }
+    const isCurrentlyExpanded = expanded[key] || false
+    const newExpanded = { ...expanded, [key]: !isCurrentlyExpanded }
 
     setExpanded(newExpanded)
 
-    // Fetch children if not already loaded
-    if (!childrenData[categoryId] && !expanded[categoryId]) {
+    if (!childrenData[key] && !isCurrentlyExpanded) {
       fetchChildren(categoryId)
     }
   }
@@ -260,42 +274,57 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
       },
       columnHelper.accessor('name', {
         header: dictionary.common?.category || 'Category',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-3'>
-            {row.original.has_children && (
-              <IconButton size='small' onClick={() => handleToggleExpand(row.original.id, row.original.has_children)}>
-                <i className={expanded[row.original.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'} />
-              </IconButton>
-            )}
-            {(row.original.image || row.original.icon) && (
-              <img
-                src={row.original.image || row.original.icon}
-                width={38}
-                height={38}
-                className='rounded bg-actionHover'
-                alt={row.original.name}
-              />
-            )}
-            <div
-              className='flex flex-col items-start'
-              style={{ cursor: 'pointer' }}
-              onClick={() => handleEditCategory(row.original)}
-              onMouseEnter={e => {
-                e.currentTarget.querySelector('.category-name').style.color = 'var(--mui-palette-primary-main)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.querySelector('.category-name').style.color = ''
-              }}
-            >
-              <Typography className='font-medium category-name' color='text.primary'>
-                {row.original.name}
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {row.original.slug}
-              </Typography>
+        cell: ({ row }) => {
+          const categoryKey = String(row.original.id)
+
+          return (
+            <div className='flex items-center gap-3'>
+              {row.original.image || row.original.icon ? (
+                <div
+                  className='flex items-center justify-center rounded bg-actionHover'
+                  style={{ width: 38, height: 38, minWidth: 38, minHeight: 38 }}
+                >
+                  <img
+                    src={row.original.image || row.original.icon}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    className='rounded'
+                    alt={row.original.name}
+                  />
+                </div>
+              ) : (
+                <div
+                  className='flex items-center justify-center rounded bg-actionHover'
+                  style={{ width: 38, height: 38 }}
+                >
+                  <i className='tabler-category text-xl text-textSecondary' />
+                </div>
+              )}
+              {row.original.has_children && (
+                <IconButton size='small' onClick={() => handleToggleExpand(row.original.id, row.original.has_children)}>
+                  <i className={expanded[categoryKey] ? 'tabler-chevron-down' : 'tabler-chevron-right'} />
+                </IconButton>
+              )}
+              <div
+                className='flex flex-col items-start'
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleEditCategory(row.original)}
+                onMouseEnter={e => {
+                  e.currentTarget.querySelector('.category-name').style.color = 'var(--mui-palette-primary-main)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.querySelector('.category-name').style.color = ''
+                }}
+              >
+                <Typography className='font-medium category-name' color='text.primary'>
+                  {row.original.name}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  {row.original.slug}
+                </Typography>
+              </div>
             </div>
-          </div>
-        )
+          )
+        }
       }),
       columnHelper.accessor('sort_order', {
         header: dictionary.common?.sortOrder || 'Sort Order',
@@ -375,8 +404,8 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel()
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel()
   })
 
   if (loading) {
@@ -410,8 +439,12 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => {
-              setGlobalFilter(String(value))
-              table.setPageIndex(0)
+              const searchValue = String(value)
+              setGlobalFilter(searchValue)
+              // إعادة تعيين إلى الصفحة الأولى عند البحث
+              if (searchValue) {
+                table.setPageIndex(0)
+              }
             }}
             placeholder={dictionary.common?.searchCategory || 'Search Category'}
             className='max-sm:is-full min-is-[200px]'
@@ -487,90 +520,256 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
               </tbody>
             ) : (
               <tbody>
-                {table.getRowModel().rows.map(row => (
-                  <React.Fragment key={row.id}>
-                    <tr className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                    {/* Children rows */}
-                    {expanded[row.original.id] && childrenData[row.original.id] && (
-                      <>
-                        {childrenData[row.original.id].map(child => (
-                          <tr key={`child-${child.id}`} style={{ backgroundColor: '#f5f5f5' }}>
-                            <td></td>
-                            <td>
-                              <div className='flex items-center gap-3'>
-                                <div style={{ width: '40px' }}></div>
-                                {(child.image || child.icon) && (
-                                  <img
-                                    src={child.image || child.icon}
-                                    width={32}
-                                    height={32}
-                                    className='rounded bg-actionHover'
-                                    alt={child.name}
-                                  />
-                                )}
-                                <div
-                                  className='flex flex-col items-start'
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={() => handleEditCategory(child)}
-                                  onMouseEnter={e => {
-                                    e.currentTarget.querySelector('.child-name').style.color =
-                                      'var(--mui-palette-primary-main)'
-                                  }}
-                                  onMouseLeave={e => {
-                                    e.currentTarget.querySelector('.child-name').style.color = ''
-                                  }}
-                                >
-                                  <Typography variant='body2' className='font-medium child-name'>
-                                    {child.name}
-                                  </Typography>
-                                  <Typography variant='caption' color='text.secondary'>
-                                    {child.slug}
-                                  </Typography>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              <Typography variant='body2'>{child.sort_order}</Typography>
-                            </td>
-                            <td>
-                              <Chip
-                                label={child.is_active ? 'Active' : 'Inactive'}
-                                color={child.is_active ? 'success' : 'error'}
-                                size='small'
-                                variant='tonal'
-                              />
-                            </td>
-                            <td>
-                              <Chip label='No' color='default' size='small' variant='tonal' />
-                            </td>
-                            <td>
-                              <div className='flex items-center'>
-                                <IconButton onClick={() => handleEditCategory(child)}>
-                                  <i className='tabler-edit text-textSecondary' />
-                                </IconButton>
-                                <OptionMenu
-                                  iconButtonProps={{ size: 'medium' }}
-                                  iconClassName='text-textSecondary'
-                                  options={[
-                                    {
-                                      text: 'Delete',
-                                      icon: 'tabler-trash',
-                                      menuItemProps: { onClick: () => handleDeleteCategory(child) }
-                                    }
-                                  ]}
-                                />
-                              </div>
-                            </td>
-                          </tr>
+                {(() => {
+                  const currentRows = table.getRowModel().rows
+                  console.log('🔷 Current Page:', pagination.pageIndex + 1)
+                  console.log(
+                    '🔷 Rows in current page:',
+                    currentRows.length,
+                    currentRows.map(r => r.original.name)
+                  )
+                  console.log('🔷 Expanded state:', expanded)
+                  console.log('🔷 Children data keys:', Object.keys(childrenData))
+                  return currentRows
+                })().map((row, rowIndex) => {
+                  const categoryId = row.original.id
+                  const key = String(categoryId)
+                  const isExpanded = expanded[key]
+                  const hasChildrenData = childrenData[key] && childrenData[key].length > 0
+
+                  console.log(`🔹 Row ${rowIndex}: ${row.original.name} (ID: ${categoryId}, Key: ${key})`)
+                  console.log(`   isExpanded: ${isExpanded}, hasChildrenData: ${hasChildrenData}`)
+                  if (hasChildrenData) {
+                    console.log(
+                      `   Children count: ${childrenData[key].length}`,
+                      childrenData[key].map(c => c.name)
+                    )
+                  }
+
+                  return (
+                    <React.Fragment key={`parent-${categoryId}-${rowIndex}`}>
+                      <tr className={classnames({ selected: row.getIsSelected() })}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                         ))}
-                      </>
-                    )}
-                  </React.Fragment>
-                ))}
+                      </tr>
+                      {/* Children rows - always render if expanded and has data */}
+                      {(() => {
+                        if (isExpanded && hasChildrenData) {
+                          console.log(`   ✅ Rendering ${childrenData[key].length} children for ${row.original.name}`)
+                          return true
+                        } else {
+                          console.log(
+                            `   ❌ NOT rendering children for ${row.original.name} - isExpanded: ${isExpanded}, hasChildrenData: ${hasChildrenData}`
+                          )
+                          return false
+                        }
+                      })() && (
+                        <>
+                          {childrenData[key].map(child => (
+                            <React.Fragment key={`child-fragment-${child.id}`}>
+                              <tr style={{ backgroundColor: '#f5f5f5' }}>
+                                <td></td>
+                                <td>
+                                  <div className='flex items-center gap-3'>
+                                    {child.image || child.icon ? (
+                                      <div
+                                        className='flex items-center justify-center rounded bg-actionHover'
+                                        style={{ width: 32, height: 32, minWidth: 32, minHeight: 32 }}
+                                      >
+                                        <img
+                                          src={child.image || child.icon}
+                                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                          className='rounded'
+                                          alt={child.name}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className='flex items-center justify-center rounded bg-actionHover'
+                                        style={{ width: 32, height: 32 }}
+                                      >
+                                        <i className='tabler-category text-lg text-textSecondary' />
+                                      </div>
+                                    )}
+                                    {/* نخفي السهم إذا: 1) has_children = false من API، أو 2) جربنا fetch وجاء رد فارغ */}
+                                    {child.has_children === false ||
+                                    (childrenData[String(child.id)] && childrenData[String(child.id)].length === 0) ? (
+                                      <div style={{ width: '40px' }}></div>
+                                    ) : (
+                                      <IconButton size='small' onClick={() => handleToggleExpand(child.id, true)}>
+                                        <i
+                                          className={
+                                            expanded[String(child.id)] ? 'tabler-chevron-down' : 'tabler-chevron-right'
+                                          }
+                                        />
+                                      </IconButton>
+                                    )}
+                                    <div
+                                      className='flex flex-col items-start'
+                                      style={{ cursor: 'pointer' }}
+                                      onClick={() => handleEditCategory(child)}
+                                      onMouseEnter={e => {
+                                        e.currentTarget.querySelector('.child-name').style.color =
+                                          'var(--mui-palette-primary-main)'
+                                      }}
+                                      onMouseLeave={e => {
+                                        e.currentTarget.querySelector('.child-name').style.color = ''
+                                      }}
+                                    >
+                                      <Typography variant='body2' className='font-medium child-name'>
+                                        {child.name}
+                                      </Typography>
+                                      <Typography variant='caption' color='text.secondary'>
+                                        {child.slug}
+                                      </Typography>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td>
+                                  <Typography variant='body2'>{child.sort_order}</Typography>
+                                </td>
+                                <td>
+                                  <Chip
+                                    label={child.is_active ? 'Active' : 'Inactive'}
+                                    color={child.is_active ? 'success' : 'error'}
+                                    size='small'
+                                    variant='tonal'
+                                  />
+                                </td>
+                                <td>
+                                  <Chip
+                                    label={
+                                      child.has_children
+                                        ? dictionary.common?.yes || 'Yes'
+                                        : dictionary.common?.no || 'No'
+                                    }
+                                    color={child.has_children ? 'primary' : 'default'}
+                                    size='small'
+                                    variant='tonal'
+                                  />
+                                </td>
+                                <td>
+                                  <div className='flex items-center'>
+                                    <IconButton onClick={() => handleEditCategory(child)}>
+                                      <i className='tabler-edit text-textSecondary' />
+                                    </IconButton>
+                                    <OptionMenu
+                                      iconButtonProps={{ size: 'medium' }}
+                                      iconClassName='text-textSecondary'
+                                      options={[
+                                        {
+                                          text: 'Delete',
+                                          icon: 'tabler-trash',
+                                          menuItemProps: { onClick: () => handleDeleteCategory(child) }
+                                        }
+                                      ]}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                              {/* Grandchildren rows */}
+                              {(() => {
+                                const childKey = String(child.id)
+                                const childExpanded = expanded[childKey]
+                                const hasGrandchildren = childrenData[childKey] && childrenData[childKey].length > 0
+
+                                console.log(`👶 Child: ${child.name} (ID: ${child.id})`)
+                                console.log(`   Child expanded: ${childExpanded}`)
+                                console.log(`   Has grandchildren data: ${hasGrandchildren}`)
+                                if (hasGrandchildren) {
+                                  console.log(`   Grandchildren count: ${childrenData[childKey].length}`)
+                                  console.log(`   ✅ SHOULD render grandchildren`)
+                                } else {
+                                  console.log(`   ❌ NOT rendering grandchildren`)
+                                }
+
+                                return childExpanded && hasGrandchildren
+                              })() && (
+                                <>
+                                  {childrenData[String(child.id)].map(grandchild => (
+                                    <tr key={`grandchild-${grandchild.id}`} style={{ backgroundColor: '#ebebeb' }}>
+                                      <td></td>
+                                      <td>
+                                        <div className='flex items-center gap-3'>
+                                          <div style={{ width: '80px' }}></div>
+                                          {(grandchild.image || grandchild.icon) && (
+                                            <img
+                                              src={grandchild.image || grandchild.icon}
+                                              width={28}
+                                              height={28}
+                                              className='rounded bg-actionHover'
+                                              alt={grandchild.name}
+                                            />
+                                          )}
+                                          <div
+                                            className='flex flex-col items-start'
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => handleEditCategory(grandchild)}
+                                            onMouseEnter={e => {
+                                              e.currentTarget.querySelector('.grandchild-name').style.color =
+                                                'var(--mui-palette-primary-main)'
+                                            }}
+                                            onMouseLeave={e => {
+                                              e.currentTarget.querySelector('.grandchild-name').style.color = ''
+                                            }}
+                                          >
+                                            <Typography variant='caption' className='font-medium grandchild-name'>
+                                              {grandchild.name}
+                                            </Typography>
+                                            <Typography
+                                              variant='caption'
+                                              color='text.secondary'
+                                              sx={{ fontSize: '0.7rem' }}
+                                            >
+                                              {grandchild.slug}
+                                            </Typography>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <Typography variant='caption'>{grandchild.sort_order}</Typography>
+                                      </td>
+                                      <td>
+                                        <Chip
+                                          label={grandchild.is_active ? 'Active' : 'Inactive'}
+                                          color={grandchild.is_active ? 'success' : 'error'}
+                                          size='small'
+                                          variant='tonal'
+                                        />
+                                      </td>
+                                      <td>
+                                        <Chip label='No' color='default' size='small' variant='tonal' />
+                                      </td>
+                                      <td>
+                                        <div className='flex items-center'>
+                                          <IconButton onClick={() => handleEditCategory(grandchild)}>
+                                            <i className='tabler-edit text-textSecondary' />
+                                          </IconButton>
+                                          <OptionMenu
+                                            iconButtonProps={{ size: 'medium' }}
+                                            iconClassName='text-textSecondary'
+                                            options={[
+                                              {
+                                                text: 'Delete',
+                                                icon: 'tabler-trash',
+                                                menuItemProps: { onClick: () => handleDeleteCategory(grandchild) }
+                                              }
+                                            ]}
+                                          />
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
               </tbody>
             )}
           </table>

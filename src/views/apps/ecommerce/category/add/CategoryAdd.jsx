@@ -67,19 +67,31 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   const fetchParentCategories = async () => {
     try {
-      const response = await fetch(`${CATEGORIES_BASE_URL}?parent_only=true`, {
-        headers: { 'X-API-Key': API_KEY }
-      })
+      // جلب كل الفئات (134 فئة) - لا يحتاج X-API-Key
+      const response = await fetch(`${CATEGORIES_BASE_URL}`)
 
       if (response.ok) {
         const result = await response.json()
-        const parentsData = result.data || result || []
+        const allCategories = result.data || result || []
 
-        setParents(Array.isArray(parentsData) ? parentsData : [])
+        // فلترة الفئات: نعرض فقط Parent و Child (نستثني Grandson من القائمة)
+        // Grandson لا يمكن أن يكون parent لفئة جديدة
+        const selectableCategories = Array.isArray(allCategories)
+          ? allCategories.filter(cat => {
+              // نتحقق من level: إذا كان parent_id موجود، نحتاج نتأكد أنه ليس grandson
+              if (!cat.parent_id) return true // Parent category
+
+              // إذا له parent، نتحقق هل parent_id هذا هو parent رئيسي
+              const parentOfThis = allCategories.find(p => p.id === cat.parent_id)
+              return parentOfThis && !parentOfThis.parent_id // Child category (parent له ليس له parent)
+            })
+          : []
+
+        setParents(selectableCategories)
 
         if (parentIdParam && !editId) {
           const requestedParentId = Number(parentIdParam)
-          const isValidParent = Array.isArray(parentsData) && parentsData.some(p => Number(p.id) === requestedParentId)
+          const isValidParent = selectableCategories.some(p => Number(p.id) === requestedParentId)
 
           if (Number.isFinite(requestedParentId) && isValidParent) {
             setFormData(prev => ({ ...prev, parent_id: requestedParentId }))
@@ -94,27 +106,32 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
   const fetchCategoryData = async () => {
     try {
       setFetchingData(true)
+      setError('') // مسح أي أخطاء سابقة
 
-      // Prefer direct GET if supported; otherwise, fall back to listing + filtering.
       let category = null
 
-      const directResponse = await fetch(`${CATEGORIES_BASE_URL}/${editId}`, {
-        headers: { 'X-API-Key': API_KEY }
-      }).catch(() => null)
+      // محاولة 1: جلب الفئة مباشرة من API
+      try {
+        const directResponse = await fetch(`${CATEGORIES_BASE_URL}/${editId}`)
 
-      if (directResponse?.ok) {
-        const directResult = await directResponse.json()
+        if (directResponse.ok) {
+          const directResult = await directResponse.json()
+          category = directResult.data || directResult
+          console.log('✅ Category loaded from direct API:', category)
+        }
+      } catch (err) {
+        console.warn('Direct fetch failed, trying list approach:', err)
+      }
 
-        category = directResult.data || directResult
-      } else {
-        const listResponse = await fetch(`${CATEGORIES_BASE_URL}`, {
-          headers: { 'X-API-Key': API_KEY }
-        })
+      // محاولة 2: إذا فشلت المحاولة الأولى، نجلب كل الفئات ونبحث
+      if (!category) {
+        console.log('🔍 Searching in all categories for ID:', editId)
+        // إضافة limit=500 لجلب كل الـ 134 فئة
+        const listResponse = await fetch(`${CATEGORIES_BASE_URL}?limit=500`)
 
         if (!listResponse.ok) {
-          setError(`Failed to load category data (${listResponse.status})`)
+          setError(`Failed to load categories (${listResponse.status})`)
           setFetchingData(false)
-
           return
         }
 
@@ -122,13 +139,24 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         const listData = listResult.data || listResult
         const asArray = Array.isArray(listData) ? listData : []
 
-        category = asArray.find(c => Number(c.id) === Number(editId)) || null
+        console.log('📋 Total categories loaded:', asArray.length)
+        category = asArray.find(c => Number(c.id) === Number(editId))
+
+        if (category) {
+          console.log('✅ Category found in list:', category.name)
+        } else {
+          console.error(
+            '❌ Category not found. Searched ID:',
+            editId,
+            'Available IDs:',
+            asArray.map(c => c.id).slice(0, 20)
+          )
+        }
       }
 
       if (!category) {
-        setError('Category not found')
+        setError(`Category not found (ID: ${editId})`)
         setFetchingData(false)
-
         return
       }
 
@@ -156,27 +184,33 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   const uploadImageToCloudinary = async (file, folder) => {
     try {
+      // Use local API endpoint for direct upload
       const formDataUpload = new FormData()
-
       formDataUpload.append('file', file)
       formDataUpload.append('folder', folder)
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/upload/image`, {
+      console.log('📤 Uploading to:', `/api/admin/upload/image`)
+      console.log('📁 Folder:', folder)
+
+      const uploadResponse = await fetch(`/api/admin/upload/image`, {
         method: 'POST',
-        headers: { 'X-API-Key': API_KEY },
         body: formDataUpload
       })
 
-      if (response.ok) {
-        const result = await response.json()
+      console.log('📡 Response status:', uploadResponse.status)
 
-        return result.url
-      } else {
-        const errorData = await response.json()
-
-        throw new Error(errorData.detail || `Upload failed: ${response.status}`)
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json()
+        console.error('❌ Upload error:', errorData)
+        throw new Error(errorData.detail || 'Failed to upload image')
       }
+
+      const result = await uploadResponse.json()
+      console.log('✅ Upload successful:', result)
+
+      return result.url
     } catch (err) {
+      console.error('💥 Upload exception:', err)
       throw err
     }
   }
@@ -416,11 +450,18 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
                       helperText={dictionary.common?.leaveEmptyMainCategory || 'Leave empty for main category'}
                     >
                       <MenuItem value=''>{dictionary.common?.noneMainCategory || 'None (Main Category)'}</MenuItem>
-                      {parents.map(parent => (
-                        <MenuItem key={parent.id} value={parent.id}>
-                          {parent.name}
-                        </MenuItem>
-                      ))}
+                      {parents.map(parent => {
+                        // عرض الفئات مع تنسيق حسب المستوى
+                        const isChild = parent.parent_id !== null && parent.parent_id !== undefined
+                        const prefix = isChild ? '└─ ' : ''
+
+                        return (
+                          <MenuItem key={parent.id} value={parent.id}>
+                            {prefix}
+                            {parent.name}
+                          </MenuItem>
+                        )
+                      })}
                     </CustomTextField>
                   </Grid>
                 </Grid>

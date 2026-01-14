@@ -118,9 +118,8 @@ const AddCategoryDrawer = props => {
       formDataUpload.append('file', file)
       formDataUpload.append('folder', folder)
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/upload/image`, {
+      const response = await fetch(`/api/admin/upload/image`, {
         method: 'POST',
-        headers: { 'X-API-Key': API_KEY },
         body: formDataUpload
       })
 
