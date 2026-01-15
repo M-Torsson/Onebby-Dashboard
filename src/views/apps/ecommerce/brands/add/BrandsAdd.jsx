@@ -19,6 +19,7 @@ import Box from '@mui/material/Box'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
+import Chip from '@mui/material/Chip'
 
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
@@ -46,6 +47,8 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
   const [loading, setLoading] = useState(false)
   const [fetchingData, setFetchingData] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [discounts, setDiscounts] = useState([])
+  const [loadingDiscounts, setLoadingDiscounts] = useState(false)
 
   // Fetch brand data if editing
   useEffect(() => {
@@ -71,6 +74,11 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
           sort_order: data.sort_order
         })
         setImagePreview(data.image)
+
+        // Fetch discounts for this brand
+        if (editId) {
+          fetchBrandDiscounts(editId)
+        }
       } else {
         setError('Failed to load brand data')
       }
@@ -78,6 +86,30 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
       setError('Network error. Please try again.')
     } finally {
       setFetchingData(false)
+    }
+  }
+
+  const fetchBrandDiscounts = async brandId => {
+    try {
+      setLoadingDiscounts(true)
+      const response = await fetch(`${API_BASE_URL}/api/v1/discounts`, {
+        headers: { 'X-API-KEY': API_KEY }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const allDiscounts = result.data || result || []
+        // Filter discounts that target this brand
+        const brandDiscounts = allDiscounts.filter(
+          discount =>
+            discount.target_type === 'brand' && discount.target_ids && discount.target_ids.includes(Number(brandId))
+        )
+        setDiscounts(brandDiscounts)
+      }
+    } catch (err) {
+      console.error('Error fetching discounts:', err)
+    } finally {
+      setLoadingDiscounts(false)
     }
   }
 
@@ -447,6 +479,69 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Active Discounts */}
+          {editId && (
+            <Grid size={{ xs: 12 }}>
+              <Card>
+                <CardHeader title={dictionary.common?.activeDiscounts || 'Active Discounts'} />
+                <CardContent>
+                  {loadingDiscounts ? (
+                    <div className='flex justify-center items-center' style={{ minHeight: '100px' }}>
+                      <CircularProgress size={24} />
+                    </div>
+                  ) : discounts.length > 0 ? (
+                    <Grid container spacing={3}>
+                      {discounts.map(discount => (
+                        <Grid size={{ xs: 12 }} key={discount.id}>
+                          <Box
+                            sx={{
+                              p: 3,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 1,
+                              bgcolor: 'action.hover'
+                            }}
+                          >
+                            <div className='flex justify-between items-start mb-2'>
+                              <Typography variant='subtitle2' className='font-medium'>
+                                {discount.name}
+                              </Typography>
+                              <Chip
+                                label={discount.is_active ? 'Active' : 'Inactive'}
+                                color={discount.is_active ? 'success' : 'error'}
+                                size='small'
+                                variant='tonal'
+                              />
+                            </div>
+                            <Typography variant='body2' color='text.secondary'>
+                              {discount.discount_type === 'percentage'
+                                ? `${discount.discount_value}% Off`
+                                : `€${discount.discount_value} Off`}
+                            </Typography>
+                            {discount.start_date && (
+                              <Typography variant='caption' color='text.secondary' display='block' className='mt-1'>
+                                From: {new Date(discount.start_date).toLocaleDateString()}
+                              </Typography>
+                            )}
+                            {discount.end_date && (
+                              <Typography variant='caption' color='text.secondary' display='block'>
+                                To: {new Date(discount.end_date).toLocaleDateString()}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  ) : (
+                    <Typography variant='body2' color='text.secondary' align='center'>
+                      {dictionary.common?.noDiscountsApplied || 'No discounts applied to this brand'}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
         </Grid>
       </Grid>
     </Grid>

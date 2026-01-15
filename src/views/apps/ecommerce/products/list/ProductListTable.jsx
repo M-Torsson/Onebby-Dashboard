@@ -72,6 +72,28 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
   return itemRank.passed
 }
 
+// Custom global filter function that searches by name or ID
+const productGlobalFilter = (row, _columnId, value) => {
+  const query = String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+  // If no search query, return all rows
+  if (!query) return true
+
+  const original = row.original || {}
+
+  // Search in: ID, product name, and product ID field
+  const searchFields = [
+    String(original.id ?? ''),
+    String(original.productName ?? ''),
+    String(original.productId ?? '')
+  ].map(v => v.toLowerCase())
+
+  // Return true if any field contains the search query
+  return searchFields.some(field => field.includes(query))
+}
+
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   // States
   const [value, setValue] = useState(initialValue)
@@ -131,18 +153,110 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
   const { lang: locale } = useParams()
   const router = useRouter()
 
-  // Fetch products from API with server-side pagination
-  const fetchProducts = async (currentPage = 0, currentPageSize = 10) => {
+  // Fetch products from API with SMART server-side search
+  const fetchProducts = async (currentPage = 0, currentPageSize = 10, searchQuery = '') => {
     try {
       setLoading(true)
       setError('')
 
-      const skip = currentPage * currentPageSize
-      const response = await fetch(
-        `https://onebby-api.onrender.com/api/v1/products?active_only=false&skip=${skip}&limit=${currentPageSize}`,
-        { headers: { 'X-API-KEY': API_KEY } }
-      )
+      const query = searchQuery?.trim() || ''
 
+      // SMART SEARCH: Search by ID or Name directly
+      if (query) {
+        // Check if searching by numeric ID
+        const isNumericSearch = /^\d+$/.test(query)
+
+        if (isNumericSearch) {
+          // Direct ID search - SUPER FAST!
+          try {
+            const response = await fetch(`https://onebby-api.onrender.com/api/v1/products/${query}`, {
+              headers: { 'X-API-KEY': API_KEY }
+            })
+
+            if (response.ok) {
+              const result = await response.json()
+              // API returns {data: {...}, meta: {...}} for single product
+              const product = result.data || result
+              // Return as array with single product for processing
+              const formattedResult = { data: [product], meta: { total: 1 } }
+              const mockResponse = { ok: true, json: async () => formattedResult }
+              return await processProducts(mockResponse, 0, currentPageSize, '', false) // No search filter needed
+            } else if (response.status === 404) {
+              // Product not found by ID
+              setData([])
+              setFilteredData([])
+              setTotalCount(0)
+              setLoading(false)
+              return
+            }
+          } catch (err) {
+            console.error(`ID search error:`, err)
+            setData([])
+            setFilteredData([])
+            setTotalCount(0)
+            setLoading(false)
+            return
+          }
+        }
+
+        // Name/Reference search - search products efficiently
+        // Fetch products from multiple ranges: first products + last products
+        const batchSize = 500
+        const fetchPromises = []
+
+        // Fetch first 1500 products (old products)
+        for (let i = 0; i < 3; i++) {
+          const skip = i * batchSize
+          fetchPromises.push(
+            fetch(`https://onebby-api.onrender.com/api/v1/products?skip=${skip}&limit=${batchSize}`, {
+              headers: { 'X-API-KEY': API_KEY }
+            })
+          )
+        }
+
+        // Fetch LAST 1500 products (newest products including 35965+)
+        // Based on total ~19444, fetch from 17944, 18444, 18944
+        for (let i = 0; i < 3; i++) {
+          const skip = 17944 + i * batchSize
+          fetchPromises.push(
+            fetch(`https://onebby-api.onrender.com/api/v1/products?skip=${skip}&limit=${batchSize}`, {
+              headers: { 'X-API-KEY': API_KEY }
+            })
+          )
+        }
+
+        const responses = await Promise.all(fetchPromises)
+        let allProducts = []
+
+        for (const response of responses) {
+          if (response.ok) {
+            const result = await response.json()
+            allProducts = [...allProducts, ...(result.data || [])]
+          }
+        }
+
+        // Now process with search filter
+        const result = { data: allProducts, meta: { total: allProducts.length } }
+        const mockResponse = { ok: true, json: async () => result }
+        return await processProducts(mockResponse, currentPage, currentPageSize, query, true)
+      } else {
+        // Normal pagination without search
+        const skip = currentPage * currentPageSize
+        const apiUrl = `https://onebby-api.onrender.com/api/v1/products?active_only=false&skip=${skip}&limit=${currentPageSize}`
+        const response = await fetch(apiUrl, { headers: { 'X-API-KEY': API_KEY } })
+
+        return await processProducts(response, currentPage, currentPageSize, query, false)
+      }
+    } catch (err) {
+      console.error('Fetch error:', err)
+      setError(`Network error: ${err.message}`)
+      setLoading(false)
+    }
+  }
+
+  // Process products helper function
+  const processProducts = async (response, currentPage, currentPageSize, searchQuery, fetchAllProducts) => {
+    try {
       if (response.ok) {
         const result = await response.json()
 
@@ -150,11 +264,17 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
         const products = result.data || []
         const total = result.meta?.total || products.length
 
-        setTotalCount(total)
+        // Only fetch stock for displayed products, not all products
+        const productsToProcess = products
 
-        // Fetch stock data for all products in parallel
+        // Fetch stock data only for products that will be displayed
         const productsWithStock = await Promise.all(
-          products.map(async product => {
+          productsToProcess.map(async product => {
+            // Skip stock fetch when searching - will fetch later for displayed items only
+            if (fetchAllProducts) {
+              return product
+            }
+
             try {
               const stockResponse = await fetch(`https://onebby-api.onrender.com/api/v1/products/${product.id}/stock`, {
                 headers: { 'X-API-KEY': API_KEY }
@@ -173,8 +293,13 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
 
         // Format products data with stock information
         const formattedData = productsWithStock.map(product => {
-          // Get stock quantity from stock_data
-          const stockQuantity = product.stock_data?.stock_quantity || 0
+          // Get stock quantity from stock_data or stock object
+          let stockQuantity = 0
+          if (product.stock_data?.stock_quantity !== undefined) {
+            stockQuantity = product.stock_data.stock_quantity
+          } else if (product.stock?.quantity !== undefined) {
+            stockQuantity = product.stock.quantity
+          }
 
           // Get image
           let productImage = '/images/misc/no-image.png'
@@ -229,23 +354,90 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
           }
         })
 
-        setData(formattedData)
-        setFilteredData(formattedData)
+        // If there's a search query, filter the data client-side
+        let finalData = formattedData
+        let finalTotal = total // Use total from API by default
+
+        if (searchQuery && searchQuery.trim()) {
+          const query = searchQuery.trim().toLowerCase()
+          finalData = formattedData.filter(product => {
+            return (
+              String(product.id).toLowerCase().includes(query) ||
+              String(product.productName).toLowerCase().includes(query) ||
+              String(product.productId).toLowerCase().includes(query) ||
+              String(product.reference).toLowerCase().includes(query)
+            )
+          })
+          finalTotal = finalData.length
+
+          // Apply pagination to filtered results
+          const start = currentPage * currentPageSize
+          const end = start + currentPageSize
+          finalData = finalData.slice(start, end)
+
+          // Now fetch stock for only the displayed products (10-50 products max)
+          finalData = await Promise.all(
+            finalData.map(async product => {
+              try {
+                const stockResponse = await fetch(
+                  `https://onebby-api.onrender.com/api/v1/products/${product.id}/stock`,
+                  {
+                    headers: { 'X-API-KEY': API_KEY }
+                  }
+                )
+
+                if (stockResponse.ok) {
+                  const stockData = await stockResponse.json()
+                  return { ...product, quantity: stockData?.stock_quantity || 0 }
+                }
+              } catch (error) {
+                console.error(`Failed to fetch stock for product ${product.id}:`, error)
+              }
+              return product
+            })
+          )
+        }
+
+        setTotalCount(finalTotal)
+        setData(finalData)
+        setFilteredData(finalData)
       } else {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
-        setError(errorData.detail || `Failed to load products: ${response.status}`)
+
+        // Handle error - could be string, object, or array
+        let errorMessage = 'Failed to load products'
+        if (typeof errorData === 'string') {
+          errorMessage = errorData
+        } else if (errorData.detail) {
+          // Handle {detail: "message"} format
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail
+          } else if (Array.isArray(errorData.detail)) {
+            // Handle array of error objects
+            errorMessage = errorData.detail.map(err => err.msg || err.message || JSON.stringify(err)).join(', ')
+          } else {
+            errorMessage = JSON.stringify(errorData.detail)
+          }
+        } else if (Array.isArray(errorData)) {
+          // Handle array of errors directly
+          errorMessage = errorData.map(err => err.msg || err.message || JSON.stringify(err)).join(', ')
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        }
+
+        setError(`${errorMessage} (Status: ${response.status})`)
       }
     } catch (err) {
-      console.error('Fetch error:', err)
-      setError(`Network error: ${err.message}`)
+      console.error('Process error:', err)
+      setError(`Error processing products: ${err.message}`)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchProducts(page, pageSize)
-  }, [page, pageSize])
+    fetchProducts(page, pageSize, globalFilter)
+  }, [page, pageSize, globalFilter])
 
   // Toggle Stock Status
   const handleToggleStock = async product => {
@@ -497,9 +689,6 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
   const table = useReactTable({
     data: filteredData,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
     state: {
       rowSelection,
       globalFilter,
@@ -510,6 +699,7 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
     },
     pageCount: Math.ceil(totalCount / pageSize),
     manualPagination: true,
+    manualFiltering: true, // Enable manual filtering since we handle it server-side
     onPaginationChange: updater => {
       if (typeof updater === 'function') {
         const newState = updater({ pageIndex: page, pageSize: pageSize })
@@ -518,15 +708,13 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
       }
     },
     enableRowSelection: true,
-    globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues()
+    onGlobalFilterChange: value => {
+      setGlobalFilter(value)
+      setPage(0) // Reset to first page when searching
+    },
+    getSortedRowModel: getSortedRowModel()
   })
 
   return (
