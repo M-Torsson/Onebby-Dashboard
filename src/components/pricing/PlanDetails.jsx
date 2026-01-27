@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 // MUI Imports
 import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'

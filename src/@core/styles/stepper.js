@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 // MUI imports
 import Box from '@mui/material/Box'
 import { styled } from '@mui/material/styles'

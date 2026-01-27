@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -16,13 +20,12 @@ export const useDictionary = () => {
         const dict = await import(`@/data/dictionaries/${lang}.json`)
         setDictionary(dict.default || dict)
       } catch (error) {
-        console.error('Failed to load dictionary:', error)
         // Fallback to English if the language file is not found
         try {
           const dict = await import('@/data/dictionaries/en.json')
           setDictionary(dict.default || dict)
         } catch (fallbackError) {
-          console.error('Failed to load fallback dictionary:', fallbackError)
+          // Failed to load fallback dictionary
         }
       }
     }

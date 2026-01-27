@@ -1,10 +1,11 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
-// React Imports
 import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-// MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Button from '@mui/material/Button'
@@ -21,8 +22,6 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContentText from '@mui/material/DialogContentText'
 import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
-
-// Third-party Imports
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
 import {
@@ -37,15 +36,9 @@ import {
   getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
-
-// Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
-
-// Style Imports
 import tableStyles from '@core/styles/table.module.css'
-
-// Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/v1`
@@ -109,7 +102,6 @@ const DiscountList = ({ dictionary = { common: {} } }) => {
       }
     } catch (err) {
       setError('Network error. Please try again.')
-      console.error('Fetch error:', err)
     } finally {
       setLoading(false)
     }
@@ -437,7 +429,6 @@ const DiscountList = ({ dictionary = { common: {} } }) => {
         <TablePaginationComponent table={table} />
       </Card>
 
-      {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Delete Discount Campaign</DialogTitle>
         <DialogContent>

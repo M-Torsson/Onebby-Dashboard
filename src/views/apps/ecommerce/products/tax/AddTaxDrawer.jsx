@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -96,7 +100,6 @@ const AddTaxDrawer = props => {
       }
     } catch (err) {
       setError('Network error. Please try again.')
-      console.error('Save error:', err)
     } finally {
       setLoading(false)
     }

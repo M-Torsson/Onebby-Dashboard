@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -430,7 +434,6 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       }
     } catch (err) {
       setBrands([])
-      console.error('Error fetching brands:', err)
     }
   }
 

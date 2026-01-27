@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 // Import all Vertical Nav components and export them
 import Menu from '../components/vertical-menu/Menu'
 import SubMenu from '../components/vertical-menu/SubMenu'

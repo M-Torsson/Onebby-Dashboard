@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -171,12 +175,10 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
         setUploadingImage(true)
         setError('')
         const imageUrl = await uploadImageToCloudinary(file)
-        console.log('Image uploaded to Cloudinary:', imageUrl) // Debug
         setFormData({ ...formData, image: imageUrl })
         setSuccess('Image uploaded successfully!')
         setTimeout(() => setSuccess(''), 2000)
       } catch (err) {
-        console.error('Cloudinary upload failed:', err) // Debug
         setError(`Failed to upload image: ${err.message}`)
         setImagePreview('')
       } finally {

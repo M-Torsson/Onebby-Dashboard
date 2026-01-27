@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 /**
  * ! We haven't used this file in our template. We've used the server actions in the
  * ! `src/app/server/actions.ts` file to fetch the static data from the fake-db.

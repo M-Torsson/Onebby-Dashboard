@@ -1,11 +1,11 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
-// React Imports
 import { useState, useEffect } from 'react'
-
 import { useRouter, useSearchParams } from 'next/navigation'
-
-// MUI Imports
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -22,11 +22,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import Chip from '@mui/material/Chip'
-
-// Component Imports
 import CustomTextField from '@core/components/mui/TextField'
-
-// Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const CATEGORIES_BASE_URL = `${API_BASE_URL}/api/v1/categories`
@@ -70,23 +66,18 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   const fetchParentCategories = async () => {
     try {
-      // جلب كل الفئات (134 فئة) - لا يحتاج X-API-Key
       const response = await fetch(`${CATEGORIES_BASE_URL}`)
 
       if (response.ok) {
         const result = await response.json()
         const allCategories = result.data || result || []
 
-        // فلترة الفئات: نعرض فقط Parent و Child (نستثني Grandson من القائمة)
-        // Grandson لا يمكن أن يكون parent لفئة جديدة
         const selectableCategories = Array.isArray(allCategories)
           ? allCategories.filter(cat => {
-              // نتحقق من level: إذا كان parent_id موجود، نحتاج نتأكد أنه ليس grandson
-              if (!cat.parent_id) return true // Parent category
+              if (!cat.parent_id) return true
 
-              // إذا له parent، نتحقق هل parent_id هذا هو parent رئيسي
               const parentOfThis = allCategories.find(p => p.id === cat.parent_id)
-              return parentOfThis && !parentOfThis.parent_id // Child category (parent له ليس له parent)
+              return parentOfThis && !parentOfThis.parent_id
             })
           : []
 
@@ -101,35 +92,29 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
           }
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch parent categories:', err)
-    }
+    } catch (err) {}
   }
 
   const fetchCategoryData = async () => {
     try {
       setFetchingData(true)
-      setError('') // مسح أي أخطاء سابقة
+      setError('')
 
       let category = null
 
-      // محاولة 1: جلب الفئة مباشرة من API
       try {
         const directResponse = await fetch(`${CATEGORIES_BASE_URL}/${editId}`)
 
         if (directResponse.ok) {
           const directResult = await directResponse.json()
           category = directResult.data || directResult
-          console.log('✅ Category loaded from direct API:', category)
         }
       } catch (err) {
-        console.warn('Direct fetch failed, trying list approach:', err)
+        // Direct fetch failed, trying list approach
       }
 
       // محاولة 2: إذا فشلت المحاولة الأولى، نجلب كل الفئات ونبحث
       if (!category) {
-        console.log('🔍 Searching in all categories for ID:', editId)
-        // إضافة limit=500 لجلب كل الـ 134 فئة
         const listResponse = await fetch(`${CATEGORIES_BASE_URL}?limit=500`)
 
         if (!listResponse.ok) {
@@ -142,19 +127,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         const listData = listResult.data || listResult
         const asArray = Array.isArray(listData) ? listData : []
 
-        console.log('📋 Total categories loaded:', asArray.length)
         category = asArray.find(c => Number(c.id) === Number(editId))
-
-        if (category) {
-          console.log('✅ Category found in list:', category.name)
-        } else {
-          console.error(
-            '❌ Category not found. Searched ID:',
-            editId,
-            'Available IDs:',
-            asArray.map(c => c.id).slice(0, 20)
-          )
-        }
       }
 
       if (!category) {
@@ -165,7 +138,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
       const data = category
 
-      // Set the form data
       setFormData({
         name: data.name || '',
         slug: data.slug || '',
@@ -178,12 +150,10 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
       setImagePreview(data.image || '')
       setIconPreview(data.icon || '')
 
-      // Fetch discounts for this category
       if (editId) {
         fetchCategoryDiscounts(editId)
       }
     } catch (err) {
-      console.error('Error fetching category:', err)
       setError('Network error. Please try again.')
     } finally {
       setFetchingData(false)
@@ -200,7 +170,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
       if (response.ok) {
         const result = await response.json()
         const allDiscounts = result.data || result || []
-        // Filter discounts that target this category
         const categoryDiscounts = allDiscounts.filter(
           discount =>
             discount.target_type === 'category' &&
@@ -218,33 +187,24 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   const uploadImageToCloudinary = async (file, folder) => {
     try {
-      // Use local API endpoint for direct upload
       const formDataUpload = new FormData()
       formDataUpload.append('file', file)
       formDataUpload.append('folder', folder)
-
-      console.log('📤 Uploading to:', `/api/admin/upload/image`)
-      console.log('📁 Folder:', folder)
 
       const uploadResponse = await fetch(`/api/admin/upload/image`, {
         method: 'POST',
         body: formDataUpload
       })
 
-      console.log('📡 Response status:', uploadResponse.status)
-
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json()
-        console.error('❌ Upload error:', errorData)
         throw new Error(errorData.detail || 'Failed to upload image')
       }
 
       const result = await uploadResponse.json()
-      console.log('✅ Upload successful:', result)
 
       return result.url
     } catch (err) {
-      console.error('💥 Upload exception:', err)
       throw err
     }
   }
@@ -270,7 +230,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
       return
     }
 
-    // Show preview
     const reader = new FileReader()
 
     reader.onloadend = () => {
@@ -283,7 +242,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
     reader.readAsDataURL(file)
 
-    // Upload
     try {
       if (type === 'image') {
         setUploadingImage(true)
@@ -385,7 +343,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   return (
     <Grid container spacing={6}>
-      {/* Header */}
       <Grid size={{ xs: 12 }}>
         <div className='flex flex-wrap sm:items-center justify-between max-sm:flex-col gap-6'>
           <div>
@@ -413,7 +370,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         </div>
       </Grid>
 
-      {/* Alerts */}
       {error && (
         <Grid size={{ xs: 12 }}>
           <Alert severity='error' onClose={() => setError('')}>
@@ -429,10 +385,8 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         </Grid>
       )}
 
-      {/* Main Content - Left Side */}
       <Grid size={{ xs: 12, md: 8 }}>
         <Grid container spacing={6}>
-          {/* Category Information */}
           <Grid size={{ xs: 12 }}>
             <Card>
               <CardHeader title={dictionary.common?.categoryInformation || 'Category Information'} />
@@ -485,7 +439,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
                     >
                       <MenuItem value=''>{dictionary.common?.noneMainCategory || 'None (Main Category)'}</MenuItem>
                       {parents.map(parent => {
-                        // عرض الفئات مع تنسيق حسب المستوى
                         const isChild = parent.parent_id !== null && parent.parent_id !== undefined
                         const prefix = isChild ? '└─ ' : ''
 
@@ -503,7 +456,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
             </Card>
           </Grid>
 
-          {/* Category Image */}
           <Grid size={{ xs: 12 }}>
             <Card>
               <CardHeader title={dictionary.common?.categoryImage || 'Category Image'} />
@@ -582,7 +534,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
             </Card>
           </Grid>
 
-          {/* Category Icon */}
           <Grid size={{ xs: 12 }}>
             <Card>
               <CardHeader title={dictionary.common?.categoryIconOptional || 'Category Icon (Optional)'} />
@@ -658,10 +609,8 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
         </Grid>
       </Grid>
 
-      {/* Right Side */}
       <Grid size={{ xs: 12, md: 4 }}>
         <Grid container spacing={6}>
-          {/* Category Settings */}
           <Grid size={{ xs: 12 }}>
             <Card>
               <CardHeader title={dictionary.common?.settings || 'Settings'} />
@@ -699,7 +648,6 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
             </Card>
           </Grid>
 
-          {/* Active Discounts */}
           {editId && (
             <Grid size={{ xs: 12 }}>
               <Card>

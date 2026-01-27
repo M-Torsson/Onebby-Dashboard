@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
+node_modules/
 
 # testing
 /coverage
@@ -48,3 +49,40 @@ src/assets/iconify-icons/generated-icons.css
 # prisma
 /prisma/*.db
 /prisma/*.db-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Scripts - utility files (not needed in repo)
+fix-informatics-name.js
+list-parent-categories.js
+upload-category-icons.js
+upload-furniture-icons.js
+upload-new-category-icons.js
+upload-single-icon.js
+
+# Documentation - temporary/internal
+ACCOUNT_SETTINGS_UPDATES.md
+API_KEY_SETUP_AR.md
+CLOUDINARY_SETUP_AR.md
+NETLIFY_DEPLOY.md
+RESTART_SERVER_NOW.txt
+URGENT_API_KEY_NEEDED.txt
+add-defender-exclusion.ps1
+
+# Package locks (keep only one)
+package-lock.json
+pnpm-lock.yaml

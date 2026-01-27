@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -114,7 +118,6 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
       }
     } catch (err) {
       setError('Network error. Please try again.')
-      console.error('Fetch error:', err)
     } finally {
       setLoading(false)
     }

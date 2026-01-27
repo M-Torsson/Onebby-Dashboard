@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -62,7 +66,7 @@ const AccountDelete = ({ dictionary = { common: {} } }) => {
           setUserId(data.id)
         }
       } catch (error) {
-        console.error('Error fetching user ID:', error)
+        // Error fetching user ID
       }
     }
 

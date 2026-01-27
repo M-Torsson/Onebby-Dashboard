@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -107,7 +111,7 @@ const AddCategoryDrawer = props => {
         setParents(Array.isArray(data) ? data : [])
       }
     } catch (err) {
-      console.error('Failed to fetch parent categories:', err)
+      // Failed to fetch parent categories
     }
   }
 
@@ -134,7 +138,6 @@ const AddCategoryDrawer = props => {
         throw new Error(`Upload failed: ${response.status}`)
       }
     } catch (err) {
-      console.error('Upload exception:', err)
       throw err
     }
   }

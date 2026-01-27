@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -161,11 +165,9 @@ const AccountDetails = ({ dictionary = { common: {} } }) => {
             lastName: lastName,
             email: data.email || ''
           }))
-        } else {
-          console.error('Failed to fetch user data')
         }
       } catch (error) {
-        console.error('Error fetching user data:', error)
+        // Error fetching user data
       } finally {
         setLoading(false)
       }
@@ -219,7 +221,6 @@ const AccountDetails = ({ dictionary = { common: {} } }) => {
         alert(dictionary.common?.saveChangesFailed || 'Failed to save changes')
       }
     } catch (error) {
-      console.error('Error saving user data:', error)
       alert(dictionary.common?.errorSavingChanges || 'An error occurred while saving changes')
     } finally {
       setSaving(false)

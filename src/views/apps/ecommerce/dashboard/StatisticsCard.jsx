@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -28,7 +32,6 @@ const StatisticsCard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log('🔍 Fetching categories with parent_only=true...')
         const [categoriesRes, brandsRes, productsRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/v1/categories?parent_only=true`, {
             headers: { 'X-API-Key': API_KEY }
@@ -45,14 +48,7 @@ const StatisticsCard = () => {
         const brandsData = await brandsRes.json()
         const productsData = await productsRes.json()
 
-        console.log('📊 Categories Response:', categoriesData)
-        console.log('📊 Categories Meta:', categoriesData.meta)
-        console.log('📊 Categories Data Length:', categoriesData.data?.length)
-        console.log('📊 First 3 Categories:', categoriesData.data?.slice(0, 3))
-
         const categoryCount = categoriesData.meta?.total || categoriesData.data?.length || 0
-
-        console.log('✅ Final Category Count:', categoryCount)
 
         setStats({
           categories: categoryCount,
@@ -61,7 +57,6 @@ const StatisticsCard = () => {
           loading: false
         })
       } catch (error) {
-        console.error('❌ Failed to fetch statistics:', error)
         setStats(prev => ({ ...prev, loading: false }))
       }
     }

@@ -1,6 +1,10 @@
 // Util Imports
 import { menuClasses } from '@menu/utils/menuClasses'
 
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 const menuItemStyles = (verticalNavOptions, theme) => {
   // Vars
   const { isCollapsed, isHovered, isPopoutWhenCollapsed, transitionDuration } = verticalNavOptions

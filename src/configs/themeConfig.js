@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 /*
  * If you change the following items in the config object, you will not see any effect in the local development server
  * as these are stored in the cookie (cookie has the highest priority over the themeConfig):

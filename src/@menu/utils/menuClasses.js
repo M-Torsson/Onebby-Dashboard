@@ -1,4 +1,8 @@
 // Common classes for menu components
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 export const menuClasses = {
   root: 'ts-menu-root',
   menuSectionRoot: 'ts-menusection-root',

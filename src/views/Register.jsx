@@ -1,13 +1,12 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
-// React Imports
 import { useState } from 'react'
-
-// Next Imports
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-
-// MUI Imports
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { styled, useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
@@ -17,22 +16,12 @@ import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Divider from '@mui/material/Divider'
-
-// Third-party Imports
 import classnames from 'classnames'
-
-// Component Imports
 import Logo from '@components/layout/shared/Logo'
 import CustomTextField from '@core/components/mui/TextField'
-
-// Hook Imports
 import { useImageVariant } from '@core/hooks/useImageVariant'
 import { useSettings } from '@core/hooks/useSettings'
-
-// Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
-
-// Styled Custom Components
 const RegisterIllustration = styled('img')(({ theme }) => ({
   zIndex: 2,
   blockSize: 'auto',
@@ -57,10 +46,8 @@ const MaskImg = styled('img')({
 })
 
 const Register = ({ mode }) => {
-  // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
 
-  // Vars
   const darkImg = '/images/pages/auth-mask-dark.png'
   const lightImg = '/images/pages/auth-mask-light.png'
   const darkIllustration = '/images/illustrations/auth/v2-register-dark.png'
@@ -68,7 +55,6 @@ const Register = ({ mode }) => {
   const borderedDarkIllustration = '/images/illustrations/auth/v2-register-dark-border.png'
   const borderedLightIllustration = '/images/illustrations/auth/v2-register-light-border.png'
 
-  // Hooks
   const { lang: locale } = useParams()
   const { settings } = useSettings()
   const theme = useTheme()

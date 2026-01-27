@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -159,10 +163,6 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
         const result = await response.json()
         const children = result.data || result || []
         const key = String(parentId)
-
-        console.log('🔍 Fetched children for parent ID:', parentId)
-        console.log('🔍 Children data:', children)
-        console.log('🔍 Sample child has_children:', children[0]?.has_children)
 
         setChildrenData(prev => ({
           ...prev,
@@ -545,29 +545,12 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
               <tbody>
                 {(() => {
                   const currentRows = table.getPaginationRowModel().rows
-                  console.log('🔷 Current Page:', pagination.pageIndex + 1)
-                  console.log(
-                    '🔷 Rows in current page:',
-                    currentRows.length,
-                    currentRows.map(r => r.original.name)
-                  )
-                  console.log('🔷 Expanded state:', expanded)
-                  console.log('🔷 Children data keys:', Object.keys(childrenData))
                   return currentRows
                 })().map((row, rowIndex) => {
                   const categoryId = row.original.id
                   const key = String(categoryId)
                   const isExpanded = expanded[key]
                   const hasChildrenData = childrenData[key] && childrenData[key].length > 0
-
-                  console.log(`🔹 Row ${rowIndex}: ${row.original.name} (ID: ${categoryId}, Key: ${key})`)
-                  console.log(`   isExpanded: ${isExpanded}, hasChildrenData: ${hasChildrenData}`)
-                  if (hasChildrenData) {
-                    console.log(
-                      `   Children count: ${childrenData[key].length}`,
-                      childrenData[key].map(c => c.name)
-                    )
-                  }
 
                   return (
                     <React.Fragment key={`parent-${categoryId}-${rowIndex}`}>
@@ -579,12 +562,8 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                       {/* Children rows - always render if expanded and has data */}
                       {(() => {
                         if (isExpanded && hasChildrenData) {
-                          console.log(`   ✅ Rendering ${childrenData[key].length} children for ${row.original.name}`)
                           return true
                         } else {
-                          console.log(
-                            `   ❌ NOT rendering children for ${row.original.name} - isExpanded: ${isExpanded}, hasChildrenData: ${hasChildrenData}`
-                          )
                           return false
                         }
                       })() && (
@@ -715,16 +694,6 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
                                 const childKey = String(child.id)
                                 const childExpanded = expanded[childKey]
                                 const hasGrandchildren = childrenData[childKey] && childrenData[childKey].length > 0
-
-                                console.log(`👶 Child: ${child.name} (ID: ${child.id})`)
-                                console.log(`   Child expanded: ${childExpanded}`)
-                                console.log(`   Has grandchildren data: ${hasGrandchildren}`)
-                                if (hasGrandchildren) {
-                                  console.log(`   Grandchildren count: ${childrenData[childKey].length}`)
-                                  console.log(`   ✅ SHOULD render grandchildren`)
-                                } else {
-                                  console.log(`   ❌ NOT rendering grandchildren`)
-                                }
 
                                 return childExpanded && hasGrandchildren
                               })() && (

@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 import { NextResponse } from 'next/server'
 
 export async function POST(request) {
@@ -18,24 +22,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Cloudinary configuration missing' }, { status: 500 })
     }
 
-    // Create FormData for Cloudinary
     const cloudinaryFormData = new FormData()
     cloudinaryFormData.append('file', file)
     cloudinaryFormData.append('folder', folder)
     cloudinaryFormData.append('api_key', CLOUDINARY_API_KEY)
 
-    // Generate timestamp
     const timestamp = Math.round(Date.now() / 1000)
     cloudinaryFormData.append('timestamp', timestamp)
 
-    // Generate signature - correct format for Cloudinary
     const crypto = require('crypto')
     const paramsToSign = `folder=${folder}&timestamp=${timestamp}`
     const stringToSign = `${paramsToSign}${CLOUDINARY_API_SECRET}`
     const signature = crypto.createHash('sha1').update(stringToSign).digest('hex')
     cloudinaryFormData.append('signature', signature)
 
-    // Upload to Cloudinary
     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
       method: 'POST',
       body: cloudinaryFormData
@@ -54,7 +54,6 @@ export async function POST(request) {
       public_id: result.public_id
     })
   } catch (error) {
-    console.error('Upload error:', error)
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
   }
 }

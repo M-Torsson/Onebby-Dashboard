@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
 // React Imports
@@ -190,7 +194,6 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
               return
             }
           } catch (err) {
-            console.error(`ID search error:`, err)
             setData([])
             setFilteredData([])
             setTotalCount(0)
@@ -248,7 +251,6 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
         return await processProducts(response, currentPage, currentPageSize, query, false)
       }
     } catch (err) {
-      console.error('Fetch error:', err)
       setError(`Network error: ${err.message}`)
       setLoading(false)
     }
@@ -285,7 +287,7 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
                 return { ...product, stock_data: stockData }
               }
             } catch (error) {
-              console.error(`Failed to fetch stock for product ${product.id}:`, error)
+              // Error fetching stock
             }
             return product
           })
@@ -391,7 +393,7 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
                   return { ...product, quantity: stockData?.stock_quantity || 0 }
                 }
               } catch (error) {
-                console.error(`Failed to fetch stock for product ${product.id}:`, error)
+                // Error fetching stock
               }
               return product
             })
@@ -463,7 +465,6 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
         fetchProducts()
       } else {
         const errorText = await response.text()
-        console.error('Failed to update status. Status:', response.status, 'Response:', errorText)
         try {
           const errorData = JSON.parse(errorText)
           alert(`Failed to update status: ${errorData.detail || 'Unknown error'}`)
@@ -472,7 +473,6 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
         }
       }
     } catch (err) {
-      console.error('Failed to update status:', err)
       alert(`Network error: ${err.message}`)
     }
   }

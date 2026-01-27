@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 const DirectionLtr = props => {
   return (
     <svg width='104' height='66' viewBox='0 0 104 66' fill='none' xmlns='http://www.w3.org/2000/svg' {...props}>

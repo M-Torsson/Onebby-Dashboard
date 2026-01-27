@@ -1,13 +1,12 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
-// React Imports
 import { useState } from 'react'
-
-// Next Imports
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-
-// MUI Imports
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { styled, useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
@@ -18,30 +17,18 @@ import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Divider from '@mui/material/Divider'
 import Alert from '@mui/material/Alert'
-
-// Third-party Imports
 import { signIn } from 'next-auth/react'
 import { Controller, useForm } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { email, object, minLength, string, pipe, nonEmpty } from 'valibot'
 import classnames from 'classnames'
-
-// Component Imports
 import Logo from '@components/layout/shared/Logo'
 import CustomTextField from '@core/components/mui/TextField'
-
-// Config Imports
 import themeConfig from '@configs/themeConfig'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
-
-// Hook Imports
 import { useImageVariant } from '@core/hooks/useImageVariant'
 import { useSettings } from '@core/hooks/useSettings'
-
-// Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
-
-// Styled Custom Components
 const LoginIllustration = styled('img')(({ theme }) => ({
   zIndex: 2,
   blockSize: 'auto',
@@ -75,11 +62,9 @@ const schema = object({
 })
 
 const Login = ({ mode }) => {
-  // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [errorState, setErrorState] = useState(null)
 
-  // Vars
   const darkImg = '/images/pages/auth-mask-dark.png'
   const lightImg = '/images/pages/auth-mask-light.png'
   const darkIllustration = '/images/illustrations/auth/v2-login-dark.png'
@@ -87,7 +72,6 @@ const Login = ({ mode }) => {
   const borderedDarkIllustration = '/images/illustrations/auth/v2-login-dark-border.png'
   const borderedLightIllustration = '/images/illustrations/auth/v2-login-light-border.png'
 
-  // Hooks
   const router = useRouter()
   const searchParams = useSearchParams()
   const { lang: locale } = useParams()
@@ -122,14 +106,8 @@ const Login = ({ mode }) => {
     try {
       setErrorState(null)
 
-      console.log('🔐 Attempting login:', { username: data.username })
-
       // Strip accidental wrapping quotes from .env (e.g., 'key' or "key")
       const apiKey = (API_KEY || '').trim().replace(/^['"]|['"]$/g, '')
-      console.log('🔑 API_KEY length:', apiKey.length)
-      console.log('🔑 API_KEY preview:', apiKey ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}` : 'MISSING')
-      console.log('🔑 API_KEY full value:', apiKey)
-      console.log('🔑 API_BASE_URL:', API_BASE_URL)
 
       // Validate API Key before making request
       if (!apiKey) {
@@ -151,12 +129,6 @@ const Login = ({ mode }) => {
         password: data.password
       }
 
-      console.log('📤 Sending request:', {
-        url: requestUrl,
-        headers: requestHeaders,
-        body: requestBody
-      })
-
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: requestHeaders,
@@ -165,11 +137,6 @@ const Login = ({ mode }) => {
 
       if (!response.ok) {
         const text = await response.text().catch(() => '')
-        console.error('❌ Login failed: raw response', {
-          status: response.status,
-          statusText: response.statusText,
-          body: text
-        })
         const parsed = (() => {
           try {
             return text ? JSON.parse(text) : {}
@@ -183,16 +150,10 @@ const Login = ({ mode }) => {
         return
       }
 
-      console.log('📡 Response status:', response.status)
-
       const result = await response.json()
-
-      console.log('📦 Response data:', result)
 
       // Check if login was successful
       if (response.ok && result.access_token) {
-        console.log('✅ Login successful!')
-
         // Store authentication data with Bearer prefix
         localStorage.setItem('accessToken', `Bearer ${result.access_token}`)
         localStorage.setItem('tokenType', result.token_type)
@@ -206,11 +167,9 @@ const Login = ({ mode }) => {
 
         router.push(getLocalizedUrl(redirectURL, locale))
       } else {
-        console.error('❌ Login failed:', result)
         setErrorState({ message: [result.detail || result.message || result.error || 'Invalid username or password'] })
       }
     } catch (error) {
-      console.error('💥 Login error:', error)
       setErrorState({ message: ['Network error. Please check your connection and try again.'] })
     }
   }

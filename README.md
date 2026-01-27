@@ -1,61 +1,136 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Onebby Dashboard
+
+A modern eCommerce dashboard built with Next.js 14, Material UI, and React. This dashboard provides comprehensive management tools for products, categories, brands, discounts, and user accounts.
+
+## Author
+
+Muthana - 2026 All rights reserved.
+
+## Features
+
+- Product Management: Create, edit, and manage products with images, pricing, and inventory
+- Category Management: Organize products with parent/child category structure
+- Brand Management: Handle brand information and associations
+- Discount System: Create and manage promotional campaigns
+- Tax Management: Configure tax classes and rates
+- User Authentication: Secure login system with role-based access
+- Responsive Design: Mobile-friendly interface
+- Dark/Light Mode: Theme switching support
+- Multi-language Ready: Internationalization support
+
+## Tech Stack
+
+- Next.js 14 (App Router)
+- React 18
+- Material UI (MUI)
+- React Hook Form
+- TanStack Table
+- Cloudinary (Image Management)
+- Prisma (Database ORM)
 
 ## Getting Started
 
-### 1. Configure Environment Variables
+### Prerequisites
 
-**IMPORTANT**: Before running the application, you must configure your API key:
+- Node.js 18+
+- npm or pnpm
+- API access credentials
 
-1. Open the `.env.local` file in the root directory
-2. Find the line `NEXT_PUBLIC_API_KEY=`
-3. Add your API key after the equals sign:
-   ```
-   NEXT_PUBLIC_API_KEY=your-actual-api-key-here
-   ```
-4. Save the file
+### Installation
 
-⚠️ **Without a valid API key, you will encounter "Invalid API Key" errors when working with products, categories, and other features.**
+1. Clone the repository
 
-### 2. Run the Development Server
+```bash
+git clone https://github.com/yourusername/onebby-dashboard.git
+cd onebby-dashboard
+```
 
-First, run the development server:
+2. Install dependencies
+
+```bash
+npm install
+```
+
+3. Configure environment variables
+
+Copy `.env.example` to `.env.local` and fill in your credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+Required environment variables:
+
+- `NEXT_PUBLIC_API_KEY`: Your API key for backend services
+- `NEXT_PUBLIC_API_BASE_URL`: Backend API URL
+- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`: Cloudinary cloud name
+- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`: Cloudinary upload preset
+
+4. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```
+src/
+├── app/              # Next.js app directory
+├── components/       # Reusable components
+├── views/           # Page views and features
+├── configs/         # Configuration files
+├── libs/            # Third-party library configurations
+├── utils/           # Utility functions
+├── @core/           # Core theme components
+├── @layouts/        # Layout components
+└── @menu/           # Navigation menu components
+```
 
-## Troubleshooting
+## Environment Variables
 
-### "Invalid API Key" Error
+Create a `.env.local` file with the following variables:
 
-If you see an "Invalid API Key" error:
+```env
+NEXT_PUBLIC_API_KEY=your-api-key
+NEXT_PUBLIC_API_BASE_URL=https://your-api-url.com
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
+```
 
-1. Check that you have set `NEXT_PUBLIC_API_KEY` in `.env.local`
-2. Verify your API key is correct
-3. Restart your development server after changing environment variables
-4. Contact your administrator for a valid API key if needed
+Never commit `.env.local` to version control.
 
-## Learn More
+## Building for Production
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+This application can be deployed to:
 
-## Deploy on Vercel
+- Vercel (recommended)
+- Netlify
+- Any Node.js hosting platform
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Make sure to configure environment variables in your hosting platform.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Security Notes
+
+- All API keys and credentials are stored in environment variables
+- Sensitive files are excluded via .gitignore
+- Authentication tokens are stored securely in localStorage
+- API requests include authentication headers
+
+## License
+
+Copyright 2026 Muthana. All rights reserved.
+Unauthorized copying or distribution is prohibited.
+
+## Support
+
+For support or questions, please contact the development team.

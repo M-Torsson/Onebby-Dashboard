@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 // Third-party Imports
 import CredentialProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
@@ -39,8 +43,6 @@ export const authOptions = {
             password
           }
 
-          console.log('🔐 Login attempt:', { username: email, url: `${API_BASE_URL}/api/users/login` })
-
           const res = await fetch(`${API_BASE_URL}/api/users/login`, {
             method: 'POST',
             headers: {
@@ -49,16 +51,12 @@ export const authOptions = {
             body: JSON.stringify(loginData)
           })
 
-          console.log('📡 Response status:', res.status)
-
           if (!res.ok) {
             const errorData = await res.json().catch(() => ({ detail: 'Invalid credentials' }))
-            console.error('❌ Login failed:', errorData)
             throw new Error(errorData.detail || 'Invalid username or password')
           }
 
           const data = await res.json()
-          console.log('✅ Login success:', { hasToken: !!data.access_token })
 
           if (data.access_token) {
             // Return user object with token
@@ -73,7 +71,6 @@ export const authOptions = {
 
           return null
         } catch (e) {
-          console.error('💥 Login error:', e.message)
           throw new Error(e.message)
         }
       }

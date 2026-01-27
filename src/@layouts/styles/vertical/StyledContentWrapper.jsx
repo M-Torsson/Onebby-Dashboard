@@ -1,5 +1,9 @@
 'use client'
 
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 // Third-party Imports
 import styled from '@emotion/styled'
 

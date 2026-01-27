@@ -1,3 +1,7 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 // ** Fake user data and data type
 // =============== Fake Data ============================
 export const users = [

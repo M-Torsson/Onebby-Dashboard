@@ -1,10 +1,11 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
-// React Imports
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-
-// MUI Imports
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -22,11 +23,7 @@ import Select from '@mui/material/Select'
 import OutlinedInput from '@mui/material/OutlinedInput'
 import Chip from '@mui/material/Chip'
 import Box from '@mui/material/Box'
-
-// Component Imports
 import CustomTextField from '@core/components/mui/TextField'
-
-// Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/v1`
@@ -76,9 +73,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
         const result = await response.json()
         setCategories(result.data || result || [])
       }
-    } catch (err) {
-      console.error('Error fetching categories:', err)
-    }
+    } catch (err) {}
   }
 
   const fetchBrands = async () => {
@@ -90,9 +85,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
         const result = await response.json()
         setBrands(result.data || result || [])
       }
-    } catch (err) {
-      console.error('Error fetching brands:', err)
-    }
+    } catch (err) {}
   }
 
   const fetchProducts = async () => {
@@ -202,7 +195,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
               )
             }
           } catch (applyErr) {
-            console.error('Error applying discount:', applyErr)
             setSuccess(
               editId
                 ? 'Discount campaign updated but failed to apply. Please apply manually.'
@@ -241,7 +233,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
     try {
       setSearchingProducts(true)
-      console.log('🔍 Searching for:', searchValue)
 
       const trimmedValue = searchValue.trim()
       let results = []
@@ -249,33 +240,22 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
       // If search is a number, try direct ID lookup first
       if (/^\d+$/.test(trimmedValue)) {
         try {
-          console.log('🔍 Fetching product by ID:', trimmedValue)
           const idResponse = await fetch(`${API_BASE_URL}/api/v1/products/${trimmedValue}`, {
             headers: { 'X-API-KEY': API_KEY },
             mode: 'cors'
           })
 
-          console.log('📡 Response status:', idResponse.status, idResponse.statusText)
-
           if (idResponse.ok) {
             const productData = await idResponse.json()
-            console.log('📦 Product response:', productData)
 
             // Handle both direct product and wrapped response
             const product = productData.data || productData
 
             if (product && product.id) {
               results = [product]
-              console.log('✅ Found product by ID:', product.id, product.title)
-            } else {
-              console.error('❌ Invalid product structure:', product)
             }
-          } else {
-            console.log('⚠️ Product not found by ID, status:', idResponse.status)
           }
-        } catch (err) {
-          console.error('❌ Error fetching by ID:', err.message, err)
-        }
+        } catch (err) {}
       }
 
       // If no direct match or searching by name, search in the list (with reduced limit)
@@ -298,17 +278,11 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
           })
 
           results = filtered
-          console.log('✅ Found', filtered.length, 'products in list')
-        } else {
-          console.error('❌ API Error:', response.status, response.statusText)
-          const errorText = await response.text()
-          console.error('❌ Error details:', errorText)
         }
       }
 
-      setSearchedProducts(results.slice(0, 10)) // Show max 10 results
+      setSearchedProducts(results.slice(0, 10))
     } catch (err) {
-      console.error('❌ Network Error:', err)
     } finally {
       setSearchingProducts(false)
     }
@@ -369,7 +343,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
   return (
     <Grid container spacing={6}>
-      {/* Header */}
       <Grid size={{ xs: 12 }}>
         <div className='flex flex-wrap sm:items-center justify-between max-sm:flex-col gap-6'>
           <div>
@@ -397,7 +370,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
         </div>
       </Grid>
 
-      {/* Alerts */}
       {error && (
         <Grid size={{ xs: 12 }}>
           <Alert severity='error' onClose={() => setError('')}>
@@ -413,7 +385,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
         </Grid>
       )}
 
-      {/* Campaign Details */}
       <Grid size={{ xs: 12, md: 8 }}>
         <Card>
           <CardHeader title={dictionary.common?.campaignDetails || 'Campaign Details'} />
@@ -480,7 +451,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                 </FormControl>
               </Grid>
 
-              {/* Product Search Field (only for products) */}
               {formData.target_type === 'product' ? (
                 <>
                   <Grid size={{ xs: 12 }}>
@@ -533,7 +503,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                     )}
                   </Grid>
 
-                  {/* Selected Products */}
                   {formData.target_ids.length > 0 && (
                     <Grid size={{ xs: 12 }}>
                       <Typography variant='subtitle2' className='mb-2'>
@@ -557,7 +526,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                   )}
                 </>
               ) : (
-                /* Category/Brand Select (original dropdown) */
                 <Grid size={{ xs: 12 }}>
                   <FormControl fullWidth>
                     <InputLabel>{dictionary.common?.selectTargets || `Select ${formData.target_type}s`}</InputLabel>
@@ -611,7 +579,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
         </Card>
       </Grid>
 
-      {/* Settings */}
       <Grid size={{ xs: 12, md: 4 }}>
         <Card>
           <CardHeader title={dictionary.common?.settings || 'Settings'} />

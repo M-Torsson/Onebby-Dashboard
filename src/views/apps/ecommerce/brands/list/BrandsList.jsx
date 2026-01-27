@@ -1,13 +1,12 @@
+// Author: Muthana
+// © 2026 Muthana. All rights reserved.
+// Unauthorized copying or distribution is prohibited.
+
 'use client'
 
-// React Imports
 import { useEffect, useMemo, useState } from 'react'
-
-// Next Imports
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-
-// MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Button from '@mui/material/Button'
@@ -25,8 +24,6 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
-
-// Third-party Imports
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
 import {
@@ -40,20 +37,12 @@ import {
   getFacetedMinMaxValues,
   getSortedRowModel
 } from '@tanstack/react-table'
-
-// Component Imports
 import TableFilters from './TableFilters'
 import CustomTextField from '@core/components/mui/TextField'
 import OptionMenu from '@core/components/option-menu'
 import TablePaginationComponent from '@components/TablePaginationComponent'
-
-// Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
-
-// Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
-
-// Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
 const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
@@ -172,9 +161,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
       if (response.ok) {
         fetchBrands(page, pageSize)
       }
-    } catch (err) {
-      console.error('Failed to update brand status')
-    }
+    } catch (err) {}
   }
 
   // Delete Brand
@@ -499,7 +486,6 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
         />
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
