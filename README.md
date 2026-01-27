@@ -2,9 +2,6 @@
 
 A modern eCommerce dashboard built with Next.js 14, Material UI, and React. This dashboard provides comprehensive management tools for products, categories, brands, discounts, and user accounts.
 
-## Author
-
-Muthana - 2026 All rights reserved.
 
 ## Features
 
@@ -125,6 +122,11 @@ Make sure to configure environment variables in your hosting platform.
 - Sensitive files are excluded via .gitignore
 - Authentication tokens are stored securely in localStorage
 - API requests include authentication headers
+
+## Author
+
+Muthana - 2026 All rights reserved.
+
 
 ## License
 
