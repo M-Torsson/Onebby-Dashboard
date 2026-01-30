@@ -28,6 +28,10 @@ export const metadata = {
   description: 'Onebby Dashboard - Modern eCommerce Admin Dashboard'
 }
 
+// Force dynamic rendering for serverless
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 const RootLayout = async props => {
   const params = await props.params
   const { children } = props

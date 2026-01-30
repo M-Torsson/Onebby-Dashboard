@@ -4,6 +4,10 @@ import NextAuth from 'next-auth'
 // Lib Imports
 import { authOptions } from '@/libs/auth'
 
+// Force dynamic rendering for API routes
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 /*
  * As we do not have backend server, the refresh token feature has not been incorporated into the template.
  * Please refer https://next-auth.js.org/tutorials/refresh-token-rotation link for a reference.

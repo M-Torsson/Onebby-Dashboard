@@ -1,6 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   basePath: process.env.BASEPATH,
+
+  // Netlify serverless configuration
+  output: 'standalone',
+
+  // Disable static optimization for auth pages
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb'
+    }
+  },
+
   redirects: async () => {
     return [
       {
