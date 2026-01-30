@@ -2,15 +2,10 @@
 const nextConfig = {
   basePath: process.env.BASEPATH,
 
-  // Netlify serverless configuration
-  output: 'standalone',
-
-  // Disable static optimization for auth pages
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb'
-    }
-  },
+  // Generate static pages where possible
+  // This helps with Netlify deployment
+  reactStrictMode: true,
+  swcMinify: true,
 
   redirects: async () => {
     return [

@@ -32,16 +32,13 @@ export const metadata = {
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const RootLayout = async props => {
-  const params = await props.params
+const RootLayout = props => {
   const { children } = props
 
-  // Type guard to ensure lang is a valid Locale
-  const lang = i18n.locales.includes(params.lang) ? params.lang : i18n.defaultLocale
-
-  // Use default values for serverless compatibility
+  // Use default locale and values for serverless compatibility
+  const lang = 'en'
   const systemMode = 'light'
-  const direction = i18n.langDirection[lang]
+  const direction = 'ltr'
 
   return (
     <TranslationWrapper lang={lang}>
