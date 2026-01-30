@@ -41,9 +41,21 @@ const RootLayout = async props => {
   // Type guard to ensure lang is a valid Locale
   const lang = i18n.locales.includes(params.lang) ? params.lang : i18n.defaultLocale
 
-  // Vars
-  const headersList = await headers()
-  const systemMode = await getSystemMode()
+  // Vars with fallbacks for serverless environments
+  let headersList, systemMode
+
+  try {
+    headersList = await headers()
+  } catch (error) {
+    headersList = new Headers()
+  }
+
+  try {
+    systemMode = await getSystemMode()
+  } catch (error) {
+    systemMode = 'light'
+  }
+
   const direction = i18n.langDirection[lang]
 
   return (

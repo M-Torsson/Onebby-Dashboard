@@ -12,34 +12,51 @@ import 'server-only'
 import themeConfig from '@configs/themeConfig'
 
 export const getSettingsFromCookie = async () => {
-  const cookieStore = await cookies()
-  const cookieName = themeConfig.settingsCookieName
+  try {
+    const cookieStore = await cookies()
+    const cookieName = themeConfig.settingsCookieName
 
-  return JSON.parse(cookieStore.get(cookieName)?.value || '{}')
+    return JSON.parse(cookieStore.get(cookieName)?.value || '{}')
+  } catch (error) {
+    // Fallback if cookies() fails on serverless
+    return {}
+  }
 }
 
 export const getMode = async () => {
-  const settingsCookie = await getSettingsFromCookie()
+  try {
+    const settingsCookie = await getSettingsFromCookie()
 
-  // Get mode from cookie or fallback to theme config
-  const _mode = settingsCookie.mode || themeConfig.mode
+    // Get mode from cookie or fallback to theme config
+    const _mode = settingsCookie.mode || themeConfig.mode
 
-  return _mode
+    return _mode
+  } catch (error) {
+    return themeConfig.mode || 'light'
+  }
 }
 
 export const getSystemMode = async () => {
-  const cookieStore = await cookies()
-  const mode = await getMode()
-  const colorPrefCookie = cookieStore.get('colorPref')?.value || 'light'
+  try {
+    const cookieStore = await cookies()
+    const mode = await getMode()
+    const colorPrefCookie = cookieStore.get('colorPref')?.value || 'light'
 
-  return (mode === 'system' ? colorPrefCookie : mode) || 'light'
+    return (mode === 'system' ? colorPrefCookie : mode) || 'light'
+  } catch (error) {
+    return 'light'
+  }
 }
 
 export const getServerMode = async () => {
-  const mode = await getMode()
-  const systemMode = await getSystemMode()
+  try {
+    const mode = await getMode()
+    const systemMode = await getSystemMode()
 
-  return mode === 'system' ? systemMode : mode
+    return mode === 'system' ? systemMode : mode
+  } catch (error) {
+    return 'light'
+  }
 }
 
 export const getSkin = async () => {

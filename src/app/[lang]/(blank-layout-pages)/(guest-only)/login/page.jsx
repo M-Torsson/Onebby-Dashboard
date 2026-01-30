@@ -10,8 +10,14 @@ export const metadata = {
 }
 
 const LoginPage = async () => {
-  // Vars
-  const mode = await getServerMode()
+  // Vars with fallback for serverless
+  let mode
+
+  try {
+    mode = await getServerMode()
+  } catch (error) {
+    mode = 'light'
+  }
 
   return <Login mode={mode} />
 }
