@@ -11,14 +11,12 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
     "build:icons": "tsx src/assets/iconify-icons/bundle-icons-css.mjs",
-    "migrate": "dotenv -e .env -- npx prisma migrate dev",
-    "postinstall": "prisma generate && npm run build:icons",
+    "postinstall": "npm run build:icons",
     "removeI18n": "tsx src/remove-translation-scripts/index.js",
     "clean": "rm -rf .next",
     "clear": "rm -rf node_modules .next"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "2.11.1",
     "@emoji-mart/data": "1.2.1",
     "@emoji-mart/react": "1.1.1",
     "@emotion/cache": "11.14.0",
@@ -39,7 +37,6 @@
     "@mui/lab": "7.0.1-beta.19",
     "@mui/material": "7.3.5",
     "@mui/material-nextjs": "7.3.5",
-    "@prisma/client": "6.19.0",
     "@reduxjs/toolkit": "2.10.1",
     "@tanstack/match-sorter-utils": "8.19.4",
     "@tanstack/react-table": "8.21.3",
