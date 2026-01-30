@@ -5,9 +5,6 @@
 // Next Imports
 import { cookies } from 'next/headers'
 
-// Third-party Imports
-import 'server-only'
-
 // Config Imports
 import themeConfig from '@configs/themeConfig'
 

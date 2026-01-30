@@ -2,9 +2,6 @@
 // © 2026 Muthana. All rights reserved.
 // Unauthorized copying or distribution is prohibited.
 
-// Third-party Imports
-import 'server-only'
-
 const dictionaries = {
   en: () => import('@/data/dictionaries/en.json').then(module => module.default),
   fr: () => import('@/data/dictionaries/fr.json').then(module => module.default),

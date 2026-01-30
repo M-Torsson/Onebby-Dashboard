@@ -2,9 +2,6 @@
 // © 2026 Muthana. All rights reserved.
 // Unauthorized copying or distribution is prohibited.
 
-// Next Imports
-import { headers } from 'next/headers'
-
 // MUI Imports
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'
 
@@ -19,9 +16,6 @@ import TranslationWrapper from '@/hocs/TranslationWrapper'
 
 // Config Imports
 import { i18n } from '@configs/i18n'
-
-// Util Imports
-import { getSystemMode } from '@core/utils/serverHelpers'
 
 // Style Imports
 import '@/app/globals.css'
@@ -41,25 +35,12 @@ const RootLayout = async props => {
   // Type guard to ensure lang is a valid Locale
   const lang = i18n.locales.includes(params.lang) ? params.lang : i18n.defaultLocale
 
-  // Vars with fallbacks for serverless environments
-  let headersList, systemMode
-
-  try {
-    headersList = await headers()
-  } catch (error) {
-    headersList = new Headers()
-  }
-
-  try {
-    systemMode = await getSystemMode()
-  } catch (error) {
-    systemMode = 'light'
-  }
-
+  // Use default values for serverless compatibility
+  const systemMode = 'light'
   const direction = i18n.langDirection[lang]
 
   return (
-    <TranslationWrapper headersList={headersList} lang={lang}>
+    <TranslationWrapper lang={lang}>
       <html id='__next' lang={lang} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
