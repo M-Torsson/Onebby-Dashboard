@@ -30,26 +30,43 @@ export const metadata = {
 
 // Force dynamic rendering for serverless
 export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
 
-const RootLayout = props => {
-  const { children } = props
+const RootLayout = async props => {
+  try {
+    // Handle params properly for Next.js 15+
+    const params = await props.params
+    const { children } = props
 
-  // Use default locale and values for serverless compatibility
-  const lang = 'en'
-  const systemMode = 'light'
-  const direction = 'ltr'
+    // Get lang from params or use default
+    const lang = params?.lang && i18n.locales.includes(params.lang) ? params.lang : i18n.defaultLocale
+    const systemMode = 'light'
+    const direction = i18n.langDirection?.[lang] || 'ltr'
 
-  return (
-    <TranslationWrapper lang={lang}>
-      <html id='__next' lang={lang} dir={direction} suppressHydrationWarning>
+    return (
+      <TranslationWrapper lang={lang}>
+        <html id='__next' lang={lang} dir={direction} suppressHydrationWarning>
+          <body className='flex is-full min-bs-full flex-auto flex-col'>
+            <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
+            <ClientProviders>{children}</ClientProviders>
+          </body>
+        </html>
+      </TranslationWrapper>
+    )
+  } catch (error) {
+    console.error('RootLayout Error:', error)
+
+    // Fallback layout on error
+    return (
+      <html id='__next' lang='en' dir='ltr' suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
-          <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-          <ClientProviders>{children}</ClientProviders>
+          <InitColorSchemeScript attribute='data' defaultMode='light' />
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <h1>Loading...</h1>
+          </div>
         </body>
       </html>
-    </TranslationWrapper>
-  )
+    )
+  }
 }
 
 export default RootLayout
