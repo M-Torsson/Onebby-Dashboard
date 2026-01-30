@@ -106,11 +106,17 @@ const Login = ({ mode }) => {
     try {
       setErrorState(null)
 
+      console.log('[LOGIN] Starting login process...')
+
       // Strip accidental wrapping quotes from .env (e.g., 'key' or "key")
       const apiKey = (API_KEY || '').trim().replace(/^['"]|['"]$/g, '')
 
+      console.log('[LOGIN] API Key present:', !!apiKey)
+      console.log('[LOGIN] API Base URL:', API_BASE_URL)
+
       // Validate API Key before making request
       if (!apiKey) {
+        console.error('[LOGIN] API Key is missing!')
         setErrorState({
           message: ['API Key is not configured. Please check your .env.local file and restart the server.']
         })
@@ -129,14 +135,19 @@ const Login = ({ mode }) => {
         password: data.password
       }
 
+      console.log('[LOGIN] Sending request to:', requestUrl)
+
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: requestHeaders,
         body: JSON.stringify(requestBody)
       })
 
+      console.log('[LOGIN] Response status:', response.status)
+
       if (!response.ok) {
         const text = await response.text().catch(() => '')
+        console.error('[LOGIN] Error response:', text)
         const parsed = (() => {
           try {
             return text ? JSON.parse(text) : {}
@@ -151,9 +162,11 @@ const Login = ({ mode }) => {
       }
 
       const result = await response.json()
+      console.log('[LOGIN] Login successful, got token')
 
       // Check if login was successful
       if (response.ok && result.access_token) {
+        console.log('[LOGIN] Storing auth data and redirecting...')
         // Store authentication data with Bearer prefix
         localStorage.setItem('accessToken', `Bearer ${result.access_token}`)
         localStorage.setItem('tokenType', result.token_type)
@@ -167,9 +180,11 @@ const Login = ({ mode }) => {
 
         router.push(getLocalizedUrl(redirectURL, locale))
       } else {
+        console.error('[LOGIN] No access token in response:', result)
         setErrorState({ message: [result.detail || result.message || result.error || 'Invalid username or password'] })
       }
     } catch (error) {
+      console.error('[LOGIN] Exception during login:', error)
       setErrorState({ message: ['Network error. Please check your connection and try again.'] })
     }
   }

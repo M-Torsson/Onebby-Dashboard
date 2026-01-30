@@ -10,6 +10,22 @@ export const authOptions = {
   // Add secret for production
   secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-please-change-in-production',
 
+  // Enable debug mode
+  debug: true,
+
+  // Add logger for debugging
+  logger: {
+    error(code, metadata) {
+      console.error('NextAuth Error:', code, metadata)
+    },
+    warn(code) {
+      console.warn('NextAuth Warning:', code)
+    },
+    debug(code, metadata) {
+      console.log('NextAuth Debug:', code, metadata)
+    }
+  },
+
   // ** Configure one or more authentication providers
   // ** Please refer to https://next-auth.js.org/configuration/options#providers for more `providers` options
   providers: [
@@ -31,14 +47,20 @@ export const authOptions = {
          */
         const { email, password } = credentials
 
+        console.log('[AUTH] Starting login attempt for:', email)
+
         try {
           // ** Login API Call to Onebby API
           const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://onebby-api.onrender.com'
+
+          console.log('[AUTH] API Base URL:', API_BASE_URL)
 
           const loginData = {
             username: email,
             password
           }
+
+          console.log('[AUTH] Sending request to:', `${API_BASE_URL}/api/users/login`)
 
           const res = await fetch(`${API_BASE_URL}/api/users/login`, {
             method: 'POST',
@@ -48,26 +70,34 @@ export const authOptions = {
             body: JSON.stringify(loginData)
           })
 
+          console.log('[AUTH] Response status:', res.status)
+
           if (!res.ok) {
             const errorData = await res.json().catch(() => ({ detail: 'Invalid credentials' }))
+            console.error('[AUTH] Login failed:', errorData)
             throw new Error(errorData.detail || 'Invalid username or password')
           }
 
           const data = await res.json()
+          console.log('[AUTH] Login successful, got token')
 
           if (data.access_token) {
             // Return user object with token
-            return {
+            const user = {
               id: '1',
               name: email,
               email: email,
               accessToken: data.access_token,
               tokenType: data.token_type
             }
+            console.log('[AUTH] Returning user object')
+            return user
           }
 
+          console.error('[AUTH] No access token in response')
           return null
         } catch (e) {
+          console.error('[AUTH] Exception during login:', e.message)
           throw new Error(e.message)
         }
       }
@@ -113,6 +143,7 @@ export const authOptions = {
      * via `jwt()` callback to make them accessible in the `session()` callback
      */
     async jwt({ token, user }) {
+      console.log('[AUTH] JWT callback - user:', !!user, 'token:', !!token)
       if (user) {
         /*
          * For adding custom parameters to user in session, we first need to add those parameters
@@ -122,17 +153,20 @@ export const authOptions = {
         token.email = user.email
         token.accessToken = user.accessToken
         token.tokenType = user.tokenType
+        console.log('[AUTH] JWT callback - added user data to token')
       }
 
       return token
     },
     async session({ session, token }) {
+      console.log('[AUTH] Session callback - session:', !!session, 'token:', !!token)
       if (session.user) {
         // ** Add custom params to user in session which are added in `jwt()` callback via `token` parameter
         session.user.name = token.name
         session.user.email = token.email
         session.user.accessToken = token.accessToken
         session.user.tokenType = token.tokenType
+        console.log('[AUTH] Session callback - added token data to session')
       }
 
       return session
