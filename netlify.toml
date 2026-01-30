@@ -29,6 +29,9 @@
   NEXT_TELEMETRY_DISABLED = "1"
   # تمكين pnpm cache
   PNPM_FLAGS = "--frozen-lockfile"
+  # NextAuth Configuration
+  NEXTAUTH_URL = "https://onebby-dashboard.netlify.app"
+  NEXTAUTH_SECRET = "onebby-secret-key-2026-production-netlify-deployment"
 
 # إعادة توجيه جميع المسارات إلى Next.js
 [[redirects]]

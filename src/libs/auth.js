@@ -7,6 +7,9 @@ import CredentialProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 
 export const authOptions = {
+  // Add secret for production
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-please-change-in-production',
+
   // ** Configure one or more authentication providers
   // ** Please refer to https://next-auth.js.org/configuration/options#providers for more `providers` options
   providers: [
@@ -68,11 +71,13 @@ export const authOptions = {
           throw new Error(e.message)
         }
       }
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
     })
+
+    // ** Google OAuth disabled for now
+    // GoogleProvider({
+    //   clientId: process.env.GOOGLE_CLIENT_ID,
+    //   clientSecret: process.env.GOOGLE_CLIENT_SECRET
+    // })
 
     // ** ...add more providers here
   ],
