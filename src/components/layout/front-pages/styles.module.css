@@ -58,11 +58,11 @@
 }
 
 .inputBorder {
-  fieldset {
+  & :global(fieldset) {
     border-color: rgb(var(--mui-mainColorChannels-dark) / 0.22) !important;
   }
-  label,
-  input {
+  & :global(label),
+  & :global(input) {
     color: rgb(var(--mui-mainColorChannels-dark) / 0.9) !important;
   }
 }
