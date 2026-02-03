@@ -18,6 +18,7 @@ import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
+import Switch from '@mui/material/Switch'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import Dialog from '@mui/material/Dialog'
@@ -55,7 +56,7 @@ import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-const V1_BASE_URL = `${API_BASE_URL}/api/v1`
+const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -104,8 +105,8 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${V1_BASE_URL}/tax-classes`, {
-        headers: { 'X-API-KEY': API_KEY }
+      const response = await fetch(`${ADMIN_BASE_URL}/tax-classes`, {
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
@@ -132,9 +133,9 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     if (!taxToDelete) return
 
     try {
-      const response = await fetch(`${V1_BASE_URL}/tax-classes/${taxToDelete.id}`, {
+      const response = await fetch(`${ADMIN_BASE_URL}/tax-classes/${taxToDelete.id}`, {
         method: 'DELETE',
-        headers: { 'X-API-KEY': API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
@@ -198,6 +199,34 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     handleCloseDrawer()
   }
 
+  const handleToggleStatus = async (taxClass) => {
+    try {
+      const newStatus = !taxClass.is_active
+      const response = await fetch(`${ADMIN_BASE_URL}/tax-classes/${taxClass.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': API_KEY
+        },
+        body: JSON.stringify({
+          name: taxClass.name,
+          rate: taxClass.rate,
+          is_active: newStatus
+        })
+      })
+
+      if (response.ok) {
+        setSuccess(`Tax class ${newStatus ? 'activated' : 'deactivated'} successfully!`)
+        fetchTaxClasses()
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError('Failed to update tax class status')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    }
+  }
+
   const columns = useMemo(
     () => [
       {
@@ -242,6 +271,11 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         header: dictionary.common?.status || 'Status',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
+            <Switch
+              checked={row.original.is_active}
+              onChange={() => handleToggleStatus(row.original)}
+              color='success'
+            />
             <Chip
               label={
                 row.original.is_active

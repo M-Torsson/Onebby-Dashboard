@@ -25,7 +25,7 @@ import CustomTextField from '@core/components/mui/TextField'
 // Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
-const V1_BASE_URL = `${API_BASE_URL}/api/v1`
+const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
 
 const AddTaxDrawer = props => {
   const { open, handleClose, taxData, onSuccess } = props
@@ -71,7 +71,7 @@ const AddTaxDrawer = props => {
         return
       }
 
-      const url = taxData ? `${V1_BASE_URL}/tax-classes/${taxData.id}` : `${V1_BASE_URL}/tax-classes`
+      const url = taxData ? `${ADMIN_BASE_URL}/tax-classes/${taxData.id}` : `${ADMIN_BASE_URL}/tax-classes`
       const method = taxData ? 'PUT' : 'POST'
 
       const bodyData = {
@@ -83,7 +83,8 @@ const AddTaxDrawer = props => {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-API-Key': API_KEY
         },
         body: JSON.stringify(bodyData)
       })

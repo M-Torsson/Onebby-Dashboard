@@ -4,19 +4,19 @@
   font-size: 0.8125rem;
   white-space: nowrap;
 
-  [align='right'] > * {
+  & :global([align='right']) > * {
     text-align: end;
   }
-  [align='center'] > * {
+  & :global([align='center']) > * {
     text-align: center;
   }
 
-  thead {
+  & thead {
     text-transform: uppercase;
     color: var(--mui-palette-text-primary);
     border-block-start: 1px solid var(--border-color);
 
-    th {
+    & th {
       font-weight: 500;
       font-size: 0.8125rem;
       letter-spacing: 0.2px;
@@ -43,11 +43,11 @@
     }
   }
 
-  tbody {
+  & tbody {
     color: var(--mui-palette-text-secondary);
 
-    th,
-    td {
+    & th,
+    & td {
       font-size: 0.9375rem;
       line-height: 1.4667;
       block-size: 50px;
@@ -71,10 +71,10 @@
       }
     }
 
-    tr:not(:last-child) {
+    & tr:not(:last-child) {
       border-block-end: 1px solid var(--border-color);
     }
-    tr {
+    & tr {
       border-block-start: 1px solid var(--border-color);
     }
   }

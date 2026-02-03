@@ -124,12 +124,8 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
       formDataUpload.append('file', file)
       formDataUpload.append('folder', 'brands')
 
-      const response = await fetch(`${API_BASE_URL}/admin/upload/image`, {
+      const response = await fetch(`/api/admin/upload/image`, {
         method: 'POST',
-        headers: {
-          'X-API-Key': API_KEY
-          // لا تضع Content-Type، FormData يضبطه تلقائياً
-        },
         body: formDataUpload
       })
 

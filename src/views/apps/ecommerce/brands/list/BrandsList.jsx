@@ -35,9 +35,9 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
+  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
-import TableFilters from './TableFilters'
 import CustomTextField from '@core/components/mui/TextField'
 import OptionMenu from '@core/components/option-menu'
 import TablePaginationComponent from '@components/TablePaginationComponent'
@@ -47,10 +47,31 @@ import tableStyles from '@core/styles/table.module.css'
 
 const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
 
+const BRANDS_FETCH_LIMIT = 500
+// Safety cap to avoid loading an unexpectedly huge dataset in the browser.
+const MAX_BRANDS_TO_LOAD = 20000
+
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
   addMeta({ itemRank })
   return itemRank.passed
+}
+
+const brandGlobalFilter = (row, _columnId, value) => {
+  const query = String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+  if (!query) return true
+
+  const original = row.original || {}
+  const haystack = [
+    String(original.id ?? ''),
+    String(original.brandName ?? ''),
+    String(original.brandSlug ?? '')
+  ].map(v => v.toLowerCase())
+
+  return haystack.some(v => v.includes(query))
 }
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -80,62 +101,79 @@ const columnHelper = createColumnHelper()
 const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
-  const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [brandToDelete, setBrandToDelete] = useState(null)
 
-  // Server-side pagination states
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
-  const [totalCount, setTotalCount] = useState(0)
+  const debugEnabled = process.env.NODE_ENV !== 'production'
 
   const { lang: locale } = useParams()
   const router = useRouter()
 
-  // Fetch brands with server-side pagination
-  const fetchBrands = async (currentPage = 0, currentPageSize = 10) => {
+  useEffect(() => {
+    fetchBrands()
+  }, [])
+
+  const fetchBrands = async () => {
     try {
       setLoading(true)
-      const skip = currentPage * currentPageSize
-      const response = await fetch(`${ADMIN_BASE_URL}/brands?skip=${skip}&limit=${currentPageSize}`, {
-        headers: { 'X-API-KEY': API_KEY }
-      })
+      setError('')
 
-      if (response.ok) {
+      // Fetch brands in batches, then do filtering + pagination client-side (same approach as Categories)
+      let skip = 0
+      let total = Infinity
+      const allBrands = []
+
+      while (skip < MAX_BRANDS_TO_LOAD && allBrands.length < total) {
+        const response = await fetch(`${ADMIN_BASE_URL}/brands?skip=${skip}&limit=${BRANDS_FETCH_LIMIT}`, {
+          headers: { 'X-API-KEY': API_KEY }
+        })
+
+        if (!response.ok) {
+          console.error('Failed to fetch brands:', response.status)
+          setError(`Failed to load brands (${response.status})`)
+          setData([])
+          return
+        }
+
         const result = await response.json()
-        const fetchedBrands = result.data || result
-        const total = result.meta?.total || fetchedBrands.length
+        const batch = (result?.data ?? result ?? [])
+        const normalizedBatch = Array.isArray(batch) ? batch : []
 
-        setTotalCount(total)
-        const formattedData = fetchedBrands.map(brand => ({
-          id: brand.id,
-          brandName: brand.name,
-          brandSlug: brand.slug,
-          image: brand.image,
-          stock: brand.is_active,
-          sortOrder: brand.sort_order,
-          status: brand.is_active ? 'Active' : 'Inactive',
-          createdAt: brand.created_at
-        }))
-        setData(formattedData)
-        setFilteredData(formattedData)
-      } else {
-        setError('Failed to load brands')
+        total = result?.meta?.total ?? total
+
+        if (normalizedBatch.length === 0) break
+
+        allBrands.push(...normalizedBatch)
+        skip += BRANDS_FETCH_LIMIT
+
+        if (normalizedBatch.length < BRANDS_FETCH_LIMIT) break
       }
+
+      const formattedData = allBrands.slice(0, MAX_BRANDS_TO_LOAD).map(brand => ({
+        id: brand.id,
+        brandName: brand.name,
+        brandSlug: brand.slug,
+        image: brand.image,
+        stock: brand.is_active,
+        sortOrder: brand.sort_order,
+        status: brand.is_active ? 'Active' : 'Inactive',
+        createdAt: brand.created_at
+      }))
+
+      setData(formattedData)
     } catch (err) {
+      console.error('Network error:', err)
       setError('Network error. Please try again.')
+      setData([])
     } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    fetchBrands(page, pageSize)
-  }, [page, pageSize])
 
   // Toggle Active Status
   const handleToggleActive = async brand => {
@@ -159,7 +197,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
       })
 
       if (response.ok) {
-        fetchBrands(page, pageSize)
+        fetchBrands()
       }
     } catch (err) {}
   }
@@ -180,7 +218,7 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
       if (response.ok) {
         setSuccess('Brand deleted successfully!')
         setDeleteDialogOpen(false)
-        fetchBrands(page, pageSize)
+        fetchBrands()
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json()
@@ -315,43 +353,52 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
         enableSorting: false
       })
     ],
-    [data, filteredData, locale]
+    [data, locale]
   )
 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
+    filterFns: { fuzzy: fuzzyFilter },
     state: {
       rowSelection,
       globalFilter,
-      pagination: {
-        pageIndex: page,
-        pageSize: pageSize
-      }
+      pagination
     },
-    pageCount: Math.ceil(totalCount / pageSize),
-    manualPagination: true,
-    onPaginationChange: updater => {
-      if (typeof updater === 'function') {
-        const newState = updater({ pageIndex: page, pageSize: pageSize })
-        setPage(newState.pageIndex)
-        setPageSize(newState.pageSize)
-      }
-    },
+    onPaginationChange: setPagination,
     enableRowSelection: true,
-    globalFilterFn: fuzzyFilter,
+    globalFilterFn: brandGlobalFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
+
+  useEffect(() => {
+    if (!debugEnabled) return
+
+    const state = table.getState()
+    const filteredCount = table.getFilteredRowModel().rows.length
+    const pagedCount = table.getPaginationRowModel().rows.length
+    const firstRow = table.getPaginationRowModel().rows[0]?.original
+
+    // eslint-disable-next-line no-console
+    console.debug('[BrandsList][debug]', {
+      globalFilter,
+      pageIndex: state.pagination.pageIndex,
+      pageSize: state.pagination.pageSize,
+      dataCount: data.length,
+      filteredCount,
+      pagedCount,
+      firstRowId: firstRow?.id,
+      firstRowName: firstRow?.brandName
+    })
+  }, [debugEnabled, data.length, globalFilter, pagination.pageIndex, pagination.pageSize])
 
   if (loading) {
     return (
@@ -378,22 +425,25 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
 
       <Card>
         <CardHeader title={dictionary.common?.filters || 'Filters'} />
-        <TableFilters setData={setFilteredData} brandData={data} dictionary={dictionary} />
         <Divider />
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <DebouncedInput
             value={globalFilter ?? ''}
-            onChange={value => setGlobalFilter(String(value))}
+            onChange={value => {
+              const searchValue = String(value)
+              setGlobalFilter(searchValue)
+              table.setPageIndex(0)
+            }}
             placeholder={dictionary.common?.searchBrand || 'Search Brand'}
             className='max-sm:is-full'
           />
           <div className='flex flex-wrap items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
             <CustomTextField
               select
-              value={pageSize}
+              value={table.getState().pagination.pageSize}
               onChange={e => {
-                setPageSize(Number(e.target.value))
-                setPage(0)
+                table.setPageSize(Number(e.target.value))
+                table.setPageIndex(0)
               }}
               className='flex-auto is-[70px] max-sm:is-full'
             >
@@ -459,29 +509,28 @@ const BrandsList = ({ dictionary = { navigation: {}, common: {} } }) => {
               </tbody>
             ) : (
               <tbody>
-                {table
-                  .getRowModel()
-                  .rows.slice(0, table.getState().pagination.pageSize)
-                  .map(row => {
-                    return (
-                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    )
-                  })}
+                {table.getPaginationRowModel().rows.map(row => (
+                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             )}
           </table>
         </div>
         <TablePagination
-          component={() => <TablePaginationComponent table={table} totalCount={totalCount} />}
-          count={totalCount}
-          rowsPerPage={pageSize}
-          page={page}
+          component={() => <TablePaginationComponent table={table} />}
+          count={table.getFilteredRowModel().rows.length}
+          rowsPerPage={table.getState().pagination.pageSize}
+          page={table.getState().pagination.pageIndex}
           onPageChange={(_, newPage) => {
-            setPage(newPage)
+            table.setPageIndex(newPage)
+          }}
+          onRowsPerPageChange={e => {
+            table.setPageSize(parseInt(e.target.value, 10))
+            table.setPageIndex(0)
           }}
         />
       </Card>
