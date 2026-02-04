@@ -90,6 +90,7 @@ CLOUDINARY_SETUP_AR.md
 NETLIFY_DEPLOY.md
 RESTART_SERVER_NOW.txt
 URGENT_API_KEY_NEEDED.txt
+GITGUARDIAN_FIX.md
 add-defender-exclusion.ps1
 
 # Package locks (keeping pnpm-lock.yaml only)
