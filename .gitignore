@@ -26,11 +26,20 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local env files
-.env*.local
+# local env files - CRITICAL: Never commit these files!
 .env
+.env*.local
+.env.local
 .env.development
+.env.development.local
 .env.production
+.env.production.local
+
+# Database files - CRITICAL: Never commit database files!
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
 
 # vercel
 .vercel
@@ -83,6 +92,18 @@ RESTART_SERVER_NOW.txt
 URGENT_API_KEY_NEEDED.txt
 add-defender-exclusion.ps1
 
-# Package locks (keep only one)
+# Package locks (keeping pnpm-lock.yaml only)
 package-lock.json
-pnpm-lock.yaml
+yarn.lock
+
+# Database files (security)
+dev.db
+*.db
+*.db-journal
+
+# Secret keys and sensitive data
+.env
+.env.local
+.env.*.local
+*.pem
+*.key

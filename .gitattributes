@@ -1,0 +1,18 @@
+# Prevent sensitive files from being committed
+.env filter=secret
+.env.local filter=secret
+.env.*.local filter=secret
+*.db filter=secret
+*.key filter=secret
+*.pem filter=secret
+
+# Line endings
+* text=auto
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
