@@ -103,5 +103,15 @@
         "menuLevel2": "Niveau menu 2",
         "menuLevel3": "Niveau menu 3",
         "disabledMenu": "Menu désactivé"
+    },
+    "common": {
+        "backendCreateBugMessage": "Erreur backend : la création de produit est actuellement cassée sur l'API (incohérence ean13).",
+        "backendCreateBugAction": "Cela doit être corrigé côté backend : mettre à jour ProductCreate pour utiliser ean (ou ajouter ean13 au modèle d'entrée).",
+        "backendCreateBugTechnical": "Détail technique : le serveur a renvoyé « ProductCreate has no attribute ean13 »",
+        "productCreateSuccess": "Produit créé avec succès !",
+        "productUpdateSuccess": "Produit mis à jour avec succès !",
+        "productCreateNotPersisted": "L'API a répondu, mais le produit est introuvable dans la base de données. Veuillez réessayer ou contacter l'administrateur.",
+        "productCreateUnknownResponse": "Réponse serveur inattendue. Le produit n'a peut-être pas été enregistré. Veuillez vérifier la liste des produits ou réessayer.",
+        "productVariantsNotAllowed": "Les variantes ne peuvent être ajoutées qu'aux produits configurables. Supprimez les variantes ou définissez le type de produit sur configurable."
     }
 }

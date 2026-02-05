@@ -6,7 +6,7 @@
 
 // React Imports
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 // MUI Imports
 import Grid from '@mui/material/Grid'
@@ -173,6 +173,7 @@ const EditorToolbar = ({ editor }) => {
 }
 
 const ProductsAdd = ({ dictionary = { common: {} } }) => {
+  const { lang: locale } = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -407,80 +408,105 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   }, [editId])
 
   const fetchBrands = async () => {
+    console.log('🔍 [DEBUG] Starting fetchBrands...')
     try {
       if (!API_KEY) {
-        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
-        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        console.error('❌ [DEBUG] API_KEY is missing')
         setBrands([])
         return
       }
 
+      console.log('🔍 [DEBUG] API_KEY exists, fetching brands from:', `${API_BASE_URL}/api/admin/brands`)
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        console.warn('⏱️ [DEBUG] Brands fetch timeout - aborting...')
+        controller.abort()
+      }, 10000)
+
       const response = await fetch(`${API_BASE_URL}/api/admin/brands`, {
         headers: { 'X-API-KEY': API_KEY },
-        mode: 'cors'
+        mode: 'cors',
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
+      console.log('✅ [DEBUG] Brands response status:', response.status, response.ok)
+      
       if (response.ok) {
         const result = await response.json()
-        // Handle both { data: [...] } and [...] response formats
         const data = result.data || result
-        setBrands(Array.isArray(data) ? data : [])
+        const brandsArray = Array.isArray(data) ? data : []
+        console.log('📊 [DEBUG] Brands raw data length:', brandsArray.length)
+        setBrands(brandsArray)
+        console.log('✅ Brands loaded:', brandsArray.length)
       } else if (response.status === 401 || response.status === 403) {
-        console.error('Invalid API Key')
-        setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+        console.error('❌ [DEBUG] Invalid API Key - Status:', response.status)
         setBrands([])
       } else {
+        console.warn('⚠️ [DEBUG] Failed to fetch brands - Status:', response.status)
         setBrands([])
-        // Don't show error to user for other errors
       }
     } catch (err) {
+      console.error('❌ [DEBUG] Error in fetchBrands:')
+      console.error('  - Error name:', err.name)
+      console.error('  - Error message:', err.message)
+      console.error('  - Full error:', err)
       setBrands([])
     }
   }
 
   const fetchCategories = async () => {
+    console.log('🔍 [DEBUG] Starting fetchCategories...')
     try {
       if (!API_KEY) {
-        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
-        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        console.error('❌ [DEBUG] API_KEY is missing')
         setCategories([])
         return
       }
 
-      // Use the v1 endpoint to get all categories (parent + children)
-      const response = await fetch(`${API_BASE_URL}/api/v1/categories?lang=en`, {
+      console.log('🔍 [DEBUG] API_KEY exists, fetching categories from:', `${API_BASE_URL}/api/v1/categories`)
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        console.warn('⏱️ [DEBUG] Categories fetch timeout - aborting...')
+        controller.abort()
+      }, 10000)
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/categories`, {
         headers: { 'X-API-KEY': API_KEY },
-        mode: 'cors'
+        mode: 'cors',
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
+      console.log('✅ [DEBUG] Categories response status:', response.status, response.ok)
+      
       if (response.ok) {
         const result = await response.json()
-        // Handle both { data: [...] } and [...] response formats
-        const data = result.data || result
+        const data = result.data || result || []
+        console.log('📊 [DEBUG] Categories raw data length:', data.length)
 
-        // Sort categories: parents first, then children
         const sortedCategories = Array.isArray(data)
           ? data.sort((a, b) => {
-              // Parents (null parent_id) come first
               if (a.parent_id === null && b.parent_id !== null) return -1
               if (a.parent_id !== null && b.parent_id === null) return 1
-              // If both are parents or both are children, sort by name
               return (a.name || '').localeCompare(b.name || '')
             })
           : []
 
         setCategories(sortedCategories)
-      } else if (response.status === 401 || response.status === 403) {
-        console.error('Invalid API Key')
-        setError('Invalid API Key: Please check your API configuration or contact the administrator.')
-        setCategories([])
+        console.log('✅ Categories loaded:', sortedCategories.length)
       } else {
-        // Set empty categories array to prevent errors
+        console.warn('⚠️ Failed to fetch categories:', response.status)
         setCategories([])
-        // Don't show error to user for other errors
       }
     } catch (err) {
-      // Set empty categories array to prevent errors
+      console.error('❌ [DEBUG] Error in fetchCategories:')
+      console.error('  - Error name:', err.name)
+      console.error('  - Error message:', err.message)
+      console.error('  - Full error:', err)
       setCategories([])
-      console.error('Error fetching categories:', err)
     }
   }
 
@@ -519,43 +545,47 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       setFetchingData(true)
       setError('')
 
-      if (!API_KEY) {
-        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
-        setError('API configuration error: API Key is missing. Please contact the administrator.')
+      if (!editId) {
         setFetchingData(false)
         return
       }
 
-      // Try fetching individual product first
-      let response = await fetch(`${API_BASE_URL}/api/v1/products/${editId}`, {
+      if (!API_KEY) {
+        console.error('API_KEY is not configured. Please set NEXT_PUBLIC_API_KEY in your .env file')
+        setError('API configuration error: API Key is missing. Please contact the administrator.')
+        return
+      }
+
+      // Full product details endpoint (includes categories/brand/translations/variants)
+      console.log('🔍 Fetching full product data for ID:', editId)
+      const response = await fetch(`${API_BASE_URL}/api/v1/products/${editId}?lang=en`, {
         headers: { 'X-API-KEY': API_KEY }
       })
 
-      // If 404, try fetching from list with active_only=false (for inactive products)
-      if (response.status === 404) {
-        const listResponse = await fetch(`${API_BASE_URL}/api/v1/products?active_only=false&limit=100`, {
-          headers: { 'X-API-KEY': API_KEY }
-        })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
 
-        if (listResponse.ok) {
-          const listResult = await listResponse.json()
-          const products = listResult.data || []
-          const product = products.find(p => p.id === parseInt(editId))
-
-          if (product) {
-            // Create a mock response with the product data
-            response = {
-              ok: true,
-              json: async () => product
-            }
-          } else {
-          }
+        if (response.status === 404) {
+          setError(`Product ID ${editId} not found. It may have been deleted or does not exist.`)
+        } else if (response.status === 401 || response.status === 403) {
+          console.error('Invalid API Key')
+          setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+        } else {
+          setError(`Failed to load product: ${errorData.detail || response.statusText}`)
         }
+
+        return
       }
 
-      if (response.ok) {
-        const result = await response.json()
-        const product = result.data || result
+      const result = await response.json()
+      const product = result.data || result
+      console.log('✅ Product data loaded (v1 full):')
+      console.log('  - Product ID:', product?.id)
+      console.log('  - Reference:', product?.reference)
+      console.log('  - EAN:', product?.ean)
+      console.log('  - EAN13:', product?.ean13)
+      console.log('  - Brand:', product?.brand)
+      console.log('  - Categories:', product?.categories)
 
         // Check if this is basic data from list (no variants/translations array)
         const isBasicData = !product.variants && !product.translations
@@ -564,6 +594,15 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         const firstVariant = product.variants && product.variants.length > 0 ? product.variants[0] : null
         const productPrice = product.price || firstVariant?.price || { list: 0, currency: 'EUR', discounts: [] }
         const productStock = product.stock || firstVariant?.stock || { status: 'in_stock', quantity: 0 }
+
+        // Extract categories safely FIRST before using in setFormData
+        const productCategories = Array.isArray(product.categories)
+          ? product.categories
+              .map(cat => (typeof cat === 'object' && cat !== null ? cat.id : cat))
+              .filter(Boolean)
+          : Array.isArray(product.category_ids)
+            ? product.category_ids
+            : []
 
         // Get translations - find English or first translation
         let englishTranslation = {}
@@ -582,7 +621,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         setFormData({
           product_type: product.product_type || 'configurable',
           reference: product.reference || '',
-          ean: product.ean || product.ean13 || '',
+          ean: product.ean || product.ean13 || product.reference || '',
           is_active: product.is_active !== undefined ? product.is_active : true,
           brand_id: product.brand?.id || product.brand_id || null,
           tax: {
@@ -595,7 +634,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
             discounts: productPrice.discounts || []
           },
           condition: product.condition || 'new',
-          categories: product.categories?.map(cat => cat.id || cat) || [],
+          categories: productCategories,
           stock: {
             status: product.stock_status || productStock.status || 'in_stock',
             quantity: product.stock_quantity || productStock.quantity || 0
@@ -651,23 +690,9 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
             images: v.images || []
           }))
         })
-
-        // Fetch discounts for this product
-        if (editId) {
-          fetchProductDiscounts(editId)
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-
-        if (response.status === 404) {
-          setError(`Product ID ${editId} not found. It may have been deleted or does not exist.`)
-        } else if (response.status === 401 || response.status === 403) {
-          console.error('Invalid API Key')
-          setError('Invalid API Key: Please check your API configuration or contact the administrator.')
-        } else {
-          setError(`Failed to load product: ${errorData.detail || response.statusText}`)
-        }
-      }
+        
+      // Fetch discounts for this product
+      fetchProductDiscounts(editId)
     } catch (err) {
       setError(`Network error: ${err.message}`)
     } finally {
@@ -877,6 +902,21 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       setSuccess('')
       setLoading(true)
 
+      const t = (key, fallback) => dictionary.common?.[key] || fallback
+
+      const langParam = encodeURIComponent(locale || 'it')
+
+      const meaningfulVariants = Array.isArray(formData.variants)
+        ? formData.variants.filter(v => {
+            const hasEan = Boolean(String(v?.ean || '').trim())
+            const hasReference = Boolean(String(v?.reference || '').trim())
+            const hasImages = Array.isArray(v?.images) && v.images.length > 0
+            const hasAttributes = v?.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0
+
+            return hasEan || hasReference || hasImages || hasAttributes
+          })
+        : []
+
       if (!API_KEY) {
         setError('API configuration error: API Key is missing. Please contact the administrator.')
         setLoading(false)
@@ -886,6 +926,13 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       // Validate required fields: EAN and Title
       if (!formData.ean || !formData.translation.title) {
         setError('EAN and Title are required')
+        setLoading(false)
+        return
+      }
+
+      // Validate required fields: at least one category (create only)
+      if (!editId && (!Array.isArray(formData.categories) || formData.categories.length < 1)) {
+        setError('At least one category is required')
         setLoading(false)
         return
       }
@@ -918,7 +965,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         // Note: reference is auto-populated by backend from EAN
         bodyData = {
           product_type: formData.product_type,
-          ean: formData.ean || null,
+          reference: formData.reference || formData.ean || `REF-${Date.now()}`,
+          ean: formData.ean,
           is_active: formData.is_active,
           brand_id: formData.brand_id,
           tax: {
@@ -965,9 +1013,9 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           // Only include variant_attributes and variants for configurable products
           ...(formData.product_type === 'configurable' && {
             variant_attributes: formData.variant_attributes,
-            variants: formData.variants.map(v => ({
+            variants: meaningfulVariants.map(v => ({
               reference: v.reference,
-              ean: v.ean || null,
+              ean: v.ean || '',
               is_active: v.is_active !== undefined ? v.is_active : true,
               condition: v.condition || 'new',
               attributes: v.attributes || {},
@@ -993,9 +1041,17 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       } else {
         // For create mode - full structure matching API
         // Note: reference is auto-populated by backend from EAN
+        
+        // Auto-detect product type based on variants
+        const hasVariants = meaningfulVariants.length > 0
+        const actualProductType = hasVariants ? formData.product_type : 'simple'
+        
+        console.log('🔍 [DEBUG] Has variants:', hasVariants, 'Product type:', actualProductType)
+        
         bodyData = {
-          product_type: formData.product_type,
-          ean: formData.ean || null,
+          product_type: actualProductType,
+          reference: formData.ean || `REF-${Date.now()}`, // Use EAN as reference or generate one
+          ean: formData.ean,
           is_active: formData.is_active,
           brand_id: formData.brand_id,
           tax: {
@@ -1039,12 +1095,12 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           ],
           features: formData.features.map(buildFeaturePayload),
           attributes: formData.attributes.map(buildAttributePayload),
-          // Only include variant_attributes and variants for configurable products
-          ...(formData.product_type === 'configurable' && {
+          // Only include variant_attributes and variants for configurable products WITH variants
+          ...(hasVariants && {
             variant_attributes: formData.variant_attributes,
-            variants: formData.variants.map(v => ({
+            variants: meaningfulVariants.map(v => ({
               reference: v.reference,
-              ean: v.ean || null,
+              ean: v.ean || '',
               is_active: v.is_active !== undefined ? v.is_active : true,
               condition: v.condition || 'new',
               attributes: v.attributes || {},
@@ -1063,15 +1119,28 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         }
 
         // Defensive: ensure variants are not sent for non-configurable products
-        if (formData.product_type !== 'configurable') {
-          delete bodyData.variant_attributes
-          delete bodyData.variants
-        }
+        // This check is now redundant since we use hasVariants, but keep for safety
       }
 
       let bodyString
       try {
+        console.log('🔍 [DEBUG] Preparing to save product...')
+        console.log('🔍 [DEBUG] Edit mode:', !!editId)
+        console.log('🔍 [DEBUG] URL:', url)
+        console.log('🔍 [DEBUG] Method:', method)
+        console.log('🔍 [DEBUG] Body data (object):', bodyData)
+        
+        // Check if ean13 is in bodyData
+        console.log('🔍 [DEBUG] Has ean13?', 'ean13' in bodyData)
+        console.log('🔍 [DEBUG] Has ean?', 'ean' in bodyData)
+        console.log('🔍 [DEBUG] ean13 value:', bodyData.ean13)
+        
         bodyString = JSON.stringify(bodyData)
+        console.log('🔍 [DEBUG] Body data (JSON):', bodyString)
+        
+        // Double check the JSON string contains ean13
+        console.log('🔍 [DEBUG] JSON contains ean13?', bodyString.includes('ean13'))
+        console.log('🔍 [DEBUG] JSON contains ean?', bodyString.includes('"ean"'))
       } catch (jsonError) {
         setError('Invalid data format. Please check your inputs.')
         setLoading(false)
@@ -1086,22 +1155,120 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           'X-API-KEY': API_KEY
         },
         body: bodyString
+      }).catch(err => {
+        console.error('❌ [DEBUG] Network error during fetch:', err)
+        throw new Error(`Network error: ${err.message}`)
       })
+
+      console.log('🔍 [DEBUG] Response received')
+      console.log('🔍 [DEBUG] Response status:', response.status, response.statusText)
+      console.log('🔍 [DEBUG] Response ok:', response.ok)
 
       if (response.ok) {
         const result = await response.json()
+        console.log('✅ [DEBUG] Success response data:', result)
+
+        const resultData = result?.data || result
+        const returnedId =
+          (typeof resultData?.id === 'number' || typeof resultData?.id === 'string' ? resultData.id : null) ||
+          (typeof result?.id === 'number' || typeof result?.id === 'string' ? result.id : null) ||
+          (typeof resultData?.product_id === 'number' || typeof resultData?.product_id === 'string' ? resultData.product_id : null)
 
         // Check if API returned an error message despite 200 status
         if (result.detail && typeof result.detail === 'string' && result.detail.includes('Only configurable')) {
-          // Success but with warning - ignore the warning
-          setSuccess(editId ? 'Product updated successfully!' : 'Product created successfully!')
-        } else if (result.error || result.message) {
-          // API returned error in success response
-          setError(result.error || result.message)
+          // Treat as error (this can happen when variants were sent for a non-configurable product)
+          setError(
+            t(
+              'productVariantsNotAllowed',
+              'Variants can only be added for configurable products. Remove variants or set product type to configurable.'
+            )
+          )
+          setLoading(false)
+          return
+        } else if (result.error) {
+          // API returned actual error in success response
+          console.log('❌ [DEBUG] API returned error in success response:', result.error)
+          setError(result.error)
+          setLoading(false)
+          return
+        } else if (result.message && !result.message.toLowerCase().includes('success')) {
+          // API returned error message (but not success message)
+          console.log('❌ [DEBUG] API returned error message:', result.message)
+          setError(result.message)
           setLoading(false)
           return
         } else {
-          setSuccess(editId ? 'Product updated successfully!' : 'Product created successfully!')
+          if (editId) {
+            console.log('✅ [DEBUG] Setting success (update)')
+            setSuccess(t('productUpdateSuccess', 'Product updated successfully!'))
+          } else {
+            // CREATE: verify persistence before claiming success
+            const idForVerify = returnedId
+            if (idForVerify) {
+              const verifyResponse = await fetch(`${API_BASE_URL}/api/v1/products/${idForVerify}?lang=${langParam}`, {
+                headers: { 'X-API-KEY': API_KEY }
+              })
+
+              if (!verifyResponse.ok) {
+                setError(
+                  t(
+                    'productCreateNotPersisted',
+                    'The API responded, but the product was not found in the database. Please try again or contact the administrator.'
+                  )
+                )
+                setLoading(false)
+                return
+              }
+
+              setSuccess(`${t('productCreateSuccess', 'Product created successfully!')} (ID: ${idForVerify})`)
+            } else {
+              // Fallback verify by backend search param (reference/EAN)
+              const lookupKey = String(bodyData?.reference || bodyData?.ean || '').trim()
+              if (lookupKey) {
+                const lookupResponse = await fetch(
+                  `${API_BASE_URL}/api/v1/products?active_only=false&skip=0&limit=10&lang=${langParam}&search=${encodeURIComponent(lookupKey)}`,
+                  { headers: { 'X-API-KEY': API_KEY } }
+                )
+
+                if (lookupResponse.ok) {
+                  const lookupResult = await lookupResponse.json().catch(() => ({}))
+                  const items = Array.isArray(lookupResult?.data) ? lookupResult.data : []
+                  const match = items.find(p => String(p?.reference || '').trim() === lookupKey || String(p?.ean || p?.ean13 || '').trim() === lookupKey)
+
+                  if (match?.id) {
+                    setSuccess(`${t('productCreateSuccess', 'Product created successfully!')} (ID: ${match.id})`)
+                  } else {
+                    setError(
+                      t(
+                        'productCreateUnknownResponse',
+                        'Unexpected server response. The product may not have been saved. Please check the product list or try again.'
+                      )
+                    )
+                    setLoading(false)
+                    return
+                  }
+                } else {
+                  setError(
+                    t(
+                      'productCreateUnknownResponse',
+                      'Unexpected server response. The product may not have been saved. Please check the product list or try again.'
+                    )
+                  )
+                  setLoading(false)
+                  return
+                }
+              } else {
+                setError(
+                  t(
+                    'productCreateUnknownResponse',
+                    'Unexpected server response. The product may not have been saved. Please check the product list or try again.'
+                  )
+                )
+                setLoading(false)
+                return
+              }
+            }
+          }
         }
 
         setTimeout(() => {
@@ -1109,11 +1276,15 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         }, 1500)
       } else {
         const responseText = await response.text()
+        console.log('❌ [DEBUG] Error response text:', responseText)
 
         let errorData = {}
         try {
           errorData = JSON.parse(responseText)
-        } catch (e) {}
+          console.log('❌ [DEBUG] Parsed error data:', errorData)
+        } catch (e) {
+          console.log('⚠️ [DEBUG] Could not parse error as JSON')
+        }
 
         // Handle API Key errors first
         if (response.status === 401 || response.status === 403) {
@@ -1127,16 +1298,38 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           errorMessage = errorData.detail.map(err => `${err.loc.join(' -> ')}: ${err.msg}`).join('\n')
         } else if (errorData.detail) {
           const detailStr = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail)
+
+          // Known backend bug (server-side): create crashes trying to read ean13 from ProductCreate
+          if (!editId && detailStr.includes("ProductCreate") && detailStr.includes("ean13")) {
+            console.error('❌ Backend create bug (ean13 mismatch). Raw detail:', detailStr)
+
+            const backendCreateBugMessage =
+              dictionary.common?.backendCreateBugMessage ||
+              'Backend error: product creation is currently broken on the API (ean13 mismatch).'
+
+            const backendCreateBugAction =
+              dictionary.common?.backendCreateBugAction ||
+              'This must be fixed in the backend: update ProductCreate to use ean (or add ean13 to the input model).'
+
+            const backendCreateBugTechnical =
+              dictionary.common?.backendCreateBugTechnical ||
+              "Technical detail: server returned 'ProductCreate' object has no attribute 'ean13'."
+
+            errorMessage =
+              `${backendCreateBugMessage}\n${backendCreateBugAction}\n${backendCreateBugTechnical}`
+          } else
           // Ignore "Only configurable products" error if product was actually saved
           if (detailStr.includes('Only configurable products can have variants')) {
-            // Product was likely saved successfully despite the error
-            setSuccess(editId ? 'Product updated successfully!' : 'Product created successfully!')
-            setTimeout(() => {
-              router.push('/apps/ecommerce/products/list')
-            }, 1500)
+            setError(
+              t(
+                'productVariantsNotAllowed',
+                'Variants can only be added for configurable products. Remove variants or set product type to configurable.'
+              )
+            )
+
             return
           }
-          errorMessage = detailStr
+          else errorMessage = detailStr
         } else if (errorData.message) {
           errorMessage = errorData.message
         } else if (errorData.error) {
@@ -1934,7 +2127,11 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                   <Select
                     value={formData.brand_id || ''}
                     label={dictionary.common?.selectBrand || 'Select Brand'}
-                    onChange={e => setFormData({ ...formData, brand_id: e.target.value })}
+                    onChange={e => {
+                      console.log('🔄 Brand changed:', e.target.value)
+                      console.log('Available brands:', brands)
+                      setFormData({ ...formData, brand_id: e.target.value })
+                    }}
                   >
                     <MenuItem value=''>
                       <em>None</em>
@@ -1961,13 +2158,25 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                   <Select
                     multiple
                     value={formData.categories}
-                    onChange={e => setFormData({ ...formData, categories: e.target.value })}
+                    onChange={e => {
+                      console.log('🔄 Categories changed:', e.target.value)
+                      console.log('Available categories:', categories)
+                      setFormData({ ...formData, categories: e.target.value })
+                    }}
                     input={<OutlinedInput label={dictionary.common?.selectCategories || 'Select Categories'} />}
                     MenuProps={{
                       PaperProps: {
                         style: {
-                          maxHeight: 400
+                          maxHeight: '60vh'
                         }
+                      },
+                      anchorOrigin: {
+                        vertical: 'bottom',
+                        horizontal: 'left'
+                      },
+                      transformOrigin: {
+                        vertical: 'top',
+                        horizontal: 'left'
                       }
                     }}
                     sx={{
@@ -1989,22 +2198,26 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                         top: 'calc(50% - 12px) !important'
                       }
                     }}
-                    renderValue={selected => (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 0.5,
-                          width: '100%'
-                        }}
-                      >
-                        {selected.map(value => {
-                          const category = Array.isArray(categories) ? categories.find(c => c.id === value) : null
-                          return (
-                            <Chip
-                              key={value}
-                              label={category?.name || value}
-                              size='small'
+                    renderValue={selected => {
+                      console.log('📋 Rendering selected categories:', selected)
+                      console.log('📋 Available categories for lookup:', categories)
+                      return (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 0.5,
+                            width: '100%'
+                          }}
+                        >
+                          {selected.map(value => {
+                            const category = Array.isArray(categories) ? categories.find(c => c.id === value) : null
+                            console.log(`📋 Category ${value}:`, category)
+                            return (
+                              <Chip
+                                key={value}
+                                label={category?.name || `ID: ${value}`}
+                                size='small'
                               onDelete={e => {
                                 e.preventDefault()
                                 e.stopPropagation()
@@ -2030,7 +2243,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                           )
                         })}
                       </Box>
-                    )}
+                      )
+                    }}
                   >
                     {Array.isArray(categories) &&
                       categories

@@ -103,5 +103,15 @@
         "menuLevel2": "Menu Level 2",
         "menuLevel3": "Menu Level 3",
         "disabledMenu": "Disabled Menu"
+    },
+    "common": {
+        "backendCreateBugMessage": "Backend error: product creation is currently broken on the API (ean13 mismatch).",
+        "backendCreateBugAction": "This must be fixed in the backend: update ProductCreate to use ean (or add ean13 to the input model).",
+        "backendCreateBugTechnical": "Technical detail: server returned 'ProductCreate' object has no attribute 'ean13'.",
+        "productCreateSuccess": "Product created successfully!",
+        "productUpdateSuccess": "Product updated successfully!",
+        "productCreateNotPersisted": "The API responded, but the product was not found in the database. Please try again or contact the administrator.",
+        "productCreateUnknownResponse": "Unexpected server response. The product may not have been saved. Please check the product list or try again.",
+        "productVariantsNotAllowed": "Variants can only be added for configurable products. Remove variants or set product type to configurable."
     }
 }

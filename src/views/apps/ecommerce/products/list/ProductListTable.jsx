@@ -5,7 +5,7 @@
 'use client'
 
 // React Imports
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -62,6 +62,7 @@ import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 import tableStyles from '@core/styles/table.module.css'
 
 const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
+const CATEGORIES_BASE_URL = `${API_BASE_URL}/api/v1/categories`
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   // Rank the item
@@ -98,7 +99,7 @@ const productGlobalFilter = (row, _columnId, value) => {
   return searchFields.some(field => field.includes(query))
 }
 
-const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
+const DebouncedInput = ({ value: initialValue, onChange, debounce = 250, ...props }) => {
   // States
   const [value, setValue] = useState(initialValue)
 
@@ -115,16 +116,6 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
   }, [value])
 
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
-}
-
-// Vars
-const productCategoryObj = {
-  Accessories: { icon: 'tabler-headphones', color: 'error' },
-  'Home Decor': { icon: 'tabler-smart-home', color: 'info' },
-  Electronics: { icon: 'tabler-device-laptop', color: 'primary' },
-  Shoes: { icon: 'tabler-shoe', color: 'success' },
-  Office: { icon: 'tabler-briefcase', color: 'warning' },
-  Games: { icon: 'tabler-device-gamepad-2', color: 'secondary' }
 }
 
 const productStatusObj = {
@@ -153,9 +144,129 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
   const [pageSize, setPageSize] = useState(10)
   const [totalCount, setTotalCount] = useState(0)
 
+  // Category filter
+  const [categories, setCategories] = useState([])
+  const [categoryId, setCategoryId] = useState('')
+
+  // Extra filters (client-side)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [stockFilter, setStockFilter] = useState('')
+
   // Hooks
   const { lang: locale } = useParams()
   const router = useRouter()
+
+  // Cache for fast text search across large product catalogs
+  const allProductsTotalRef = useRef(null)
+  const productPageCacheRef = useRef(new Map()) // pageIndex -> { ts: number, products: any[] }
+  const nameSearchAbortRef = useRef(null)
+
+  const PAGE_CACHE_TTL_MS = 60 * 1000
+
+  const getCachedPage = pageIndex => {
+    const entry = productPageCacheRef.current.get(pageIndex)
+
+    if (!entry) {
+      return null
+    }
+
+    if (!entry.ts || Date.now() - entry.ts > PAGE_CACHE_TTL_MS) {
+      productPageCacheRef.current.delete(pageIndex)
+
+      return null
+    }
+
+    return entry.products
+  }
+
+  const setCachedPage = (pageIndex, products) => {
+    productPageCacheRef.current.set(pageIndex, { ts: Date.now(), products: Array.isArray(products) ? products : [] })
+  }
+
+  useEffect(() => {
+    allProductsTotalRef.current = null
+    productPageCacheRef.current = new Map()
+
+    if (nameSearchAbortRef.current) {
+      try {
+        nameSearchAbortRef.current.abort()
+      } catch {
+        // ignore
+      }
+      nameSearchAbortRef.current = null
+    }
+  }, [locale, categoryId])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const getCategoryNameForLocale = (c, lang) => {
+      const translations = Array.isArray(c?.translations) ? c.translations : []
+      const want = String(lang || '').toLowerCase()
+      const exact = translations.find(t => String(t?.lang || '').toLowerCase() === want)
+      if (exact?.name) return String(exact.name)
+
+      const en = translations.find(t => String(t?.lang || '').toLowerCase() === 'en')
+      if (en?.name) return String(en.name)
+
+      return String(c?.name ?? '').trim()
+    }
+
+    const fetchAllCategories = async () => {
+      try {
+        const langParam = encodeURIComponent(locale || 'it')
+        const limit = 500
+        let skip = 0
+        let all = []
+
+        for (let i = 0; i < 10; i++) {
+          const url = `${CATEGORIES_BASE_URL}?skip=${skip}&limit=${limit}&lang=${langParam}&active_only=false&parent_only=false`
+          const response = await fetch(url)
+          if (!response.ok) break
+
+          const result = await response.json().catch(() => ({}))
+          const items = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []
+          const meta = result?.meta || {}
+
+          all = all.concat(items)
+
+          const hasNext = Boolean(meta?.has_next)
+          const total = typeof meta?.total === 'number' ? meta.total : null
+
+          if (hasNext) {
+            skip += limit
+            continue
+          }
+
+          if (total != null && all.length < total) {
+            skip += limit
+            continue
+          }
+
+          break
+        }
+
+        const normalized = all
+          .filter(c => c && c.id != null)
+          .map(c => ({
+            ...c,
+            id: c.id,
+            parent_id: c.parent_id ?? null,
+            name: getCategoryNameForLocale(c, locale || 'it')
+          }))
+
+        if (!cancelled) setCategories(normalized)
+      } catch {
+        if (!cancelled) setCategories([])
+      }
+    }
+
+    fetchAllCategories()
+
+    return () => {
+      cancelled = true
+    }
+  }, [locale])
 
   // Fetch products from API with SMART server-side search
   const fetchProducts = async (currentPage = 0, currentPageSize = 10, searchQuery = '') => {
@@ -163,94 +274,341 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
       setLoading(true)
       setError('')
 
-      const query = searchQuery?.trim() || ''
+      const query = (searchQuery ?? '').trim()
+      const langParam = encodeURIComponent(locale || 'it')
+      const searchLangParam = encodeURIComponent('en')
+      const headers = { 'X-API-KEY': API_KEY }
+      const categoryParam = categoryId ? `&category_id=${encodeURIComponent(categoryId)}` : ''
 
-      // SMART SEARCH: Search by ID or Name directly
+      const getProductTitleForSearch = product => {
+        const directTitle = String(product?.title ?? product?.name ?? '')
+        if (directTitle) return directTitle
+
+        const translations = Array.isArray(product?.translations) ? product.translations : []
+        if (!translations.length) return ''
+
+        const localeTranslation = translations.find(t => t?.lang === (locale || 'it'))
+        if (localeTranslation?.title) return String(localeTranslation.title)
+
+        const enTranslation = translations.find(t => t?.lang === 'en')
+        if (enTranslation?.title) return String(enTranslation.title)
+
+        const anyTitle = translations.find(t => t?.title)
+
+        return anyTitle?.title ? String(anyTitle.title) : ''
+      }
+
+      const tryBackendSearch = async () => {
+        const url = `${API_BASE_URL}/api/v1/products?active_only=false&skip=0&limit=${Math.max(10, currentPageSize)}&lang=${searchLangParam}&search=${encodeURIComponent(query)}${categoryParam}`
+        const response = await fetch(url, { headers })
+
+        if (!response.ok) return null
+
+        const result = await response.json().catch(() => ({}))
+        const items = Array.isArray(result?.data) ? result.data : []
+        const total = result?.meta?.total
+
+        if (!items.length && !(typeof total === 'number' && total > 0)) return null
+
+        const formattedResult = { data: items, meta: { total: typeof total === 'number' ? total : items.length } }
+
+        return { ok: true, json: async () => formattedResult }
+      }
+
+      const tryAdminTitleSearchEndpoint = async () => {
+        // This endpoint exists per OpenAPI and is NOT shadowed by /products/{product_id}.
+        // Requires X-API-KEY.
+        const localeLang = String(locale || 'it').toLowerCase()
+        const supportedLang = ['it', 'en', 'fr', 'de', 'ar'].includes(localeLang) ? localeLang : 'en'
+
+        const doRequest = async lang => {
+          const url = `${API_BASE_URL}/api/admin/products/search-by-title?title=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}&limit=50`
+          const response = await fetch(url, { headers: { 'X-API-KEY': API_KEY } })
+          if (!response.ok) return null
+          return await response.json().catch(() => ({}))
+        }
+
+        let result = await doRequest(supportedLang)
+        if (!result) return null
+
+        let raw =
+          (Array.isArray(result?.data) && result.data) ||
+          (Array.isArray(result?.results) && result.results) ||
+          (Array.isArray(result?.items) && result.items) ||
+          (Array.isArray(result) && result) ||
+          []
+
+        // If locale search returns nothing, retry in English (many records only have EN titles).
+        if (!raw.length && supportedLang !== 'en') {
+          const enResult = await doRequest('en')
+          if (enResult) {
+            result = enResult
+            raw =
+              (Array.isArray(result?.data) && result.data) ||
+              (Array.isArray(result?.results) && result.results) ||
+              (Array.isArray(result?.items) && result.items) ||
+              (Array.isArray(result) && result) ||
+              []
+          }
+        }
+
+        if (!raw.length) return null
+
+        // Normalize into the shape expected by processProducts (it can handle extra fields too).
+        const normalized = raw
+          .map(item => {
+            const priceList =
+              typeof item?.price_list === 'number'
+                ? item.price_list
+                : typeof item?.price?.list === 'number'
+                  ? item.price.list
+                  : null
+
+            const currency = item?.currency || item?.price?.currency || 'EUR'
+            const stockQuantity =
+              typeof item?.stock_quantity === 'number'
+                ? item.stock_quantity
+                : typeof item?.stock?.quantity === 'number'
+                  ? item.stock.quantity
+                  : 0
+
+            return {
+              ...item,
+              id: item?.id,
+              reference: item?.reference || '',
+              ean: item?.ean || item?.ean13 || '',
+              title: item?.title || '',
+              is_active: item?.is_active,
+              stock: item?.stock || { quantity: stockQuantity },
+              price:
+                typeof priceList === 'number'
+                  ? {
+                      list: priceList,
+                      currency
+                    }
+                  : item?.price ?? null
+            }
+          })
+          .filter(p => p?.id !== undefined && p?.id !== null)
+
+        if (!normalized.length) return null
+
+        // Client-side slice for pagination (endpoint returns at most 50)
+        const start = currentPage * currentPageSize
+        const pageItems = normalized.slice(start, start + currentPageSize)
+
+        const total =
+          typeof result?.total === 'number'
+            ? result.total
+            : typeof result?.meta?.total === 'number'
+              ? result.meta.total
+              : normalized.length
+
+        const formattedResult = {
+          data: pageItems,
+          meta: {
+            total
+          }
+        }
+
+        return { ok: true, json: async () => formattedResult }
+      }
+
+      const fetchAllProductsTotal = async () => {
+        if (typeof allProductsTotalRef.current === 'number') return allProductsTotalRef.current
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/products?active_only=false&skip=0&limit=1&lang=${langParam}`,
+          { headers }
+        )
+
+        if (!response.ok) {
+          allProductsTotalRef.current = 0
+          return 0
+        }
+
+        const result = await response.json().catch(() => ({}))
+        const total = result?.meta?.total
+        allProductsTotalRef.current = typeof total === 'number' ? total : 0
+
+        return allProductsTotalRef.current
+      }
+
+      const buildAlternatingPageOrder = maxPages => {
+        const order = []
+        let left = 0
+        let right = maxPages - 1
+
+        while (left <= right) {
+          order.push(left)
+          if (left !== right) order.push(right)
+          left += 1
+          right -= 1
+        }
+
+        return order
+      }
+
       if (query) {
-        // Check if searching by numeric ID
         const isNumericSearch = /^\d+$/.test(query)
 
+        // Avoid expensive full-catalog scans for very short text queries
+        if (!isNumericSearch && query.length < 3) {
+          setData([])
+          setFilteredData([])
+          setTotalCount(0)
+          setLoading(false)
+          return
+        }
+
+        // Direct ID search (fast path)
         if (isNumericSearch) {
-          // Direct ID search - SUPER FAST!
-          try {
-            const response = await fetch(`https://onebby-api.onrender.com/api/v1/products/${query}`, {
-              headers: { 'X-API-KEY': API_KEY }
-            })
+          const response = await fetch(`${API_BASE_URL}/api/v1/products/${query}?lang=${langParam}`, {
+            headers
+          })
 
-            if (response.ok) {
-              const result = await response.json()
-              // API returns {data: {...}, meta: {...}} for single product
-              const product = result.data || result
-              // Return as array with single product for processing
-              const formattedResult = { data: [product], meta: { total: 1 } }
-              const mockResponse = { ok: true, json: async () => formattedResult }
-              return await processProducts(mockResponse, 0, currentPageSize, '', false) // No search filter needed
-            } else if (response.status === 404) {
-              // Product not found by ID
-              setData([])
-              setFilteredData([])
-              setTotalCount(0)
-              setLoading(false)
-              return
-            }
-          } catch (err) {
-            setData([])
-            setFilteredData([])
-            setTotalCount(0)
-            setLoading(false)
-            return
-          }
-        }
-
-        // Name/Reference search - search products efficiently
-        // Fetch products from multiple ranges: first products + last products
-        const batchSize = 500
-        const fetchPromises = []
-
-        // Fetch first 1500 products (old products)
-        for (let i = 0; i < 3; i++) {
-          const skip = i * batchSize
-          fetchPromises.push(
-            fetch(`https://onebby-api.onrender.com/api/v1/products?skip=${skip}&limit=${batchSize}`, {
-              headers: { 'X-API-KEY': API_KEY }
-            })
-          )
-        }
-
-        // Fetch LAST 1500 products (newest products including 35965+)
-        // Based on total ~19444, fetch from 17944, 18444, 18944
-        for (let i = 0; i < 3; i++) {
-          const skip = 17944 + i * batchSize
-          fetchPromises.push(
-            fetch(`https://onebby-api.onrender.com/api/v1/products?skip=${skip}&limit=${batchSize}`, {
-              headers: { 'X-API-KEY': API_KEY }
-            })
-          )
-        }
-
-        const responses = await Promise.all(fetchPromises)
-        let allProducts = []
-
-        for (const response of responses) {
           if (response.ok) {
             const result = await response.json()
-            allProducts = [...allProducts, ...(result.data || [])]
+            const product = result.data || result
+            const formattedResult = { data: [product], meta: { total: 1 } }
+            const mockResponse = { ok: true, json: async () => formattedResult }
+
+            return await processProducts(mockResponse, 0, currentPageSize, '', false)
+          }
+          // If 404: it might be a reference/EAN (numeric) not a product id; fall back to the scan below.
+        }
+
+        // Try backend search param first (fast path when supported by API)
+        const backendSearchResponse = await tryBackendSearch()
+        if (backendSearchResponse) {
+          return await processProducts(backendSearchResponse, currentPage, currentPageSize, '', false)
+        }
+
+        // Fast title search endpoint (case-insensitive partial match)
+        const adminTitleSearchResponse = await tryAdminTitleSearchEndpoint()
+        if (adminTitleSearchResponse) {
+          return await processProducts(adminTitleSearchResponse, currentPage, currentPageSize, '', false)
+        }
+
+        // Text search (name/reference) across large catalog: progressive scan with caching.
+        // This avoids fetching thousands of products on every keystroke.
+        if (nameSearchAbortRef.current) {
+          try {
+            nameSearchAbortRef.current.abort()
+          } catch {
+            // ignore
           }
         }
 
-        // Now process with search filter
-        const result = { data: allProducts, meta: { total: allProducts.length } }
-        const mockResponse = { ok: true, json: async () => result }
-        return await processProducts(mockResponse, currentPage, currentPageSize, query, true)
-      } else {
-        // Normal pagination without search
-        const skip = currentPage * currentPageSize
-        const apiUrl = `https://onebby-api.onrender.com/api/v1/products?active_only=false&skip=${skip}&limit=${currentPageSize}`
-        const response = await fetch(apiUrl, { headers: { 'X-API-KEY': API_KEY } })
+        const controller = new AbortController()
+        nameSearchAbortRef.current = controller
 
-        return await processProducts(response, currentPage, currentPageSize, query, false)
+        const batchSize = 500
+        const totalProducts = await fetchAllProductsTotal()
+        const maxPages = Math.max(1, Math.ceil(totalProducts / batchSize))
+        const order = buildAlternatingPageOrder(maxPages)
+
+        const q = query.toLowerCase()
+        const neededCount = (currentPage + 1) * currentPageSize
+        const matches = []
+
+        const maxScanPages = 10
+        const maxScanMs = 12_000
+        const scanStart = Date.now()
+        let scannedPages = 0
+
+        for (const pageIndex of order) {
+          if (controller.signal.aborted) {
+            setLoading(false)
+
+            return
+          }
+
+          if (Date.now() - scanStart > maxScanMs || scannedPages >= maxScanPages) {
+            break
+          }
+
+          const forceRefresh = pageIndex === 0 || pageIndex === maxPages - 1
+
+          // Fetch page if not cached (or cache expired)
+          if (forceRefresh || !getCachedPage(pageIndex)) {
+            const skip = pageIndex * batchSize
+            const response = await fetch(
+              `${API_BASE_URL}/api/v1/products?active_only=false&skip=${skip}&limit=${batchSize}&lang=${searchLangParam}`,
+              { headers, signal: controller.signal }
+            )
+
+            scannedPages += 1
+
+            if (!response.ok) {
+              setCachedPage(pageIndex, [])
+            } else {
+              const result = await response.json().catch(() => ({}))
+              setCachedPage(pageIndex, Array.isArray(result?.data) ? result.data : [])
+            }
+          }
+
+          const products = getCachedPage(pageIndex) || []
+
+          for (const p of products) {
+            const title = getProductTitleForSearch(p).toLowerCase()
+            const reference = String(p?.reference ?? '').toLowerCase()
+            const ean = String(p?.ean ?? p?.ean13 ?? '').toLowerCase()
+            const idStr = String(p?.id ?? '').toLowerCase()
+
+            if (title.includes(q) || reference.includes(q) || ean.includes(q) || idStr.includes(q)) {
+              matches.push(p)
+            }
+          }
+
+          // Stop early once we have enough to render the requested page
+          if (matches.length >= neededCount) break
+        }
+
+        const start = currentPage * currentPageSize
+        const pageItems = matches.slice(start, start + currentPageSize)
+
+        if (!pageItems.length) {
+          setData([])
+          setFilteredData([])
+          setTotalCount(0)
+          setLoading(false)
+
+          setError(
+            dictionary.common?.nameSearchLimited ||
+              'Name search can be slow/limited due to API constraints. Try searching by ID or Reference/EAN instead.'
+          )
+
+          return
+        }
+
+        // We don't know the real total matches without scanning all pages.
+        // Provide an approximate total that enables pagination while we scan more on demand.
+        const scannedAllPages = productPageCacheRef.current.size >= maxPages
+        const hasMore = !scannedAllPages && matches.length >= neededCount
+        const approxTotal = hasMore ? start + pageItems.length + 1 : matches.length
+
+        const mockResult = { data: pageItems, meta: { total: approxTotal } }
+        const mockResponse = { ok: true, json: async () => mockResult }
+
+        return await processProducts(mockResponse, currentPage, currentPageSize, '', false)
       }
+
+      // Normal pagination
+      const skip = currentPage * currentPageSize
+      const apiUrl = `${API_BASE_URL}/api/v1/products?active_only=false&skip=${skip}&limit=${currentPageSize}&lang=${langParam}${categoryParam}`
+      const response = await fetch(apiUrl, { headers })
+
+      return await processProducts(response, currentPage, currentPageSize, '', false)
     } catch (err) {
+      // Aborts are expected when the user types quickly (we cancel the previous in-flight search).
+      // Don't surface them as errors.
+      if (err?.name === 'AbortError' || String(err?.message || '').toLowerCase().includes('aborted')) {
+        setLoading(false)
+
+        return
+      }
+
       setError(`Network error: ${err.message}`)
       setLoading(false)
     }
@@ -277,8 +635,13 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
               return product
             }
 
+            // List endpoint usually includes stock; avoid extra network calls when present
+            if (product?.stock && typeof product.stock.quantity === 'number') {
+              return product
+            }
+
             try {
-              const stockResponse = await fetch(`https://onebby-api.onrender.com/api/v1/products/${product.id}/stock`, {
+              const stockResponse = await fetch(`${API_BASE_URL}/api/v1/products/${product.id}/stock`, {
                 headers: { 'X-API-KEY': API_KEY }
               })
 
@@ -356,51 +719,25 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
           }
         })
 
-        // If there's a search query, filter the data client-side
-        let finalData = formattedData
-        let finalTotal = total // Use total from API by default
-
-        if (searchQuery && searchQuery.trim()) {
-          const query = searchQuery.trim().toLowerCase()
-          finalData = formattedData.filter(product => {
-            return (
-              String(product.id).toLowerCase().includes(query) ||
-              String(product.productName).toLowerCase().includes(query) ||
-              String(product.productId).toLowerCase().includes(query) ||
-              String(product.reference).toLowerCase().includes(query)
-            )
-          })
-          finalTotal = finalData.length
-
-          // Apply pagination to filtered results
-          const start = currentPage * currentPageSize
-          const end = start + currentPageSize
-          finalData = finalData.slice(start, end)
-
-          // Now fetch stock for only the displayed products (10-50 products max)
-          finalData = await Promise.all(
-            finalData.map(async product => {
-              try {
-                const stockResponse = await fetch(
-                  `https://onebby-api.onrender.com/api/v1/products/${product.id}/stock`,
-                  {
-                    headers: { 'X-API-KEY': API_KEY }
-                  }
-                )
-
-                if (stockResponse.ok) {
-                  const stockData = await stockResponse.json()
-                  return { ...product, quantity: stockData?.stock_quantity || 0 }
-                }
-              } catch (error) {
-                // Error fetching stock
-              }
-              return product
-            })
-          )
+        const productStockObj = {
+          'In Stock': true,
+          'Out of Stock': false
         }
 
-        setTotalCount(finalTotal)
+        const finalData = formattedData.filter(item => {
+          if (statusFilter && String(item.status) !== String(statusFilter)) return false
+
+          if (stockFilter) {
+            const wantInStock = productStockObj[String(stockFilter)]
+            const isInStock = Number(item.quantity || 0) > 0
+            if (wantInStock === true && !isInStock) return false
+            if (wantInStock === false && isInStock) return false
+          }
+
+          return true
+        })
+
+        setTotalCount(total)
         setData(finalData)
         setFilteredData(finalData)
       } else {
@@ -439,7 +776,12 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
 
   useEffect(() => {
     fetchProducts(page, pageSize, globalFilter)
-  }, [page, pageSize, globalFilter])
+  }, [page, pageSize, globalFilter, categoryId])
+
+  useEffect(() => {
+    setPage(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId])
 
   // Toggle Stock Status
   const handleToggleStock = async product => {
@@ -487,11 +829,11 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
     if (!productToDelete) return
 
     try {
-      const deleteUrl = `https://onebby-api.onrender.com/api/admin/products/${productToDelete.id}`
+      const deleteUrl = `${API_BASE_URL}/api/admin/products/${productToDelete.id}`
 
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
-        headers: { 'X-API-Key': API_KEY }
+        headers: { 'X-API-KEY': API_KEY }
       })
 
       if (response.ok) {
@@ -732,7 +1074,16 @@ const ProductListTable = ({ productData, dictionary = { navigation: {}, common: 
             {success}
           </Alert>
         )}
-        <TableFilters setData={setFilteredData} productData={data} dictionary={dictionary} />
+        <TableFilters
+          dictionary={dictionary}
+          categories={categories}
+          categoryId={categoryId}
+          onCategoryChange={value => setCategoryId(String(value || ''))}
+          status={statusFilter}
+          onStatusChange={value => setStatusFilter(String(value || ''))}
+          stock={stockFilter}
+          onStockChange={value => setStockFilter(String(value || ''))}
+        />
         <Divider />
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <DebouncedInput
