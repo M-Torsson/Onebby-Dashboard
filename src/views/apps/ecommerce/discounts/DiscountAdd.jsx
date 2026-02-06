@@ -43,6 +43,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
   const [productSearchInput, setProductSearchInput] = useState('')
   const [searchedProducts, setSearchedProducts] = useState([])
   const [searchingProducts, setSearchingProducts] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState({})
 
   const [formData, setFormData] = useState({
     name: '',
@@ -66,26 +67,86 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${V1_BASE_URL}/categories`, {
-        headers: { 'X-API-KEY': API_KEY }
-      })
-      if (response.ok) {
+      // Fetch all categories with pagination
+      const limit = 500
+      let skip = 0
+      let allCategories = []
+      let hasMore = true
+
+      while (hasMore && skip < 5000) {
+        const url = `${V1_BASE_URL}/categories?skip=${skip}&limit=${limit}&active_only=false&parent_only=false`
+        const response = await fetch(url, {
+          headers: { 'X-API-KEY': API_KEY }
+        })
+
+        if (!response.ok) break
+
         const result = await response.json()
-        setCategories(result.data || result || [])
+        const data = result.data || result || []
+        const categoriesArray = Array.isArray(data) ? data : []
+
+        allCategories = allCategories.concat(categoriesArray)
+
+        if (categoriesArray.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
       }
-    } catch (err) {}
+
+      // Sort: parents first, then by name
+      allCategories.sort((a, b) => {
+        if (a.parent_id === null && b.parent_id !== null) return -1
+        if (a.parent_id !== null && b.parent_id === null) return 1
+        return (a.name || '').localeCompare(b.name || '')
+      })
+
+      setCategories(allCategories)
+    } catch (err) {
+      console.error('Error fetching categories:', err)
+    }
   }
 
   const fetchBrands = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/brands`, {
-        headers: { 'X-API-KEY': API_KEY }
-      })
-      if (response.ok) {
+      // Fetch all brands with pagination
+      const limit = 500
+      let skip = 0
+      let allBrands = []
+      let hasMore = true
+
+      while (hasMore && skip < 5000) {
+        const url = `${API_BASE_URL}/api/admin/brands?skip=${skip}&limit=${limit}&active_only=false`
+        const response = await fetch(url, {
+          headers: { 'X-API-KEY': API_KEY }
+        })
+
+        if (!response.ok) break
+
         const result = await response.json()
-        setBrands(result.data || result || [])
+        const data = result.data || result
+        const brandsArray = Array.isArray(data) ? data : []
+
+        allBrands = allBrands.concat(brandsArray)
+
+        if (brandsArray.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
       }
-    } catch (err) {}
+
+      // Sort brands alphabetically
+      allBrands.sort((a, b) => {
+        const nameA = String(a?.name || '').toLowerCase()
+        const nameB = String(b?.name || '').toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+
+      setBrands(allBrands)
+    } catch (err) {
+      console.error('Error fetching brands:', err)
+    }
   }
 
   const fetchProducts = async () => {
@@ -331,6 +392,74 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
     return item.name || `Item ${item.id}`
   }
 
+  const toggleCategoryExpanded = categoryId => {
+    setExpandedCategories(prev => ({ ...prev, [categoryId]: !prev?.[categoryId] }))
+  }
+
+  const getCategoryTree = () => {
+    const byId = new Map(categories.filter(Boolean).map(c => [String(c?.id ?? ''), c]))
+    const childrenByParent = new Map()
+
+    for (const c of categories) {
+      if (!c || c?.id == null) continue
+      const pid = c?.parent_id == null ? null : String(c.parent_id)
+      const arr = childrenByParent.get(pid) || []
+      arr.push(c)
+      childrenByParent.set(pid, arr)
+    }
+
+    const getName = c => String(c?.name ?? c?.label ?? '').trim()
+    const sortByName = arr => [...arr].sort((a, b) => getName(a).localeCompare(getName(b)))
+    const roots = sortByName(childrenByParent.get(null) || [])
+
+    const flatten = () => {
+      const out = []
+      const visited = new Set()
+
+      const walk = (node, depth) => {
+        const id = String(node?.id ?? '')
+        if (!id || visited.has(id)) return
+        visited.add(id)
+
+        const kids = sortByName(childrenByParent.get(id) || [])
+        const hasChildren = kids.length > 0
+
+        out.push({ id, label: getName(node), depth, hasChildren, node })
+
+        if (hasChildren && expandedCategories?.[id]) {
+          for (const child of kids) {
+            walk(child, depth + 1)
+          }
+        }
+      }
+
+      for (const root of roots) {
+        walk(root, 0)
+      }
+
+      return out
+    }
+
+    // Auto-expand path to selected categories
+    if (formData.target_ids.length > 0) {
+      for (const selectedId of formData.target_ids) {
+        const selected = byId.get(String(selectedId))
+        if (selected) {
+          const seen = new Set()
+          let cur = selected
+          while (cur && cur?.parent_id != null) {
+            const pid = String(cur.parent_id)
+            if (!pid || seen.has(pid)) break
+            seen.add(pid)
+            cur = byId.get(pid)
+          }
+        }
+      }
+    }
+
+    return flatten()
+  }
+
   if (fetchingData) {
     return (
       <Card>
@@ -543,11 +672,47 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                         </Box>
                       )}
                     >
-                      {getTargetOptions().map(item => (
-                        <MenuItem key={item.id} value={item.id}>
-                          {getTargetLabel(item)}
-                        </MenuItem>
-                      ))}
+                      {formData.target_type === 'category'
+                        ? getCategoryTree().map(opt => (
+                            <MenuItem key={opt.id} value={opt.node.id} sx={{ pl: 2 + opt.depth * 3 }}>
+                              <div className='flex items-center justify-between w-full'>
+                                <span
+                                  style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                >
+                                  {opt.label}
+                                </span>
+                                {opt.hasChildren ? (
+                                  <span
+                                    role='button'
+                                    tabIndex={-1}
+                                    onMouseDown={e => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                    }}
+                                    onClick={e => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      toggleCategoryExpanded(opt.id)
+                                    }}
+                                    style={{ display: 'inline-flex', alignItems: 'center', paddingLeft: 10 }}
+                                    aria-label={expandedCategories?.[opt.id] ? 'Collapse' : 'Expand'}
+                                    title={expandedCategories?.[opt.id] ? 'Collapse' : 'Expand'}
+                                  >
+                                    <i
+                                      className={
+                                        expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
+                                      }
+                                    />
+                                  </span>
+                                ) : null}
+                              </div>
+                            </MenuItem>
+                          ))
+                        : getTargetOptions().map(item => (
+                            <MenuItem key={item.id} value={item.id}>
+                              {getTargetLabel(item)}
+                            </MenuItem>
+                          ))}
                     </Select>
                   </FormControl>
                 </Grid>

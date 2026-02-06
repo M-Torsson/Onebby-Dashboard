@@ -416,37 +416,66 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         return
       }
 
-      console.log('🔍 [DEBUG] API_KEY exists, fetching brands from:', `${API_BASE_URL}/api/admin/brands`)
+      console.log('🔍 [DEBUG] API_KEY exists, fetching ALL brands...')
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         console.warn('⏱️ [DEBUG] Brands fetch timeout - aborting...')
         controller.abort()
-      }, 10000)
+      }, 15000)
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/brands`, {
-        headers: { 'X-API-KEY': API_KEY },
-        mode: 'cors',
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      console.log('✅ [DEBUG] Brands response status:', response.status, response.ok)
-      
-      if (response.ok) {
+      // Fetch all brands with pagination (up to 5000 brands max)
+      const limit = 500 // API max per request
+      let skip = 0
+      let allBrands = []
+      let hasMore = true
+
+      while (hasMore && skip < 5000) {
+        const url = `${API_BASE_URL}/api/admin/brands?skip=${skip}&limit=${limit}&active_only=false`
+        console.log(`🔍 [DEBUG] Fetching brands page: skip=${skip}, limit=${limit}`)
+
+        const response = await fetch(url, {
+          headers: { 'X-API-KEY': API_KEY },
+          mode: 'cors',
+          signal: controller.signal
+        })
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            console.error('❌ [DEBUG] Invalid API Key - Status:', response.status)
+          } else {
+            console.warn('⚠️ [DEBUG] Failed to fetch brands - Status:', response.status)
+          }
+          break
+        }
+
         const result = await response.json()
         const data = result.data || result
         const brandsArray = Array.isArray(data) ? data : []
-        console.log('📊 [DEBUG] Brands raw data length:', brandsArray.length)
-        setBrands(brandsArray)
-        console.log('✅ Brands loaded:', brandsArray.length)
-      } else if (response.status === 401 || response.status === 403) {
-        console.error('❌ [DEBUG] Invalid API Key - Status:', response.status)
-        setBrands([])
-      } else {
-        console.warn('⚠️ [DEBUG] Failed to fetch brands - Status:', response.status)
-        setBrands([])
+
+        console.log(`📊 [DEBUG] Received ${brandsArray.length} brands in this page`)
+        allBrands = allBrands.concat(brandsArray)
+
+        // Check if there are more pages
+        if (brandsArray.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
       }
+
+      clearTimeout(timeoutId)
+      console.log(`✅ [DEBUG] Total brands loaded: ${allBrands.length}`)
+      
+      // Sort brands alphabetically by name
+      allBrands.sort((a, b) => {
+        const nameA = String(a?.name || '').toLowerCase()
+        const nameB = String(b?.name || '').toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+
+      setBrands(allBrands)
+      console.log('✅ Brands loaded and sorted:', allBrands.length)
     } catch (err) {
       console.error('❌ [DEBUG] Error in fetchBrands:')
       console.error('  - Error name:', err.name)
@@ -465,42 +494,60 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         return
       }
 
-      console.log('🔍 [DEBUG] API_KEY exists, fetching categories from:', `${API_BASE_URL}/api/v1/categories`)
+      console.log('🔍 [DEBUG] API_KEY exists, fetching ALL categories...')
       
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         console.warn('⏱️ [DEBUG] Categories fetch timeout - aborting...')
         controller.abort()
-      }, 10000)
+      }, 15000)
       
-      const response = await fetch(`${API_BASE_URL}/api/v1/categories`, {
-        headers: { 'X-API-KEY': API_KEY },
-        mode: 'cors',
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      console.log('✅ [DEBUG] Categories response status:', response.status, response.ok)
-      
-      if (response.ok) {
+      // Fetch all categories with pagination
+      const limit = 500
+      let skip = 0
+      let allCategories = []
+      let hasMore = true
+
+      while (hasMore && skip < 5000) {
+        const url = `${API_BASE_URL}/api/v1/categories?skip=${skip}&limit=${limit}&active_only=false&parent_only=false`
+        console.log(`🔍 [DEBUG] Fetching categories page: skip=${skip}, limit=${limit}`)
+
+        const response = await fetch(url, {
+          headers: { 'X-API-KEY': API_KEY },
+          mode: 'cors',
+          signal: controller.signal
+        })
+
+        if (!response.ok) {
+          console.warn('⚠️ Failed to fetch categories:', response.status)
+          break
+        }
+
         const result = await response.json()
         const data = result.data || result || []
-        console.log('📊 [DEBUG] Categories raw data length:', data.length)
+        const categoriesArray = Array.isArray(data) ? data : []
 
-        const sortedCategories = Array.isArray(data)
-          ? data.sort((a, b) => {
-              if (a.parent_id === null && b.parent_id !== null) return -1
-              if (a.parent_id !== null && b.parent_id === null) return 1
-              return (a.name || '').localeCompare(b.name || '')
-            })
-          : []
+        console.log(`📊 [DEBUG] Received ${categoriesArray.length} categories in this page`)
+        allCategories = allCategories.concat(categoriesArray)
 
-        setCategories(sortedCategories)
-        console.log('✅ Categories loaded:', sortedCategories.length)
-      } else {
-        console.warn('⚠️ Failed to fetch categories:', response.status)
-        setCategories([])
+        if (categoriesArray.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
       }
+
+      clearTimeout(timeoutId)
+      console.log(`✅ [DEBUG] Total categories loaded: ${allCategories.length}`)
+
+      const sortedCategories = allCategories.sort((a, b) => {
+        if (a.parent_id === null && b.parent_id !== null) return -1
+        if (a.parent_id !== null && b.parent_id === null) return 1
+        return (a.name || '').localeCompare(b.name || '')
+      })
+
+      setCategories(sortedCategories)
+      console.log('✅ Categories loaded and sorted:', sortedCategories.length)
     } catch (err) {
       console.error('❌ [DEBUG] Error in fetchCategories:')
       console.error('  - Error name:', err.name)
@@ -519,21 +566,42 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/tax-classes`, {
-        headers: { 'X-API-KEY': API_KEY },
-        mode: 'cors'
-      })
-      if (response.ok) {
+      // Fetch all tax classes with pagination
+      const limit = 500
+      let skip = 0
+      let allTaxClasses = []
+      let hasMore = true
+
+      while (hasMore && skip < 5000) {
+        const url = `${API_BASE_URL}/api/admin/tax-classes?skip=${skip}&limit=${limit}&active_only=false`
+        const response = await fetch(url, {
+          headers: { 'X-API-KEY': API_KEY },
+          mode: 'cors'
+        })
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            console.error('Invalid API Key')
+            setError('Invalid API Key: Please check your API configuration or contact the administrator.')
+          }
+          break
+        }
+
         const result = await response.json()
         const data = result.data || result
-        setTaxClasses(Array.isArray(data) ? data : [])
-      } else if (response.status === 401 || response.status === 403) {
-        console.error('Invalid API Key')
-        setError('Invalid API Key: Please check your API configuration or contact the administrator.')
-        setTaxClasses([])
-      } else {
-        setTaxClasses([])
+        const taxArray = Array.isArray(data) ? data : []
+
+        allTaxClasses = allTaxClasses.concat(taxArray)
+
+        if (taxArray.length < limit) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
       }
+
+      setTaxClasses(allTaxClasses)
+      console.log('✅ Tax classes loaded:', allTaxClasses.length)
     } catch (err) {
       setTaxClasses([])
       console.error('Error fetching tax classes:', err)
