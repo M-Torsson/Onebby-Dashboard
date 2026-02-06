@@ -2229,7 +2229,14 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                     onChange={e => {
                       console.log('🔄 Categories changed:', e.target.value)
                       console.log('Available categories:', categories)
-                      setFormData({ ...formData, categories: e.target.value })
+                      
+                      // Filter out parent categories (those with children)
+                      const selectedCategories = e.target.value.filter(catId => {
+                        const hasChildren = categories.some(c => c.parent_id === catId)
+                        return !hasChildren
+                      })
+                      
+                      setFormData({ ...formData, categories: selectedCategories })
                     }}
                     input={<OutlinedInput label={dictionary.common?.selectCategories || 'Select Categories'} />}
                     MenuProps={{
@@ -2325,6 +2332,17 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                             <MenuItem
                               key={parentCategory.id}
                               value={parentCategory.id}
+                              onClick={e => {
+                                if (children.length > 0) {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  setExpandedCategories(prev =>
+                                    prev.includes(parentCategory.id)
+                                      ? prev.filter(id => id !== parentCategory.id)
+                                      : [...prev, parentCategory.id]
+                                  )
+                                }
+                              }}
                               sx={{
                                 fontWeight: 700,
                                 fontSize: '0.95rem',
@@ -2358,21 +2376,75 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                             </MenuItem>,
 
                             ...(isExpanded
-                              ? children.map(child => (
-                                  <MenuItem
-                                    key={child.id}
-                                    value={child.id}
-                                    sx={{
-                                      pl: 6,
-                                      fontWeight: 400,
-                                      fontSize: '0.875rem',
-                                      color: 'text.secondary'
-                                    }}
-                                  >
-                                    {child.name}
-                                  </MenuItem>
-                                ))
-                              : [])
+                              ? children.map(child => {
+                                  const grandChildren = categories.filter(gc => gc.parent_id === child.id)
+                                  const childIsExpanded = expandedCategories.includes(child.id)
+                                  return [
+                                    <MenuItem
+                                      key={child.id}
+                                      value={child.id}
+                                      onClick={e => {
+                                        if (grandChildren.length > 0) {
+                                          e.preventDefault()
+                                          e.stopPropagation()
+                                          setExpandedCategories(prev =>
+                                            prev.includes(child.id)
+                                              ? prev.filter(id => id !== child.id)
+                                              : [...prev, child.id]
+                                          )
+                                        }
+                                      }}
+                                      sx={{
+                                        pl: 6,
+                                        fontWeight: 400,
+                                        fontSize: '0.875rem',
+                                        color: 'text.secondary',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                      }}
+                                    >
+                                      {grandChildren.length > 0 && (
+                                        <IconButton
+                                          size='small'
+                                          onClick={e => {
+                                            e.stopPropagation()
+                                            setExpandedCategories(prev =>
+                                              prev.includes(child.id)
+                                                ? prev.filter(id => id !== child.id)
+                                                : [...prev, child.id]
+                                            )
+                                          }}
+                                          sx={{ p: 0, minWidth: 20 }}
+                                        >
+                                          <i
+                                            className={childIsExpanded ? 'tabler-chevron-down' : 'tabler-chevron-right'}
+                                            style={{ fontSize: '0.875rem' }}
+                                          />
+                                        </IconButton>
+                                      )}
+                                      {grandChildren.length === 0 && <Box sx={{ width: 20 }} />}
+                                      {child.name}
+                                    </MenuItem>,
+                                    ...(childIsExpanded && grandChildren.length > 0
+                                      ? grandChildren.map(grandChild => (
+                                          <MenuItem
+                                            key={grandChild.id}
+                                            value={grandChild.id}
+                                            sx={{
+                                              pl: 10,
+                                              fontWeight: 400,
+                                              fontSize: '0.8rem',
+                                              color: 'text.secondary'
+                                            }}
+                                          >
+                                            {grandChild.name}
+                                          </MenuItem>
+                                        ))
+                                      : [])
+                                  ]
+                                })
+                              : []).flat()
                           ]
                         })
                         .flat()}
