@@ -21,6 +21,8 @@
         "category": "Categoria",
         "brands": "Marchi",
         "taxClasses": "Classi Fiscali",
+        "discounts": "Sconti",
+        "delivery": "Consegna",
         "orders": "Ordini",
         "details": "Dettagli",
         "customers": "Clienti",

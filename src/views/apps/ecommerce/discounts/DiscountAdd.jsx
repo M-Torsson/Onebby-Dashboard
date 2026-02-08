@@ -576,7 +576,6 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                   >
                     <MenuItem value='category'>Category</MenuItem>
                     <MenuItem value='product'>Product</MenuItem>
-                    <MenuItem value='brand'>Brand</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

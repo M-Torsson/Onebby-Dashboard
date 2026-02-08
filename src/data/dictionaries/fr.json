@@ -21,6 +21,8 @@
         "category": "Catégorie",
         "brands": "Marques",
         "taxClasses": "Classes Fiscales",
+        "discounts": "Remises",
+        "delivery": "Livraison",
         "orders": "Ordres",
         "details": "Détails",
         "customers": "Clientes",

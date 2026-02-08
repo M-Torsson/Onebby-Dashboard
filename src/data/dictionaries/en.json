@@ -21,6 +21,8 @@
         "category": "Category",
         "brands": "Brands",
         "taxClasses": "Tax Classes",
+        "discounts": "Discounts",
+        "delivery": "Delivery",
         "orders": "Orders",
         "details": "Details",
         "customers": "Customers",

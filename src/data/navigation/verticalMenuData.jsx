@@ -36,6 +36,10 @@ const verticalMenuData = dictionary => [
         href: '/apps/ecommerce/discounts/list'
       },
       {
+        label: dictionary['navigation'].delivery || 'Delivery',
+        href: '/apps/ecommerce/delivery/list'
+      },
+      {
         label: dictionary['navigation'].orders,
         href: '/apps/ecommerce/orders/list'
       },

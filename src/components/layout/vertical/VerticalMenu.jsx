@@ -83,6 +83,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             <MenuItem href={`/${locale}/apps/ecommerce/discounts/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem href={`/${locale}/apps/ecommerce/discounts/add`}>{dictionary['navigation'].add}</MenuItem>
           </SubMenu>
+          <SubMenu label={dictionary['navigation'].delivery || 'Delivery'}>
+            <MenuItem href={`/${locale}/apps/ecommerce/delivery/list`}>{dictionary['navigation'].list}</MenuItem>
+            <MenuItem href={`/${locale}/apps/ecommerce/delivery/add`}>{dictionary['navigation'].add}</MenuItem>
+          </SubMenu>
           <SubMenu label={dictionary['navigation'].orders}>
             <MenuItem href={`/${locale}/apps/ecommerce/orders/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem
