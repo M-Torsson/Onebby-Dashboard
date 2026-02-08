@@ -48,6 +48,8 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
     days_to: '',
     note: '',
     is_free_delivery: false,
+    category_id: [],
+    option_note: '',
     options: []
   })
 
@@ -56,10 +58,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
       id: 1,
       icon: '',
       details: '',
-      price: '',
-      category_id: [],
-      product_id: '',
-      note: ''
+      price: ''
     }
   ])
 
@@ -113,6 +112,30 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
 
   const toggleCategoryExpanded = categoryId => {
     setExpandedCategories(prev => ({ ...prev, [categoryId]: !prev?.[categoryId] }))
+  }
+
+  const getAllDescendants = categoryId => {
+    const descendants = []
+    const childrenByParent = new Map()
+
+    for (const c of categories) {
+      if (!c || c?.id == null) continue
+      const pid = c?.parent_id == null ? null : String(c.parent_id)
+      const arr = childrenByParent.get(pid) || []
+      arr.push(c)
+      childrenByParent.set(pid, arr)
+    }
+
+    const collectChildren = parentId => {
+      const children = childrenByParent.get(String(parentId)) || []
+      for (const child of children) {
+        descendants.push(child.id)
+        collectChildren(child.id)
+      }
+    }
+
+    collectChildren(categoryId)
+    return descendants
   }
 
   const getCategoryTree = () => {
@@ -233,10 +256,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
         id: optionsList.length + 1,
         icon: '',
         details: '',
-        price: '',
-        category_id: [],
-        product_id: '',
-        note: ''
+        price: ''
       }
     ])
   }
@@ -421,6 +441,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
               {/* Options Section - Hidden when free delivery is checked */}
               {!formData.is_free_delivery && (
                 <Box>
+                  {/* Options List */}
                   <Box className='flex items-center justify-between mb-4'>
                     <Typography variant='h6'>Options:</Typography>
                     <IconButton
@@ -545,174 +566,169 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                             />
                           </Box>
                         </Box>
-
-                        <FormControl fullWidth>
-                          <InputLabel>Select category</InputLabel>
-                          <Select
-                            multiple
-                            value={Array.isArray(option.category_id) ? option.category_id : []}
-                            onChange={e => {
-                              const selectedIds = e.target.value.filter(id => {
-                                const opt = getCategoryTree().find(o => o.node.id === id)
-                                return opt && !opt.hasChildren
-                              })
-                              handleOptionChange(option.id, 'category_id', selectedIds)
-                            }}
-                            input={<OutlinedInput label='Select category' />}
-                            MenuProps={{
-                              PaperProps: {
-                                style: {
-                                  maxHeight: '60vh'
-                                }
-                              },
-                              anchorOrigin: {
-                                vertical: 'bottom',
-                                horizontal: 'left'
-                              },
-                              transformOrigin: {
-                                vertical: 'top',
-                                horizontal: 'left'
-                              }
-                            }}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                height: 'auto !important',
-                                minHeight: '56px !important'
-                              },
-                              '& .MuiSelect-select': {
-                                height: 'auto !important',
-                                minHeight: 'unset !important',
-                                display: 'flex !important',
-                                flexWrap: 'wrap !important',
-                                gap: '4px !important',
-                                paddingTop: '12px !important',
-                                paddingBottom: '12px !important',
-                                paddingRight: '32px !important'
-                              },
-                              '& .MuiSelect-icon': {
-                                top: 'calc(50% - 12px) !important'
-                              }
-                            }}
-                            renderValue={selected => {
-                              if (!selected || selected.length === 0) {
-                                return null
-                              }
-                              return (
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    gap: 0.5,
-                                    width: '100%'
-                                  }}
-                                >
-                                  {selected.map(value => {
-                                    const category = categories.find(c => c.id === value)
-                                    return (
-                                      <Chip
-                                        key={value}
-                                        label={category?.name || `ID: ${value}`}
-                                        size='small'
-                                        onDelete={e => {
-                                          e.preventDefault()
-                                          e.stopPropagation()
-                                          const newCategoryIds = option.category_id.filter(id => id !== value)
-                                          handleOptionChange(option.id, 'category_id', newCategoryIds)
-                                        }}
-                                        onMouseDown={e => {
-                                          e.stopPropagation()
-                                        }}
-                                        deleteIcon={
-                                          <i
-                                            className='tabler-x'
-                                            style={{ fontSize: '0.875rem', color: '#d32f2f', cursor: 'pointer' }}
-                                            onMouseDown={e => {
-                                              e.preventDefault()
-                                              e.stopPropagation()
-                                              const newCategoryIds = option.category_id.filter(id => id !== value)
-                                              handleOptionChange(option.id, 'category_id', newCategoryIds)
-                                            }}
-                                          />
-                                        }
-                                      />
-                                    )
-                                  })}
-                                </Box>
-                              )
-                            }}
-                          >
-                            <MenuItem value=''>
-                              <em>None</em>
-                            </MenuItem>
-                            {getCategoryTree().map(opt => (
-                              <MenuItem
-                                key={opt.id}
-                                value={opt.node.id}
-                                onClick={e => {
-                                  if (opt.hasChildren) {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    toggleCategoryExpanded(opt.id)
-                                  }
-                                }}
-                                sx={{
-                                  pl: 2 + opt.depth * 3,
-                                  fontWeight: opt.depth === 0 ? 700 : opt.depth === 1 ? 400 : 400,
-                                  fontSize: opt.depth === 0 ? '0.95rem' : opt.depth === 1 ? '0.875rem' : '0.8rem',
-                                  color: opt.depth === 0 ? 'text.primary' : 'text.secondary',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1
-                                }}
-                              >
-                                {opt.hasChildren && (
-                                  <IconButton
-                                    size='small'
-                                    onClick={e => {
-                                      e.stopPropagation()
-                                      toggleCategoryExpanded(opt.id)
-                                    }}
-                                    sx={{ p: 0, minWidth: 20 }}
-                                  >
-                                    <i
-                                      className={
-                                        expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
-                                      }
-                                      style={{ fontSize: opt.depth === 0 ? '1rem' : '0.875rem' }}
-                                    />
-                                  </IconButton>
-                                )}
-                                {!opt.hasChildren && <Box sx={{ width: 20 }} />}
-                                {opt.label}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-
-                        <CustomTextField
-                          fullWidth
-                          label='add product id'
-                          placeholder='add product id'
-                          value={option.product_id}
-                          onChange={e => handleOptionChange(option.id, 'product_id', e.target.value)}
-                        />
-
-                        <Box>
-                          <Typography variant='subtitle2' className='mb-2'>
-                            Option note:
-                          </Typography>
-                          <CustomTextField
-                            fullWidth
-                            multiline
-                            rows={3}
-                            value={option.note}
-                            onChange={e => handleOptionChange(option.id, 'note', e.target.value)}
-                            placeholder='Option note:'
-                          />
-                        </Box>
                       </Box>
                     </Card>
                   ))}
+
+                  {/* Select Category - Fixed Section */}
+                  <Box sx={{ mt: 10, mb: 4 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>Select category</InputLabel>
+                      <Select
+                        multiple
+                        value={Array.isArray(formData.category_id) ? formData.category_id : []}
+                        onChange={e => {
+                          const newValue = e.target.value
+                          const currentValue = formData.category_id || []
+                          
+                          const added = newValue.filter(id => !currentValue.includes(id))
+                          
+                          if (added.length > 0) {
+                            const addedId = added[0]
+                            const descendants = getAllDescendants(addedId)
+                            const allIds = [addedId, ...descendants]
+                            const uniqueIds = [...new Set([...currentValue, ...allIds])]
+                            setFormData({ ...formData, category_id: uniqueIds })
+                          } else {
+                            setFormData({ ...formData, category_id: newValue })
+                          }
+                        }}
+                        input={<OutlinedInput label='Select category' />}
+                        MenuProps={{
+                          PaperProps: {
+                            style: {
+                              maxHeight: '60vh'
+                            }
+                          },
+                          anchorOrigin: {
+                            vertical: 'bottom',
+                            horizontal: 'left'
+                          },
+                          transformOrigin: {
+                            vertical: 'top',
+                            horizontal: 'left'
+                          }
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            height: 'auto !important',
+                            minHeight: '56px !important'
+                          },
+                          '& .MuiSelect-select': {
+                            height: 'auto !important',
+                            minHeight: 'unset !important',
+                            display: 'flex !important',
+                            flexWrap: 'wrap !important',
+                            gap: '4px !important',
+                            paddingTop: '12px !important',
+                            paddingBottom: '12px !important',
+                            paddingRight: '32px !important'
+                          },
+                          '& .MuiSelect-icon': {
+                            top: 'calc(50% - 12px) !important'
+                          }
+                        }}
+                        renderValue={selected => {
+                          if (!selected || selected.length === 0) {
+                            return null
+                          }
+                          return (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: 0.5,
+                                width: '100%'
+                              }}
+                            >
+                              {selected.map(value => {
+                                const category = categories.find(c => c.id === value)
+                                return (
+                                  <Chip
+                                    key={value}
+                                    label={category?.name || `ID: ${value}`}
+                                    size='small'
+                                    onDelete={e => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      const newCategoryIds = formData.category_id.filter(id => id !== value)
+                                      setFormData({ ...formData, category_id: newCategoryIds })
+                                    }}
+                                    onMouseDown={e => {
+                                      e.stopPropagation()
+                                    }}
+                                    deleteIcon={
+                                      <i
+                                        className='tabler-x'
+                                        style={{ fontSize: '0.875rem', color: '#d32f2f', cursor: 'pointer' }}
+                                        onMouseDown={e => {
+                                          e.preventDefault()
+                                          e.stopPropagation()
+                                          const newCategoryIds = formData.category_id.filter(id => id !== value)
+                                          setFormData({ ...formData, category_id: newCategoryIds })
+                                        }}
+                                      />
+                                    }
+                                  />
+                                )
+                              })}
+                            </Box>
+                          )
+                        }}
+                      >
+                        {getCategoryTree().map(opt => (
+                          <MenuItem
+                            key={opt.id}
+                            value={opt.node.id}
+                            sx={{
+                              pl: 2 + opt.depth * 3,
+                              fontWeight: opt.depth === 0 ? 700 : opt.depth === 1 ? 400 : 400,
+                              fontSize: opt.depth === 0 ? '0.95rem' : opt.depth === 1 ? '0.875rem' : '0.8rem',
+                              color: opt.depth === 0 ? 'text.primary' : 'text.secondary',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1
+                            }}
+                          >
+                            {opt.hasChildren && (
+                              <IconButton
+                                size='small'
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  toggleCategoryExpanded(opt.id)
+                                }}
+                                sx={{ p: 0, minWidth: 20 }}
+                              >
+                                <i
+                                  className={
+                                    expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
+                                  }
+                                  style={{ fontSize: opt.depth === 0 ? '1rem' : '0.875rem' }}
+                                />
+                              </IconButton>
+                            )}
+                            {!opt.hasChildren && <Box sx={{ width: 20 }} />}
+                            {opt.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+
+                  {/* Option Note - Fixed Section */}
+                  <Box sx={{ mb: 4 }}>
+                    <Typography variant='subtitle2' className='mb-2'>
+                      Option note:
+                    </Typography>
+                    <CustomTextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      value={formData.option_note}
+                      onChange={e => setFormData({ ...formData, option_note: e.target.value })}
+                      placeholder='Option note:'
+                    />
+                  </Box>
                 </Box>
               )}
 
