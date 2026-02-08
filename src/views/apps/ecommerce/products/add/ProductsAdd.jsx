@@ -225,6 +225,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   const [expandedCategories, setExpandedCategories] = useState([])
   const [discounts, setDiscounts] = useState([])
   const [loadingDiscounts, setLoadingDiscounts] = useState(false)
+  const [delivery, setDelivery] = useState(null)
+  const [loadingDelivery, setLoadingDelivery] = useState(false)
 
   const [formData, setFormData] = useState({
     product_type: 'configurable',
@@ -761,6 +763,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
         
       // Fetch discounts for this product
       fetchProductDiscounts(editId)
+      // Fetch delivery for this product
+      fetchProductDelivery(editId)
     } catch (err) {
       setError(`Network error: ${err.message}`)
     } finally {
@@ -791,6 +795,29 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       console.error('Error fetching discounts:', err)
     } finally {
       setLoadingDiscounts(false)
+    }
+  }
+
+  const fetchProductDelivery = async productId => {
+    try {
+      setLoadingDelivery(true)
+      const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}`, {
+        headers: { 'X-API-KEY': API_KEY }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const product = result.data || result
+        if (product.delivery && product.delivery !== null) {
+          setDelivery(product.delivery)
+        } else {
+          setDelivery(null)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching delivery:', err)
+    } finally {
+      setLoadingDelivery(false)
     }
   }
 
@@ -2591,7 +2618,19 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
           {editId && (
             <Grid size={{ xs: 12 }}>
               <Card>
-                <CardHeader title={dictionary.common?.activeDiscounts || 'Active Discounts'} />
+                <CardHeader 
+                  title={dictionary.common?.activeDiscounts || 'Active Discounts'}
+                  action={
+                    discounts.length > 0 && discounts[0] ? (
+                      <IconButton
+                        size='small'
+                        onClick={() => router.push(`/apps/ecommerce/discounts/add?edit=${discounts[0].id}`)}
+                      >
+                        <i className='tabler-edit text-[22px] text-textSecondary' />
+                      </IconButton>
+                    ) : null
+                  }
+                />
                 <CardContent>
                   {loadingDiscounts ? (
                     <div className='flex justify-center items-center' style={{ minHeight: '100px' }}>
@@ -2643,6 +2682,89 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                   ) : (
                     <Typography variant='body2' color='text.secondary' align='center'>
                       {dictionary.common?.noDiscountsApplied || 'No discounts applied to this product'}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Active Delivery */}
+          {editId && (
+            <Grid size={{ xs: 12 }}>
+              <Card>
+                <CardHeader 
+                  title='Active Delivery'
+                  action={
+                    delivery ? (
+                      <IconButton
+                        size='small'
+                        onClick={() => router.push(`/apps/ecommerce/delivery/add?edit=${delivery.id}`)}
+                      >
+                        <i className='tabler-edit text-[22px] text-textSecondary' />
+                      </IconButton>
+                    ) : null
+                  }
+                />
+                <CardContent>
+                  {loadingDelivery ? (
+                    <div className='flex justify-center items-center' style={{ minHeight: '100px' }}>
+                      <CircularProgress size={24} />
+                    </div>
+                  ) : delivery ? (
+                    <Box
+                      sx={{
+                        p: 3,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        bgcolor: 'action.hover'
+                      }}
+                    >
+                      <div className='flex justify-between items-start mb-2'>
+                        <Typography variant='subtitle2' className='font-medium'>
+                          Delivery Information
+                        </Typography>
+                        <Chip
+                          label={delivery.is_active !== false ? 'Active' : 'Inactive'}
+                          color={delivery.is_active !== false ? 'success' : 'error'}
+                          size='small'
+                          variant='tonal'
+                        />
+                      </div>
+                      <Typography variant='body2' color='text.secondary' className='mb-1'>
+                        {delivery.days_from} - {delivery.days_to} Days
+                      </Typography>
+                      {delivery.note && (
+                        <Typography variant='body2' color='text.secondary' className='mb-2'>
+                          {delivery.note}
+                        </Typography>
+                      )}
+                      {delivery.is_free_delivery ? (
+                        <Chip label='Free Delivery' color='success' size='small' variant='tonal' />
+                      ) : (
+                        delivery.options && delivery.options.length > 0 && (
+                          <Box className='mt-2'>
+                            <Typography variant='caption' color='text.secondary' display='block' className='mb-1'>
+                              Delivery Options:
+                            </Typography>
+                            {delivery.options.map((option, index) => (
+                              <Box key={index} className='flex items-center justify-between mb-1'>
+                                <Typography variant='caption' color='text.secondary'>
+                                  {option.details}
+                                </Typography>
+                                <Typography variant='caption' color='text.secondary' className='font-medium'>
+                                  €{option.price}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        )
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography variant='body2' color='text.secondary' align='center'>
+                      No delivery settings applied to this product
                     </Typography>
                   )}
                 </CardContent>
