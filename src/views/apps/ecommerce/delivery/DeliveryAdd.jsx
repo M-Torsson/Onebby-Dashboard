@@ -28,7 +28,9 @@ import GlobalStyles from '@mui/material/GlobalStyles'
 import CustomTextField from '@core/components/mui/TextField'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
-const V1_BASE_URL = `${API_BASE_URL}/api/v1`
+const V1_BASE_URL = `${API_BASE_URL}/api/admin`
+const API_V1_BASE_URL = `${API_BASE_URL}/api/v1`
+const DELIVERY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const DeliveryAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
@@ -53,14 +55,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
     options: []
   })
 
-  const [optionsList, setOptionsList] = useState([
-    {
-      id: 1,
-      icon: '',
-      details: '',
-      price: ''
-    }
-  ])
+  const [optionsList, setOptionsList] = useState([])
 
   useEffect(() => {
     fetchCategories()
@@ -78,7 +73,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
       let hasMore = true
 
       while (hasMore && skip < 5000) {
-        const url = `${V1_BASE_URL}/categories?skip=${skip}&limit=${limit}&active_only=false&parent_only=false`
+        const url = `${API_V1_BASE_URL}/categories?skip=${skip}&limit=${limit}&active_only=false&parent_only=false`
         const response = await fetch(url, {
           headers: { 'X-API-KEY': API_KEY }
         })
@@ -193,7 +188,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
       let hasMore = true
 
       while (hasMore && skip < 5000) {
-        const url = `${V1_BASE_URL}/products?skip=${skip}&limit=${limit}`
+        const url = `${API_V1_BASE_URL}/products?skip=${skip}&limit=${limit}`
         const response = await fetch(url, {
           headers: { 'X-API-KEY': API_KEY }
         })
@@ -222,22 +217,31 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
   const fetchDeliveryData = async () => {
     try {
       setFetchingData(true)
-      const response = await fetch(`${V1_BASE_URL}/delivery/${editId}`, {
-        headers: { 'X-API-KEY': API_KEY }
+      const response = await fetch(`${V1_BASE_URL}/deliveries/${editId}`, {
+        headers: { 'X-API-Key': DELIVERY_API_KEY }
       })
 
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.data || result
+        
         setFormData({
           days_from: data.days_from || '',
           days_to: data.days_to || '',
           note: data.note || '',
           is_free_delivery: data.is_free_delivery || false,
+          category_id: data.categories || [],
+          option_note: data.option_note || '',
           options: data.options || []
         })
 
         if (data.options && data.options.length > 0) {
-          setOptionsList(data.options)
+          setOptionsList(data.options.map((opt, index) => ({
+            id: index + 1,
+            icon: opt.icon || '',
+            details: opt.details || '',
+            price: opt.price || ''
+          })))
         }
       } else {
         setError('Failed to load delivery data')
@@ -278,23 +282,35 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
       setLoading(true)
 
       const payload = {
-        ...formData,
         days_from: parseInt(formData.days_from) || 0,
         days_to: parseInt(formData.days_to) || 0,
+        note: formData.note || '',
+        option_note: formData.option_note || '',
+        is_free_delivery: formData.is_free_delivery || false,
+        is_active: true,
+        categories: formData.category_id || [],
+        translations: [
+          {
+            lang: 'it',
+            note: formData.note || '',
+            option_note: formData.option_note || ''
+          }
+        ],
         options: formData.is_free_delivery ? [] : optionsList.map(opt => ({
-          ...opt,
+          icon: opt.icon || '',
+          details: opt.details || '',
           price: parseFloat(opt.price) || 0
         }))
       }
 
-      const url = editId ? `${V1_BASE_URL}/delivery/${editId}` : `${V1_BASE_URL}/delivery`
+      const url = editId ? `${V1_BASE_URL}/deliveries/${editId}` : `${V1_BASE_URL}/deliveries`
       const method = editId ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': API_KEY
+          'X-API-Key': DELIVERY_API_KEY
         },
         body: JSON.stringify(payload)
       })
@@ -306,7 +322,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
         }, 1500)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || 'Failed to save delivery')
+        setError(errorData.detail || errorData.message || 'Failed to save delivery')
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -569,168 +585,168 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                       </Box>
                     </Card>
                   ))}
+                </Box>
+              )}
 
-                  {/* Select Category - Fixed Section */}
-                  <Box sx={{ mt: 10, mb: 4 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Select category</InputLabel>
-                      <Select
-                        multiple
-                        value={Array.isArray(formData.category_id) ? formData.category_id : []}
-                        onChange={e => {
-                          const newValue = e.target.value
-                          const currentValue = formData.category_id || []
-                          
-                          const added = newValue.filter(id => !currentValue.includes(id))
-                          
-                          if (added.length > 0) {
-                            const addedId = added[0]
-                            const descendants = getAllDescendants(addedId)
-                            const allIds = [addedId, ...descendants]
-                            const uniqueIds = [...new Set([...currentValue, ...allIds])]
-                            setFormData({ ...formData, category_id: uniqueIds })
-                          } else {
-                            setFormData({ ...formData, category_id: newValue })
-                          }
-                        }}
-                        input={<OutlinedInput label='Select category' />}
-                        MenuProps={{
-                          PaperProps: {
-                            style: {
-                              maxHeight: '60vh'
-                            }
-                          },
-                          anchorOrigin: {
-                            vertical: 'bottom',
-                            horizontal: 'left'
-                          },
-                          transformOrigin: {
-                            vertical: 'top',
-                            horizontal: 'left'
-                          }
-                        }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            height: 'auto !important',
-                            minHeight: '56px !important'
-                          },
-                          '& .MuiSelect-select': {
-                            height: 'auto !important',
-                            minHeight: 'unset !important',
-                            display: 'flex !important',
-                            flexWrap: 'wrap !important',
-                            gap: '4px !important',
-                            paddingTop: '12px !important',
-                            paddingBottom: '12px !important',
-                            paddingRight: '32px !important'
-                          },
-                          '& .MuiSelect-icon': {
-                            top: 'calc(50% - 12px) !important'
-                          }
-                        }}
-                        renderValue={selected => {
-                          if (!selected || selected.length === 0) {
-                            return null
-                          }
-                          return (
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                gap: 0.5,
-                                width: '100%'
-                              }}
-                            >
-                              {selected.map(value => {
-                                const category = categories.find(c => c.id === value)
-                                return (
-                                  <Chip
-                                    key={value}
-                                    label={category?.name || `ID: ${value}`}
-                                    size='small'
-                                    onDelete={e => {
+              {/* Select Category - Fixed Section - Always visible */}
+              <Box sx={{ mt: 10, mb: 4 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Select category</InputLabel>
+                  <Select
+                    multiple
+                    value={Array.isArray(formData.category_id) ? formData.category_id : []}
+                    onChange={e => {
+                      const newValue = e.target.value
+                      const currentValue = formData.category_id || []
+                      
+                      const added = newValue.filter(id => !currentValue.includes(id))
+                      
+                      if (added.length > 0) {
+                        const addedId = added[0]
+                        const descendants = getAllDescendants(addedId)
+                        const allIds = [addedId, ...descendants]
+                        const uniqueIds = [...new Set([...currentValue, ...allIds])]
+                        setFormData({ ...formData, category_id: uniqueIds })
+                      } else {
+                        setFormData({ ...formData, category_id: newValue })
+                      }
+                    }}
+                    input={<OutlinedInput label='Select category' />}
+                    MenuProps={{
+                      PaperProps: {
+                        style: {
+                          maxHeight: '60vh'
+                        }
+                      },
+                      anchorOrigin: {
+                        vertical: 'bottom',
+                        horizontal: 'left'
+                      },
+                      transformOrigin: {
+                        vertical: 'top',
+                        horizontal: 'left'
+                      }
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        height: 'auto !important',
+                        minHeight: '56px !important'
+                      },
+                      '& .MuiSelect-select': {
+                        height: 'auto !important',
+                        minHeight: 'unset !important',
+                        display: 'flex !important',
+                        flexWrap: 'wrap !important',
+                        gap: '4px !important',
+                        paddingTop: '12px !important',
+                        paddingBottom: '12px !important',
+                        paddingRight: '32px !important'
+                      },
+                      '& .MuiSelect-icon': {
+                        top: 'calc(50% - 12px) !important'
+                      }
+                    }}
+                    renderValue={selected => {
+                      if (!selected || selected.length === 0) {
+                        return null
+                      }
+                      return (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 0.5,
+                            width: '100%'
+                          }}
+                        >
+                          {selected.map(value => {
+                            const category = categories.find(c => c.id === value)
+                            return (
+                              <Chip
+                                key={value}
+                                label={category?.name || `ID: ${value}`}
+                                size='small'
+                                onDelete={e => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  const newCategoryIds = formData.category_id.filter(id => id !== value)
+                                  setFormData({ ...formData, category_id: newCategoryIds })
+                                }}
+                                onMouseDown={e => {
+                                  e.stopPropagation()
+                                }}
+                                deleteIcon={
+                                  <i
+                                    className='tabler-x'
+                                    style={{ fontSize: '0.875rem', color: '#d32f2f', cursor: 'pointer' }}
+                                    onMouseDown={e => {
                                       e.preventDefault()
                                       e.stopPropagation()
                                       const newCategoryIds = formData.category_id.filter(id => id !== value)
                                       setFormData({ ...formData, category_id: newCategoryIds })
                                     }}
-                                    onMouseDown={e => {
-                                      e.stopPropagation()
-                                    }}
-                                    deleteIcon={
-                                      <i
-                                        className='tabler-x'
-                                        style={{ fontSize: '0.875rem', color: '#d32f2f', cursor: 'pointer' }}
-                                        onMouseDown={e => {
-                                          e.preventDefault()
-                                          e.stopPropagation()
-                                          const newCategoryIds = formData.category_id.filter(id => id !== value)
-                                          setFormData({ ...formData, category_id: newCategoryIds })
-                                        }}
-                                      />
-                                    }
                                   />
-                                )
-                              })}
-                            </Box>
-                          )
+                                }
+                              />
+                            )
+                          })}
+                        </Box>
+                      )
+                    }}
+                  >
+                    {getCategoryTree().map(opt => (
+                      <MenuItem
+                        key={opt.id}
+                        value={opt.node.id}
+                        sx={{
+                          pl: 2 + opt.depth * 3,
+                          fontWeight: opt.depth === 0 ? 700 : opt.depth === 1 ? 400 : 400,
+                          fontSize: opt.depth === 0 ? '0.95rem' : opt.depth === 1 ? '0.875rem' : '0.8rem',
+                          color: opt.depth === 0 ? 'text.primary' : 'text.secondary',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1
                         }}
                       >
-                        {getCategoryTree().map(opt => (
-                          <MenuItem
-                            key={opt.id}
-                            value={opt.node.id}
-                            sx={{
-                              pl: 2 + opt.depth * 3,
-                              fontWeight: opt.depth === 0 ? 700 : opt.depth === 1 ? 400 : 400,
-                              fontSize: opt.depth === 0 ? '0.95rem' : opt.depth === 1 ? '0.875rem' : '0.8rem',
-                              color: opt.depth === 0 ? 'text.primary' : 'text.secondary',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1
+                        {opt.hasChildren && (
+                          <IconButton
+                            size='small'
+                            onClick={e => {
+                              e.stopPropagation()
+                              toggleCategoryExpanded(opt.id)
                             }}
+                            sx={{ p: 0, minWidth: 20 }}
                           >
-                            {opt.hasChildren && (
-                              <IconButton
-                                size='small'
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  toggleCategoryExpanded(opt.id)
-                                }}
-                                sx={{ p: 0, minWidth: 20 }}
-                              >
-                                <i
-                                  className={
-                                    expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
-                                  }
-                                  style={{ fontSize: opt.depth === 0 ? '1rem' : '0.875rem' }}
-                                />
-                              </IconButton>
-                            )}
-                            {!opt.hasChildren && <Box sx={{ width: 20 }} />}
-                            {opt.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
+                            <i
+                              className={
+                                expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
+                              }
+                              style={{ fontSize: opt.depth === 0 ? '1rem' : '0.875rem' }}
+                            />
+                          </IconButton>
+                        )}
+                        {!opt.hasChildren && <Box sx={{ width: 20 }} />}
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
 
-                  {/* Option Note - Fixed Section */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant='subtitle2' className='mb-2'>
-                      Option note:
-                    </Typography>
-                    <CustomTextField
-                      fullWidth
-                      multiline
-                      rows={3}
-                      value={formData.option_note}
-                      onChange={e => setFormData({ ...formData, option_note: e.target.value })}
-                      placeholder='Option note:'
-                    />
-                  </Box>
-                </Box>
-              )}
+              {/* Option Note - Fixed Section - Always visible */}
+              <Box sx={{ mb: 4 }}>
+                <Typography variant='subtitle2' className='mb-2'>
+                  Option note:
+                </Typography>
+                <CustomTextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={formData.option_note}
+                  onChange={e => setFormData({ ...formData, option_note: e.target.value })}
+                  placeholder='Option note:'
+                />
+              </Box>
 
               {/* Free Delivery Checkbox */}
               <Box>

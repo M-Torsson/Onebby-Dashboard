@@ -40,7 +40,8 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 import tableStyles from '@core/styles/table.module.css'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
-const V1_BASE_URL = `${API_BASE_URL}/api/v1`
+const V1_BASE_URL = `${API_BASE_URL}/api/admin`
+const DELIVERY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -87,8 +88,8 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${V1_BASE_URL}/delivery`, {
-        headers: { 'X-API-KEY': API_KEY }
+      const response = await fetch(`${V1_BASE_URL}/deliveries`, {
+        headers: { 'X-API-Key': DELIVERY_API_KEY }
       })
 
       if (response.ok) {
@@ -96,7 +97,8 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
         const deliveries = result.data || result || []
         setData(deliveries)
       } else {
-        setError('Failed to load delivery settings')
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.detail || errorData.message || 'Failed to load delivery settings')
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -114,23 +116,30 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
     if (!deliveryToDelete) return
 
     try {
-      const response = await fetch(`${V1_BASE_URL}/delivery/${deliveryToDelete.id}`, {
+      const response = await fetch(`${V1_BASE_URL}/deliveries/${deliveryToDelete.id}`, {
         method: 'DELETE',
-        headers: { 'X-API-KEY': API_KEY }
+        headers: { 'X-API-Key': DELIVERY_API_KEY }
       })
 
       if (response.ok) {
         setSuccess('Delivery setting deleted successfully!')
-        fetchDeliveries()
         setDeleteDialogOpen(false)
         setDeliveryToDelete(null)
+        
+        // Refresh the list after deletion
+        await fetchDeliveries()
+        
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
         setError(errorData.detail || 'Failed to delete delivery setting')
+        setDeleteDialogOpen(false)
+        setDeliveryToDelete(null)
       }
     } catch (err) {
       setError('Network error. Please try again.')
+      setDeleteDialogOpen(false)
+      setDeliveryToDelete(null)
     }
   }
 
