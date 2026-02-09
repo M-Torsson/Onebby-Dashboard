@@ -242,6 +242,8 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
             details: opt.details || '',
             price: opt.price || ''
           })))
+        } else {
+          setOptionsList([])
         }
       } else {
         setError('Failed to load delivery data')
@@ -588,8 +590,9 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                 </Box>
               )}
 
-              {/* Select Category - Fixed Section - Always visible */}
-              <Box sx={{ mt: 10, mb: 4 }}>
+              {/* Select Category - Fixed Section - Hidden when free delivery is checked */}
+              {!formData.is_free_delivery && (
+                <Box sx={{ mt: 10, mb: 4 }}>
                 <FormControl fullWidth>
                   <InputLabel>Select category</InputLabel>
                   <Select
@@ -732,9 +735,11 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                   </Select>
                 </FormControl>
               </Box>
+              )}
 
-              {/* Option Note - Fixed Section - Always visible */}
-              <Box sx={{ mb: 4 }}>
+              {/* Option Note - Fixed Section - Hidden when free delivery is checked */}
+              {!formData.is_free_delivery && (
+                <Box sx={{ mb: 4 }}>
                 <Typography variant='subtitle2' className='mb-2'>
                   Option note:
                 </Typography>
@@ -747,6 +752,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                   placeholder='Option note:'
                 />
               </Box>
+              )}
 
               {/* Free Delivery Checkbox */}
               <Box>
