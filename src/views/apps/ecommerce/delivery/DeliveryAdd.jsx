@@ -590,9 +590,8 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                 </Box>
               )}
 
-              {/* Select Category - Fixed Section - Hidden when free delivery is checked */}
-              {!formData.is_free_delivery && (
-                <Box sx={{ mt: 10, mb: 4 }}>
+              {/* Select Category - Fixed Section - Always visible */}
+              <Box sx={{ mt: 10, mb: 4 }}>
                 <FormControl fullWidth>
                   <InputLabel>Select category</InputLabel>
                   <Select
@@ -735,7 +734,6 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                   </Select>
                 </FormControl>
               </Box>
-              )}
 
               {/* Option Note - Fixed Section - Hidden when free delivery is checked */}
               {!formData.is_free_delivery && (
