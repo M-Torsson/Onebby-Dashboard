@@ -41,7 +41,7 @@ import tableStyles from '@core/styles/table.module.css'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/admin`
-const DELIVERY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
+const WARRANTY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -69,7 +69,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 
 const columnHelper = createColumnHelper()
 
-const DeliveryList = ({ dictionary = { common: {} } }) => {
+const WarrantyList = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
@@ -78,27 +78,27 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deliveryToDelete, setDeliveryToDelete] = useState(null)
+  const [warrantyToDelete, setWarrantyToDelete] = useState(null)
 
   useEffect(() => {
-    fetchDeliveries()
+    fetchWarranties()
   }, [])
 
-  const fetchDeliveries = async () => {
+  const fetchWarranties = async () => {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${V1_BASE_URL}/deliveries`, {
-        headers: { 'X-API-Key': DELIVERY_API_KEY }
+      const response = await fetch(`${V1_BASE_URL}/warranties?skip=0&limit=500&active_only=false`, {
+        headers: { 'X-API-Key': WARRANTY_API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
-        const deliveries = result.data || result || []
-        setData(deliveries)
+        const warranties = result.data || result || []
+        setData(warranties)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || errorData.message || 'Failed to load delivery settings')
+        setError(errorData.detail || errorData.message || 'Failed to load warranties')
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -107,44 +107,44 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
     }
   }
 
-  const handleDeleteDelivery = delivery => {
-    setDeliveryToDelete(delivery)
+  const handleDeleteWarranty = warranty => {
+    setWarrantyToDelete(warranty)
     setDeleteDialogOpen(true)
   }
 
-  const confirmDeleteDelivery = async () => {
-    if (!deliveryToDelete) return
+  const confirmDeleteWarranty = async () => {
+    if (!warrantyToDelete) return
 
     try {
-      const response = await fetch(`${V1_BASE_URL}/deliveries/${deliveryToDelete.id}`, {
+      const response = await fetch(`${V1_BASE_URL}/warranties/${warrantyToDelete.id}?soft_delete=true`, {
         method: 'DELETE',
-        headers: { 'X-API-Key': DELIVERY_API_KEY }
+        headers: { 'X-API-Key': WARRANTY_API_KEY }
       })
 
       if (response.ok) {
-        setSuccess('Delivery setting deleted successfully!')
+        setSuccess('Warranty deleted successfully!')
         setDeleteDialogOpen(false)
-        setDeliveryToDelete(null)
+        setWarrantyToDelete(null)
         
         // Refresh the list after deletion
-        await fetchDeliveries()
+        await fetchWarranties()
         
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || 'Failed to delete delivery setting')
+        setError(errorData.detail || 'Failed to delete warranty')
         setDeleteDialogOpen(false)
-        setDeliveryToDelete(null)
+        setWarrantyToDelete(null)
       }
     } catch (err) {
       setError('Network error. Please try again.')
       setDeleteDialogOpen(false)
-      setDeliveryToDelete(null)
+      setWarrantyToDelete(null)
     }
   }
 
-  const handleEditDelivery = delivery => {
-    router.push(`/apps/ecommerce/delivery/add?edit=${delivery.id}`)
+  const handleEditWarranty = warranty => {
+    router.push(`/apps/ecommerce/warranty/add?edit=${warranty.id}`)
   }
 
   const columns = useMemo(
@@ -171,39 +171,47 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
           />
         )
       },
-      columnHelper.accessor('days_from', {
-        header: 'Delivery Time',
+      columnHelper.accessor('title', {
+        header: 'Warranty',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
-            <div className='flex flex-col'>
-              <Typography color='text.primary' className='font-medium'>
-                {row.original.days_from} - {row.original.days_to} Days
+            {row.original.image && (
+              <img
+                src={row.original.image}
+                alt={row.original.title}
+                style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
+              />
+            )}
+            <div className='flex flex-col' style={{ maxWidth: '300px' }}>
+              <Typography color='text.primary' className='font-medium' noWrap>
+                {row.original.title || 'Untitled'}
               </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                Estimated delivery time
+              <Typography variant='body2' color='text.secondary' noWrap>
+                {row.original.subtitle || 'No subtitle'}
               </Typography>
             </div>
           </div>
         )
       }),
-      columnHelper.accessor('options', {
-        header: 'Options',
+      columnHelper.accessor('price', {
+        header: 'Price',
+        cell: ({ row }) => {
+          const price = row.original.price || 0
+          const priceInEuros = price / 100
+          return (
+            <Typography className='font-medium'>
+              €{priceInEuros.toFixed(2)}
+            </Typography>
+          )
+        }
+      }),
+      columnHelper.accessor('features', {
+        header: 'Features',
         cell: ({ row }) => (
           <Chip
-            label={`${row.original.options?.length || 0} option${row.original.options?.length !== 1 ? 's' : ''}`}
+            label={`${row.original.features?.length || 0} feature${row.original.features?.length !== 1 ? 's' : ''}`}
             variant='tonal'
             color='info'
-            size='small'
-          />
-        )
-      }),
-      columnHelper.accessor('is_free_delivery', {
-        header: 'Free Delivery',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.is_free_delivery ? 'Yes' : 'No'}
-            variant='tonal'
-            color={row.original.is_free_delivery ? 'success' : 'default'}
             size='small'
           />
         )
@@ -223,10 +231,10 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
-            <IconButton size='small' onClick={() => handleEditDelivery(row.original)}>
+            <IconButton size='small' onClick={() => handleEditWarranty(row.original)}>
               <i className='tabler-edit text-[22px] text-textSecondary' />
             </IconButton>
-            <IconButton size='small' onClick={() => handleDeleteDelivery(row.original)}>
+            <IconButton size='small' onClick={() => handleDeleteWarranty(row.original)}>
               <i className='tabler-trash text-[22px] text-textSecondary' />
             </IconButton>
           </div>
@@ -268,7 +276,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
   if (loading) {
     return (
       <Card>
-        <CardHeader title='Delivery Settings' />
+        <CardHeader title='Warranty Settings' />
         <div className='flex justify-center items-center min-h-[400px]'>
           <CircularProgress />
         </div>
@@ -279,7 +287,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
   return (
     <>
       <Card>
-        <CardHeader title='Delivery Settings' />
+        <CardHeader title='Warranty Settings' />
         {error && (
           <Alert severity='error' onClose={() => setError('')} className='m-6'>
             {error}
@@ -294,7 +302,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Delivery Settings'
+            placeholder='Search Warranties'
             className='is-full sm:is-auto'
           />
           <div className='flex gap-4'>
@@ -310,10 +318,10 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
             </CustomTextField>
             <Button
               variant='contained'
-              onClick={() => router.push('/apps/ecommerce/delivery/add')}
+              onClick={() => router.push('/apps/ecommerce/warranty/add')}
               startIcon={<i className='tabler-plus' />}
             >
-              Add Delivery Setting
+              Add Warranty
             </Button>
           </div>
         </div>
@@ -348,7 +356,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                    No delivery settings found
+                    No warranties found
                   </td>
                 </tr>
               </tbody>
@@ -372,17 +380,17 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
       </Card>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Delivery Setting</DialogTitle>
+        <DialogTitle>Delete Warranty</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this delivery setting? This action cannot be undone.
+            Are you sure you want to delete this warranty? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
             Cancel
           </Button>
-          <Button onClick={confirmDeleteDelivery} variant='contained' color='error'>
+          <Button onClick={confirmDeleteWarranty} variant='contained' color='error'>
             Delete
           </Button>
         </DialogActions>
@@ -391,4 +399,4 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
   )
 }
 
-export default DeliveryList
+export default WarrantyList

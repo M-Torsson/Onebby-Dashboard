@@ -40,6 +40,10 @@ const verticalMenuData = dictionary => [
         href: '/apps/ecommerce/delivery/list'
       },
       {
+        label: dictionary['navigation'].warranty || 'Warranty',
+        href: '/apps/ecommerce/warranty/list'
+      },
+      {
         label: dictionary['navigation'].orders,
         href: '/apps/ecommerce/orders/list'
       },

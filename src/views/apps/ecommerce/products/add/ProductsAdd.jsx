@@ -227,6 +227,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
   const [loadingDiscounts, setLoadingDiscounts] = useState(false)
   const [delivery, setDelivery] = useState(null)
   const [loadingDelivery, setLoadingDelivery] = useState(false)
+  const [warranty, setWarranty] = useState(null)
+  const [loadingWarranty, setLoadingWarranty] = useState(false)
 
   const [formData, setFormData] = useState({
     product_type: 'configurable',
@@ -765,6 +767,8 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       fetchProductDiscounts(editId)
       // Fetch delivery for this product
       fetchProductDelivery(editId)
+      // Fetch warranty for this product
+      fetchProductWarranty(editId)
     } catch (err) {
       setError(`Network error: ${err.message}`)
     } finally {
@@ -818,6 +822,29 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
       console.error('Error fetching delivery:', err)
     } finally {
       setLoadingDelivery(false)
+    }
+  }
+
+  const fetchProductWarranty = async productId => {
+    try {
+      setLoadingWarranty(true)
+      const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}`, {
+        headers: { 'X-API-KEY': API_KEY }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const product = result.data || result
+        if (product.warranty && product.warranty !== null) {
+          setWarranty(product.warranty)
+        } else {
+          setWarranty(null)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching warranty:', err)
+    } finally {
+      setLoadingWarranty(false)
     }
   }
 
@@ -2765,6 +2792,85 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                   ) : (
                     <Typography variant='body2' color='text.secondary' align='center'>
                       No delivery settings applied to this product
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Active Warranty */}
+          {editId && (
+            <Grid size={{ xs: 12 }}>
+              <Card>
+                <CardHeader 
+                  title='Active Warranty'
+                  action={
+                    warranty ? (
+                      <IconButton
+                        size='small'
+                        onClick={() => router.push(`/apps/ecommerce/warranty/add?edit=${warranty.id}`)}
+                      >
+                        <i className='tabler-edit text-[22px] text-textSecondary' />
+                      </IconButton>
+                    ) : null
+                  }
+                />
+                <CardContent>
+                  {loadingWarranty ? (
+                    <div className='flex justify-center items-center' style={{ minHeight: '100px' }}>
+                      <CircularProgress size={24} />
+                    </div>
+                  ) : warranty ? (
+                    <Box
+                      sx={{
+                        p: 3,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        bgcolor: 'action.hover'
+                      }}
+                    >
+                      <div className='flex justify-between items-start mb-2'>
+                        <Typography variant='subtitle2' className='font-medium'>
+                          {warranty.title || 'Warranty Information'}
+                        </Typography>
+                        <Chip
+                          label={warranty.is_active !== false ? 'Active' : 'Inactive'}
+                          color={warranty.is_active !== false ? 'success' : 'error'}
+                          size='small'
+                          variant='tonal'
+                        />
+                      </div>
+                      {warranty.subtitle && (
+                        <Typography variant='body2' color='text.secondary' className='mb-2'>
+                          {warranty.subtitle}
+                        </Typography>
+                      )}
+                      <Typography variant='body2' color='text.secondary' className='mb-2 font-medium'>
+                        €{warranty.price ? (warranty.price / 100).toFixed(2) : '0.00'}
+                      </Typography>
+                      {warranty.features && warranty.features.length > 0 && (
+                        <Box className='mt-2'>
+                          <Typography variant='caption' color='text.secondary' display='block' className='mb-1 font-medium'>
+                            Features:
+                          </Typography>
+                          {warranty.features.map((feature, index) => (
+                            <Box key={index} className='flex items-start gap-2 mb-1'>
+                              <Typography variant='caption' color='text.secondary' className='font-medium'>
+                                {feature.key}:
+                              </Typography>
+                              <Typography variant='caption' color='text.secondary'>
+                                {feature.value}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography variant='body2' color='text.secondary' align='center'>
+                      No warranty applied to this product
                     </Typography>
                   )}
                 </CardContent>
