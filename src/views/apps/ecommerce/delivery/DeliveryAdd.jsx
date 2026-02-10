@@ -380,7 +380,21 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
         }, 1500)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || errorData.message || 'Failed to save delivery')
+        let errorMessage = 'Failed to save delivery'
+        
+        if (errorData.detail) {
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail
+          } else if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => err.msg || JSON.stringify(err)).join(', ')
+          } else if (typeof errorData.detail === 'object') {
+            errorMessage = JSON.stringify(errorData.detail)
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        }
+        
+        setError(errorMessage)
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -617,25 +631,18 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                             <CustomTextField
                               fullWidth
                               label='option price'
-                              placeholder='0'
-                              type='number'
+                              placeholder='0.00'
+                              type='text'
                               value={option.price}
-                              onChange={e => handleOptionChange(option.id, 'price', e.target.value)}
+                              onChange={e => {
+                                const value = e.target.value
+                                // Allow only numbers and one decimal point
+                                if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                                  handleOptionChange(option.id, 'price', value)
+                                }
+                              }}
                               InputProps={{
                                 endAdornment: <Typography>€</Typography>
-                              }}
-                              sx={{
-                                '& input[type=number]': {
-                                  MozAppearance: 'textfield'
-                                },
-                                '& input[type=number]::-webkit-outer-spin-button': {
-                                  WebkitAppearance: 'none',
-                                  margin: 0
-                                },
-                                '& input[type=number]::-webkit-inner-spin-button': {
-                                  WebkitAppearance: 'none',
-                                  margin: 0
-                                }
                               }}
                             />
                           </Box>

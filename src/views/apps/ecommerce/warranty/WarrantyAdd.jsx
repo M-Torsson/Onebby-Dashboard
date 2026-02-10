@@ -193,7 +193,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         
         setFormData({
           title: data.title || '',
-          price: data.price || '',
+          price: data.price ? (data.price / 100).toFixed(2) : '',
           subtitle: data.subtitle || '',
           meta_description: data.meta_description || '',
           image: data.image || '',
@@ -308,9 +308,14 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
       setSuccess('')
       setLoading(true)
 
+      const priceInEuros = formData.price && !isNaN(parseFloat(formData.price)) ? parseFloat(formData.price) : 0
+      const priceInCents = Math.round(priceInEuros * 100)
+
+      console.log('Form price:', formData.price, 'Price in euros:', priceInEuros, 'Price in cents:', priceInCents)
+
       const payload = {
         title: formData.title || '',
-        price: parseFloat(formData.price) || 0,
+        price: priceInCents,
         subtitle: formData.subtitle || '',
         meta_description: formData.meta_description || '',
         image: formData.image || '',
@@ -342,6 +347,8 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         }))
       }
 
+      console.log('Sending payload:', payload)
+
       const url = editId ? `${V1_BASE_URL}/warranties/${editId}` : `${V1_BASE_URL}/warranties`
       const method = editId ? 'PUT' : 'POST'
 
@@ -361,7 +368,21 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         }, 1500)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || errorData.message || 'Failed to save warranty')
+        let errorMessage = 'Failed to save warranty'
+        
+        if (errorData.detail) {
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail
+          } else if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => err.msg || JSON.stringify(err)).join(', ')
+          } else if (typeof errorData.detail === 'object') {
+            errorMessage = JSON.stringify(errorData.detail)
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        }
+        
+        setError(errorMessage)
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -433,26 +454,19 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                 </Typography>
                 <CustomTextField
                   fullWidth
-                  type='number'
+                  type='text'
                   placeholder='0.00'
                   value={formData.price}
-                  onChange={e => setFormData({ ...formData, price: e.target.value })}
+                  onChange={e => {
+                    const value = e.target.value
+                    // Allow only numbers and one decimal point
+                    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                      console.log('Price input changed:', value)
+                      setFormData({ ...formData, price: value })
+                    }
+                  }}
                   InputProps={{
                     endAdornment: <Typography>€</Typography>
-                  }}
-                  inputProps={{ min: 0, step: '0.01' }}
-                  sx={{
-                    '& input[type=number]': {
-                      MozAppearance: 'textfield'
-                    },
-                    '& input[type=number]::-webkit-outer-spin-button': {
-                      WebkitAppearance: 'none',
-                      margin: 0
-                    },
-                    '& input[type=number]::-webkit-inner-spin-button': {
-                      WebkitAppearance: 'none',
-                      margin: 0
-                    }
                   }}
                 />
               </Box>

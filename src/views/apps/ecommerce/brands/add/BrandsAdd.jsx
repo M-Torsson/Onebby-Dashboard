@@ -247,8 +247,20 @@ const BrandsAdd = ({ dictionary = { common: {} } }) => {
           router.push('/apps/ecommerce/brands/list')
         }, 1500)
       } else {
-        const errorData = await response.json()
-        setError(errorData.detail || `Failed to ${editId ? 'update' : 'create'} brand`)
+        const errorData = await response.json().catch(() => ({}))
+        let errorMessage = `Failed to ${editId ? 'update' : 'create'} brand`
+        
+        if (errorData.detail) {
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail
+          } else if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => err.msg || JSON.stringify(err)).join(', ')
+          } else if (typeof errorData.detail === 'object') {
+            errorMessage = JSON.stringify(errorData.detail)
+          }
+        }
+        
+        setError(errorMessage)
       }
     } catch (err) {
       setError('Network error. Please try again.')

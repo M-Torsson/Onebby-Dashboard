@@ -2848,7 +2848,7 @@ const ProductsAdd = ({ dictionary = { common: {} } }) => {
                         </Typography>
                       )}
                       <Typography variant='body2' color='text.secondary' className='mb-2 font-medium'>
-                        €{warranty.price ? parseFloat(warranty.price).toFixed(2) : '0.00'}
+                        €{warranty.price ? (warranty.price / 100).toFixed(2) : '0.00'}
                       </Typography>
                       {warranty.features && warranty.features.length > 0 && (
                         <Box className='mt-2'>
