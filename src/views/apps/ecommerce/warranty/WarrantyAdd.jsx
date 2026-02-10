@@ -193,7 +193,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         
         setFormData({
           title: data.title || '',
-          price: data.price ? (data.price / 100).toFixed(2) : '',
+          price: data.price || '',
           subtitle: data.subtitle || '',
           meta_description: data.meta_description || '',
           image: data.image || '',
