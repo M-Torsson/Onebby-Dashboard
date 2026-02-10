@@ -44,6 +44,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [expandedCategories, setExpandedCategories] = useState({})
+  const [uploadingIcons, setUploadingIcons] = useState({})
 
   const [formData, setFormData] = useState({
     days_from: '',
@@ -275,6 +276,61 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
     setOptionsList(
       optionsList.map(opt => (opt.id === id ? { ...opt, [field]: value } : opt))
     )
+  }
+
+  const uploadImageToCloudinary = async file => {
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append('file', file)
+      formDataUpload.append('folder', 'delivery')
+
+      const response = await fetch(`/api/admin/upload/image`, {
+        method: 'POST',
+        body: formDataUpload
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        return result.url
+      } else {
+        const errorText = await response.text()
+        console.error('Upload error:', response.status, errorText)
+        throw new Error(`Upload failed: ${response.status}`)
+      }
+    } catch (err) {
+      throw err
+    }
+  }
+
+  const handleIconUpload = async (optionId, file) => {
+    if (!file) return
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+    if (!validTypes.includes(file.type)) {
+      setError('Please upload a valid image (JPEG, PNG, WEBP, SVG)')
+      return
+    }
+
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError('Image size must be less than 5MB')
+      return
+    }
+
+    try {
+      setUploadingIcons(prev => ({ ...prev, [optionId]: true }))
+      setError('')
+      
+      const imageUrl = await uploadImageToCloudinary(file)
+      
+      handleOptionChange(optionId, 'icon', imageUrl)
+      setSuccess('Icon uploaded successfully!')
+      setTimeout(() => setSuccess(''), 2000)
+    } catch (err) {
+      setError(`Failed to upload icon: ${err.message}`)
+    } finally {
+      setUploadingIcons(prev => ({ ...prev, [optionId]: false }))
+    }
   }
 
   const handleSubmit = async () => {
@@ -515,26 +571,26 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                                 onChange={e => {
                                   const file = e.target.files?.[0]
                                   if (file) {
-                                    const reader = new FileReader()
-                                    reader.onloadend = () => {
-                                      handleOptionChange(option.id, 'icon', reader.result)
-                                    }
-                                    reader.readAsDataURL(file)
+                                    handleIconUpload(option.id, file)
                                   }
                                 }}
+                                disabled={uploadingIcons[option.id]}
                               />
                               <label
                                 htmlFor={`icon-upload-${option.id}`}
                                 style={{
-                                  cursor: 'pointer',
+                                  cursor: uploadingIcons[option.id] ? 'not-allowed' : 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   width: '100%',
-                                  height: '100%'
+                                  height: '100%',
+                                  opacity: uploadingIcons[option.id] ? 0.6 : 1
                                 }}
                               >
-                                {option.icon ? (
+                                {uploadingIcons[option.id] ? (
+                                  <CircularProgress size={24} />
+                                ) : option.icon ? (
                                   <img
                                     src={option.icon}
                                     alt='icon'

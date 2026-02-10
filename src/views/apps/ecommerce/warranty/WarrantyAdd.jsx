@@ -42,6 +42,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
   const [categories, setCategories] = useState([])
   const [expandedCategories, setExpandedCategories] = useState({})
   const [imagePreview, setImagePreview] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -244,15 +245,60 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
     )
   }
 
-  const handleImageUpload = e => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result)
-        setFormData({ ...formData, image: reader.result })
+  const uploadImageToCloudinary = async file => {
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append('file', file)
+      formDataUpload.append('folder', 'warranties')
+
+      const response = await fetch(`/api/admin/upload/image`, {
+        method: 'POST',
+        body: formDataUpload
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        return result.url
+      } else {
+        const errorText = await response.text()
+        console.error('Upload error:', response.status, errorText)
+        throw new Error(`Upload failed: ${response.status}`)
       }
-      reader.readAsDataURL(file)
+    } catch (err) {
+      throw err
+    }
+  }
+
+  const handleImageUpload = async e => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+    if (!validTypes.includes(file.type)) {
+      setError('Please upload a valid image (JPEG, PNG, WEBP, SVG)')
+      return
+    }
+
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError('Image size must be less than 5MB')
+      return
+    }
+
+    try {
+      setUploadingImage(true)
+      setError('')
+      
+      const imageUrl = await uploadImageToCloudinary(file)
+      
+      setImagePreview(imageUrl)
+      setFormData({ ...formData, image: imageUrl })
+      setSuccess('Image uploaded successfully!')
+      setTimeout(() => setSuccess(''), 2000)
+    } catch (err) {
+      setError(`Failed to upload image: ${err.message}`)
+    } finally {
+      setUploadingImage(false)
     }
   }
 
@@ -468,19 +514,23 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                       style={{ display: 'none' }}
                       id='warranty-image-upload'
                       onChange={handleImageUpload}
+                      disabled={uploadingImage}
                     />
                     <label
                       htmlFor='warranty-image-upload'
                       style={{
-                        cursor: 'pointer',
+                        cursor: uploadingImage ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         width: '100%',
-                        height: '100%'
+                        height: '100%',
+                        opacity: uploadingImage ? 0.6 : 1
                       }}
                     >
-                      {imagePreview ? (
+                      {uploadingImage ? (
+                        <CircularProgress size={40} />
+                      ) : imagePreview ? (
                         <img
                           src={imagePreview}
                           alt='warranty'
