@@ -197,10 +197,9 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
         header: 'Price',
         cell: ({ row }) => {
           const price = row.original.price || 0
-          const priceInEuros = price / 100
           return (
             <Typography className='font-medium'>
-              €{priceInEuros.toFixed(2)}
+              €{parseFloat(price).toFixed(2)}
             </Typography>
           )
         }

@@ -193,7 +193,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         
         setFormData({
           title: data.title || '',
-          price: data.price ? (data.price / 100) : '',
+          price: data.price || '',
           subtitle: data.subtitle || '',
           meta_description: data.meta_description || '',
           image: data.image || '',
@@ -310,7 +310,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
 
       const payload = {
         title: formData.title || '',
-        price: parseInt(parseFloat(formData.price) * 100) || 0,
+        price: parseFloat(formData.price) || 0,
         subtitle: formData.subtitle || '',
         meta_description: formData.meta_description || '',
         image: formData.image || '',
