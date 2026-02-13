@@ -27,6 +27,8 @@
         "orders": "Orders",
         "details": "Details",
         "customers": "Customers",
+        "users": "Users",
+        "companyUsers": "Company Users",
         "manageReviews": "Manage Reviews",
         "referrals": "Referrals",
         "settings": "Settings",

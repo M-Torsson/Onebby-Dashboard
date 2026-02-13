@@ -115,16 +115,12 @@ const HorizontalMenu = ({ dictionary }) => {
                 {dictionary['navigation'].details}
               </MenuItem>
             </SubMenu>
-            <SubMenu label={dictionary['navigation'].customers}>
-              <MenuItem href={`/${locale}/apps/ecommerce/customers/list`}>{dictionary['navigation'].list}</MenuItem>
-              <MenuItem
-                href={`/${locale}/apps/ecommerce/customers/details/879861`}
-                exactMatch={false}
-                activeUrl='/apps/ecommerce/customers/details'
-              >
-                {dictionary['navigation'].details}
-              </MenuItem>
-            </SubMenu>
+            <MenuItem href={`/${locale}/apps/ecommerce/users/list`}>
+              {dictionary['navigation'].users || 'Users'}
+            </MenuItem>
+            <MenuItem href={`/${locale}/apps/ecommerce/company-users/list`}>
+              {dictionary['navigation'].companyUsers || 'Company Users'}
+            </MenuItem>
             <MenuItem href={`/${locale}/apps/ecommerce/manage-reviews`}>
               {dictionary['navigation'].manageReviews}
             </MenuItem>
@@ -173,14 +169,14 @@ const HorizontalMenu = ({ dictionary }) => {
             </MenuItem>
             <MenuItem href={`/${locale}/apps/invoice/add`}>{dictionary['navigation'].add}</MenuItem>
           </SubMenu>
-          <SubMenu label={dictionary['navigation'].user} icon={<i className='tabler-user' />}>
+          {/* <SubMenu label={dictionary['navigation'].user} icon={<i className='tabler-user' />}>
             <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem href={`/${locale}/apps/user/view`}>{dictionary['navigation'].view}</MenuItem>
-          </SubMenu>
-          <SubMenu label={dictionary['navigation'].rolesPermissions} icon={<i className='tabler-lock' />}>
+          </SubMenu> */}
+          {/* <SubMenu label={dictionary['navigation'].rolesPermissions} icon={<i className='tabler-lock' />}>
             <MenuItem href={`/${locale}/apps/roles`}>{dictionary['navigation'].roles}</MenuItem>
             <MenuItem href={`/${locale}/apps/permissions`}>{dictionary['navigation'].permissions}</MenuItem>
-          </SubMenu>
+          </SubMenu> */}
         </SubMenu>
         <SubMenu label={dictionary['navigation'].pages} icon={<i className='tabler-file' />}>
           <MenuItem href={`/${locale}/pages/user-profile`} icon={<i className='tabler-user-circle' />}>

@@ -56,12 +56,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
         renderExpandedMenuItemIcon={{ icon: <i className='tabler-circle text-xs' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        {/* Dashboard at top */}
         <MenuItem href={`/${locale}/apps/ecommerce/dashboard`} icon={<i className='tabler-smart-home' />}>
           {dictionary['navigation'].dashboard}
         </MenuItem>
 
-        {/* eCommerce */}
         <SubMenu label={dictionary['navigation'].eCommerce} icon={<i className='tabler-shopping-cart' />}>
           <SubMenu label={dictionary['navigation'].brands}>
             <MenuItem href={`/${locale}/apps/ecommerce/brands/list`}>{dictionary['navigation'].list}</MenuItem>
@@ -101,16 +99,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               {dictionary['navigation'].details}
             </MenuItem>
           </SubMenu>
-          <SubMenu label={dictionary['navigation'].customers}>
-            <MenuItem href={`/${locale}/apps/ecommerce/customers/list`}>{dictionary['navigation'].list}</MenuItem>
-            <MenuItem
-              href={`/${locale}/apps/ecommerce/customers/details/879861`}
-              exactMatch={false}
-              activeUrl='/apps/ecommerce/customers/details'
-            >
-              {dictionary['navigation'].details}
-            </MenuItem>
-          </SubMenu>
           <MenuItem href={`/${locale}/apps/ecommerce/manage-reviews`}>
             {dictionary['navigation'].manageReviews}
           </MenuItem>
@@ -118,7 +106,14 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <MenuItem href={`/${locale}/apps/ecommerce/settings`}>{dictionary['navigation'].settings}</MenuItem>
         </SubMenu>
 
-        {/* Invoice */}
+        <MenuItem href={`/${locale}/apps/ecommerce/users/list`} icon={<i className='tabler-users' />}>
+          {dictionary['navigation'].users || 'Users'}
+        </MenuItem>
+
+        <MenuItem href={`/${locale}/apps/ecommerce/company-users/list`} icon={<i className='tabler-building' />}>
+          {dictionary['navigation'].companyUsers || 'Company Users'}
+        </MenuItem>
+
         <SubMenu label={dictionary['navigation'].invoice} icon={<i className='tabler-file-description' />}>
           <MenuItem href={`/${locale}/apps/invoice/list`}>{dictionary['navigation'].list}</MenuItem>
           <MenuItem href={`/${locale}/apps/invoice/preview/4987`} exactMatch={false} activeUrl='/apps/invoice/preview'>
@@ -130,19 +125,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <MenuItem href={`/${locale}/apps/invoice/add`}>{dictionary['navigation'].add}</MenuItem>
         </SubMenu>
 
-        {/* User */}
-        <SubMenu label={dictionary['navigation'].user} icon={<i className='tabler-user' />}>
-          <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list}</MenuItem>
-          <MenuItem href={`/${locale}/apps/user/view`}>{dictionary['navigation'].view}</MenuItem>
-        </SubMenu>
-
-        {/* Roles & Permissions */}
-        <SubMenu label={dictionary['navigation'].rolesPermissions} icon={<i className='tabler-lock' />}>
-          <MenuItem href={`/${locale}/apps/roles`}>{dictionary['navigation'].roles}</MenuItem>
-          <MenuItem href={`/${locale}/apps/permissions`}>{dictionary['navigation'].permissions}</MenuItem>
-        </SubMenu>
-
-        {/* Pages */}
         <SubMenu label={dictionary['navigation'].pages} icon={<i className='tabler-settings' />}>
           <MenuItem href={`/${locale}/pages/user-profile`}>{dictionary['navigation'].userProfile}</MenuItem>
           <MenuItem href={`/${locale}/pages/account-settings`}>{dictionary['navigation'].accountSettings}</MenuItem>

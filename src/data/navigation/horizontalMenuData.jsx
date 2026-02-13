@@ -62,21 +62,6 @@ const horizontalMenuData = dictionary => [
             ]
           },
           {
-            label: dictionary['navigation'].customers,
-            children: [
-              {
-                label: dictionary['navigation'].list,
-                href: '/apps/ecommerce/customers/list'
-              },
-              {
-                label: dictionary['navigation'].details,
-                href: '/apps/ecommerce/customers/details/879861',
-                exactMatch: false,
-                activeUrl: '/apps/ecommerce/customers/details'
-              }
-            ]
-          },
-          {
             label: dictionary['navigation'].manageReviews,
             href: '/apps/ecommerce/manage-reviews'
           },
@@ -89,6 +74,16 @@ const horizontalMenuData = dictionary => [
             href: '/apps/ecommerce/settings'
           }
         ]
+      },
+      {
+        label: dictionary['navigation'].users || 'Users',
+        icon: 'tabler-users',
+        href: '/apps/ecommerce/users/list'
+      },
+      {
+        label: dictionary['navigation'].companyUsers || 'Company Users',
+        icon: 'tabler-building',
+        href: '/apps/ecommerce/company-users/list'
       },
       {
         label: dictionary['navigation'].invoice,
@@ -116,34 +111,34 @@ const horizontalMenuData = dictionary => [
           }
         ]
       },
-      {
-        label: dictionary['navigation'].user,
-        icon: 'tabler-user',
-        children: [
-          {
-            label: dictionary['navigation'].list,
-            href: '/apps/user/list'
-          },
-          {
-            label: dictionary['navigation'].view,
-            href: '/apps/user/view'
-          }
-        ]
-      },
-      {
-        label: dictionary['navigation'].rolesPermissions,
-        icon: 'tabler-lock',
-        children: [
-          {
-            label: dictionary['navigation'].roles,
-            href: '/apps/roles'
-          },
-          {
-            label: dictionary['navigation'].permissions,
-            href: '/apps/permissions'
-          }
-        ]
-      }
+      // {
+      //   label: dictionary['navigation'].user,
+      //   icon: 'tabler-user',
+      //   children: [
+      //     {
+      //       label: dictionary['navigation'].list,
+      //       href: '/apps/user/list'
+      //     },
+      //     {
+      //       label: dictionary['navigation'].view,
+      //       href: '/apps/user/view'
+      //     }
+      //   ]
+      // },
+      // {
+      //   label: dictionary['navigation'].rolesPermissions,
+      //   icon: 'tabler-lock',
+      //   children: [
+      //     {
+      //       label: dictionary['navigation'].roles,
+      //       href: '/apps/roles'
+      //     },
+      //     {
+      //       label: dictionary['navigation'].permissions,
+      //       href: '/apps/permissions'
+      //     }
+      //   ]
+      // }
     ]
   },
 

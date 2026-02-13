@@ -48,10 +48,6 @@ const verticalMenuData = dictionary => [
         href: '/apps/ecommerce/orders/list'
       },
       {
-        label: dictionary['navigation'].customers,
-        href: '/apps/ecommerce/customers/list'
-      },
-      {
         label: dictionary['navigation'].manageReviews,
         href: '/apps/ecommerce/manage-reviews'
       },
@@ -64,6 +60,20 @@ const verticalMenuData = dictionary => [
         href: '/apps/ecommerce/settings'
       }
     ]
+  },
+
+  // Users Management
+  {
+    label: dictionary['navigation'].users || 'Users',
+    icon: 'tabler-users',
+    href: '/apps/ecommerce/users/list'
+  },
+
+  // Company Users Management
+  {
+    label: dictionary['navigation'].companyUsers || 'Company Users',
+    icon: 'tabler-building',
+    href: '/apps/ecommerce/company-users/list'
   },
 
   // Invoice Management
@@ -95,36 +105,36 @@ const verticalMenuData = dictionary => [
   },
 
   // User Management
-  {
-    label: dictionary['navigation'].user,
-    icon: 'tabler-user',
-    children: [
-      {
-        label: dictionary['navigation'].list,
-        href: '/apps/user/list'
-      },
-      {
-        label: dictionary['navigation'].view,
-        href: '/apps/user/view'
-      }
-    ]
-  },
+  // {
+  //   label: dictionary['navigation'].user,
+  //   icon: 'tabler-user',
+  //   children: [
+  //     {
+  //       label: dictionary['navigation'].list,
+  //       href: '/apps/user/list'
+  //     },
+  //     {
+  //       label: dictionary['navigation'].view,
+  //       href: '/apps/user/view'
+  //     }
+  //   ]
+  // },
 
   // Roles & Permissions
-  {
-    label: dictionary['navigation'].rolesPermissions,
-    icon: 'tabler-lock',
-    children: [
-      {
-        label: dictionary['navigation'].roles,
-        href: '/apps/roles'
-      },
-      {
-        label: dictionary['navigation'].permissions,
-        href: '/apps/permissions'
-      }
-    ]
-  },
+  // {
+  //   label: dictionary['navigation'].rolesPermissions,
+  //   icon: 'tabler-lock',
+  //   children: [
+  //     {
+  //       label: dictionary['navigation'].roles,
+  //       href: '/apps/roles'
+  //     },
+  //     {
+  //       label: dictionary['navigation'].permissions,
+  //       href: '/apps/permissions'
+  //     }
+  //   ]
+  // },
 
   // Settings & Pages
   {
