@@ -86,11 +86,19 @@ upload-single-icon.js
 # Documentation - temporary/internal
 ACCOUNT_SETTINGS_UPDATES.md
 API_KEY_SETUP_AR.md
+API_SETUP_GUIDE.md
 CLOUDINARY_SETUP_AR.md
 NETLIFY_DEPLOY.md
 RESTART_SERVER_NOW.txt
 URGENT_API_KEY_NEEDED.txt
 add-defender-exclusion.ps1
+
+# Test files
+test-delivery-api.ps1
+test-*.ps1
+*-test.js
+*.test.js
+*.spec.js
 
 # Package locks (keeping pnpm-lock.yaml only)
 package-lock.json
