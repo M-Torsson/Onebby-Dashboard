@@ -1,40 +1,105 @@
-// Next Imports
-import { redirect } from 'next/navigation'
+'use client'
+
+// React Imports
+import { useState, useEffect, useCallback } from 'react'
+
+// MUI Imports
+import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
+import Alert from '@mui/material/Alert'
 
 // Component Imports
 import OrderDetails from '@views/apps/ecommerce/orders/details'
 
-// Data Imports
-import { getEcommerceData } from '@/app/server/actions'
+// API Imports
+import { getOrderById } from '@/services/ordersApi'
 
-/**
- * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
- * ! `.env` file found at root of your project and also update the API endpoints like `/apps/ecommerce` in below example.
- * ! Also, remove the above server action import and the action itself from the `src/app/server/actions.ts` file to clean up unused code
- * ! because we've used the server action for getting our static data.
- */
-/* const getEcommerceData = async () => {
-  // Vars
-  const res = await fetch(`${process.env.API_URL}/apps/ecommerce`)
+// Hook Imports
+import useAuthToken from '@/hooks/useAuthToken'
 
-  if (!res.ok) {
-    throw new Error('Failed to fetch ecommerce data')
+const OrderDetailsPage = props => {
+  // Auth hook - syncs NextAuth session with localStorage
+  const { isAuthenticated, isLoading: authLoading } = useAuthToken()
+
+  // States
+  const [orderData, setOrderData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Get params
+  const [params, setParams] = useState(null)
+
+  useEffect(() => {
+    props.params.then(p => setParams(p))
+  }, [props.params])
+
+  // Fetch order details
+  const fetchOrderDetails = useCallback(async () => {
+    if (!params?.id) return
+
+    // Wait for auth to load
+    if (authLoading) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      const order = await getOrderById(params.id)
+
+      setOrderData(order)
+    } catch (err) {
+      console.error('[Order Details] Error fetching order:', err)
+
+      // Check if it's an authentication error
+      if (err.message?.includes('401') || err.message?.includes('403')) {
+        setError('Please login to view order details. Your session may have expired.')
+      } else {
+        setError(err.message || 'Failed to fetch order details')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [params, isAuthenticated, authLoading])
+
+  useEffect(() => {
+    fetchOrderDetails()
+  }, [fetchOrderDetails])
+
+  // Handle update callback - refetch data after update
+  const handleUpdate = () => {
+    fetchOrderDetails()
   }
 
-  return res.json()
-} */
-const OrderDetailsPage = async props => {
-  const params = await props.params
-
-  // Vars
-  const data = await getEcommerceData()
-  const filteredData = data?.orderData.filter(item => item.order === params.id)[0]
-
-  if (!filteredData) {
-    redirect('/not-found')
+  // Loading state
+  if (loading || authLoading) {
+    return (
+      <Box display='flex' justifyContent='center' alignItems='center' minHeight='400px'>
+        <CircularProgress />
+      </Box>
+    )
   }
 
-  return filteredData ? <OrderDetails orderData={filteredData} order={params.id} /> : null
+  // Error state
+  if (error) {
+    return (
+      <Box p={4}>
+        <Alert severity='error'>{error}</Alert>
+      </Box>
+    )
+  }
+
+  // Not found state
+  if (!orderData) {
+    return (
+      <Box p={4}>
+        <Alert severity='warning'>Order not found</Alert>
+      </Box>
+    )
+  }
+
+  return <OrderDetails orderData={orderData} order={params.id} onUpdate={handleUpdate} />
 }
 
 export default OrderDetailsPage

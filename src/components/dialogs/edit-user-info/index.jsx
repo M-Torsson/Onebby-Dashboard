@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // MUI Imports
 import Grid from '@mui/material/Grid'
@@ -15,10 +15,15 @@ import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Switch from '@mui/material/Switch'
 import { FormControlLabel } from '@mui/material'
+import CircularProgress from '@mui/material/CircularProgress'
+import Alert from '@mui/material/Alert'
 
 // Component Imports
 import DialogCloseButton from '../DialogCloseButton'
 import CustomTextField from '@core/components/mui/TextField'
+
+// API Imports
+import { updateOrder } from '@/services/ordersApi'
 
 const initialData = {
   firstName: 'Oliver',
@@ -37,13 +42,70 @@ const status = ['Status', 'Active', 'Inactive', 'Suspended']
 const languages = ['English', 'Spanish', 'French', 'German', 'Hindi']
 const countries = ['Select Country', 'France', 'Russia', 'China', 'UK', 'US']
 
-const EditUserInfo = ({ open, setOpen, data }) => {
+const EditUserInfo = ({ open, setOpen, data, orderId, onUpdate }) => {
   // States
   const [userData, setUserData] = useState(data || initialData)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
+
+  // Update userData when dialog opens or data changes
+  useEffect(() => {
+    if (open) {
+      setUserData(data || initialData)
+    }
+  }, [open, data])
 
   const handleClose = () => {
-    setOpen(false)
-    setUserData(data || initialData)
+    if (!loading) {
+      setOpen(false)
+      setUserData(data || initialData)
+      setError(null)
+      setSuccess(false)
+    }
+  }
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+
+    if (!orderId) {
+      setError('Order ID is required')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Prepare customer_info update data
+      const updateData = {
+        customer_info: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          email: userData.billingEmail,
+          phone: userData.contact,
+          tax_code: userData.taxId
+        }
+      }
+
+      await updateOrder(orderId, updateData)
+
+      setSuccess(true)
+
+      // Call onUpdate callback if provided
+      if (onUpdate) {
+        onUpdate()
+      }
+
+      // Close dialog after 1.5 seconds
+      setTimeout(() => {
+        handleClose()
+      }, 1500)
+    } catch (err) {
+      setError(err.message || 'Failed to update customer information')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -65,8 +127,18 @@ const EditUserInfo = ({ open, setOpen, data }) => {
           Updating user details will receive a privacy audit.
         </Typography>
       </DialogTitle>
-      <form onSubmit={e => e.preventDefault()}>
+      <form onSubmit={handleSubmit}>
         <DialogContent className='overflow-visible pbs-0 sm:pli-16'>
+          {error && (
+            <Alert severity='error' className='mb-4'>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity='success' className='mb-4'>
+              Customer information updated successfully!
+            </Alert>
+          )}
           <Grid container spacing={5}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
@@ -188,10 +260,15 @@ const EditUserInfo = ({ open, setOpen, data }) => {
           </Grid>
         </DialogContent>
         <DialogActions className='justify-center pbs-0 sm:pbe-16 sm:pli-16'>
-          <Button variant='contained' onClick={handleClose} type='submit'>
-            Submit
+          <Button
+            variant='contained'
+            type='submit'
+            disabled={loading}
+            startIcon={loading && <CircularProgress size={20} />}
+          >
+            {loading ? 'Updating...' : 'Submit'}
           </Button>
-          <Button variant='tonal' color='secondary' type='reset' onClick={handleClose}>
+          <Button variant='tonal' color='secondary' type='button' onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
         </DialogActions>

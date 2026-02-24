@@ -7,6 +7,7 @@
 // React Imports
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { isAuthenticated as checkAuth, getAuthToken } from '@/utils/authTokenManager'
 
 export default function AuthGuard({ children, locale }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -14,13 +15,19 @@ export default function AuthGuard({ children, locale }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated
-    const authStatus = localStorage.getItem('isAuthenticated')
-    const accessToken = localStorage.getItem('accessToken')
+    // Check if user is authenticated using centralized auth manager
+    const authenticated = checkAuth()
+    const token = getAuthToken()
 
-    if (authStatus === 'true' && accessToken) {
+    console.log('[AuthGuard] Checking authentication...')
+    console.log('[AuthGuard] isAuthenticated:', authenticated)
+    console.log('[AuthGuard] Token present:', !!token)
+
+    if (authenticated && token) {
+      console.log('[AuthGuard] User is authenticated')
       setIsAuthenticated(true)
     } else {
+      console.log('[AuthGuard] User not authenticated, redirecting to login')
       // Redirect to login if not authenticated
       router.push(`/${locale}/login`)
     }

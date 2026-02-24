@@ -14,6 +14,8 @@ import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
+import CircularProgress from '@mui/material/CircularProgress'
+import Alert from '@mui/material/Alert'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -22,6 +24,9 @@ import classnames from 'classnames'
 import CustomInputVertical from '@core/components/custom-inputs/Vertical'
 import DialogCloseButton from '../DialogCloseButton'
 import CustomTextField from '@core/components/mui/TextField'
+
+// API Imports
+import { updateOrder } from '@/services/ordersApi'
 
 const countries = ['Select Country', 'France', 'Russia', 'China', 'UK', 'US']
 
@@ -53,13 +58,16 @@ const customInputData = [
   }
 ]
 
-const AddEditAddress = ({ open, setOpen, data }) => {
+const AddEditAddress = ({ open, setOpen, data, orderId, addressType, onUpdate }) => {
   // Vars
   const initialSelected = customInputData?.find(item => item.isSelected)?.value || ''
 
   // States
   const [selected, setSelected] = useState(initialSelected)
   const [addressData, setAddressData] = useState(initialAddressData)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
 
   const handleChange = prop => {
     if (typeof prop === 'string') {
@@ -70,9 +78,66 @@ const AddEditAddress = ({ open, setOpen, data }) => {
   }
 
   useEffect(() => {
-    setAddressData(data ?? initialAddressData)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+    if (open) {
+      setAddressData(data ?? initialAddressData)
+    }
+  }, [open, data])
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+
+    if (!orderId) {
+      setError('Order ID is required')
+      return
+    }
+
+    if (!addressType || (addressType !== 'shipping' && addressType !== 'billing')) {
+      setError('Address type must be either "shipping" or "billing"')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Prepare address update data
+      const addressFieldName = addressType === 'shipping' ? 'shipping_address' : 'billing_address'
+      const updateData = {
+        [addressFieldName]: {
+          name: addressData.firstName,
+          last_name: addressData.lastName,
+          address_house_number: addressData.address1,
+          city: addressData.city,
+          state: addressData.state,
+          postal_code: addressData.zipCode,
+          country: addressData.country,
+          phone: addressData.contact,
+          landmark: addressData.landmark
+        }
+      }
+
+      await updateOrder(orderId, updateData)
+
+      setSuccess(true)
+
+      // Call onUpdate callback if provided
+      if (onUpdate) {
+        onUpdate()
+      }
+
+      // Close dialog after 1.5 seconds
+      setTimeout(() => {
+        setOpen(false)
+        setSelected(initialSelected)
+        setSuccess(false)
+        setError(null)
+      }, 1500)
+    } catch (err) {
+      setError(err.message || 'Failed to update address')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <Dialog
@@ -92,11 +157,21 @@ const AddEditAddress = ({ open, setOpen, data }) => {
           {data ? 'Edit Address for future billing' : 'Add address for billing address'}
         </Typography>
       </DialogTitle>
-      <form onSubmit={e => e.preventDefault()}>
+      <form onSubmit={handleSubmit}>
         <DialogContent className='pbs-0 sm:pli-16'>
           <DialogCloseButton onClick={() => setOpen(false)} disableRipple>
             <i className='tabler-x' />
           </DialogCloseButton>
+          {error && (
+            <Alert severity='error' className='mb-4'>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity='success' className='mb-4'>
+              Address updated successfully!
+            </Alert>
+          )}
           <Grid container spacing={6}>
             {customInputData.map((item, index) => {
               let asset
@@ -230,8 +305,13 @@ const AddEditAddress = ({ open, setOpen, data }) => {
           </Grid>
         </DialogContent>
         <DialogActions className='justify-center pbs-0 sm:pbe-16 sm:pli-16'>
-          <Button variant='contained' onClick={() => setOpen(false)} type='submit'>
-            {data ? 'Update' : 'Submit'}
+          <Button
+            variant='contained'
+            type='submit'
+            disabled={loading}
+            startIcon={loading && <CircularProgress size={20} />}
+          >
+            {loading ? 'Updating...' : data ? 'Update' : 'Submit'}
           </Button>
           <Button
             variant='tonal'
@@ -240,7 +320,8 @@ const AddEditAddress = ({ open, setOpen, data }) => {
               setOpen(false)
               setSelected(initialSelected)
             }}
-            type='reset'
+            type='button'
+            disabled={loading}
           >
             Cancel
           </Button>

@@ -48,13 +48,81 @@ export const paymentStatus = {
   1: { text: 'Paid', color: 'success', colorClassName: 'text-success' },
   2: { text: 'Pending', color: 'warning', colorClassName: 'text-warning' },
   3: { text: 'Cancelled', color: 'secondary', colorClassName: 'text-secondary' },
-  4: { text: 'Failed', color: 'error', colorClassName: 'text-error' }
+  4: { text: 'Failed', color: 'error', colorClassName: 'text-error' },
+  5: { text: 'Refunded', color: 'info', colorClassName: 'text-info' }
 }
-export const statusChipColor = {
-  Delivered: { color: 'success' },
-  'Out for Delivery': { color: 'primary' },
-  'Ready to Pickup': { color: 'info' },
-  Dispatched: { color: 'warning' }
+
+// Map status values to display text and colors
+export const statusConfig = {
+  delivered: { text: 'Delivered', color: 'success' },
+  shipped: { text: 'Out for Delivery', color: 'primary' },
+  pending: { text: 'Pending', color: 'info' },
+  cancelled: { text: 'Cancelled', color: 'error' },
+  processing: { text: 'Processing', color: 'warning' },
+  confirmed: { text: 'Confirmed', color: 'success' },
+  'ready-to-pickup': { text: 'Ready to Pickup', color: 'info' }
+}
+
+// Helper to get status display text
+const getStatusDisplay = status => {
+  return statusConfig[status]?.text || status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+// Helper to get status color
+const getStatusColor = status => {
+  return statusConfig[status]?.color || 'default'
+}
+
+// Helper function to convert API data to table format
+const convertApiDataToTableFormat = apiOrders => {
+  if (!apiOrders || !Array.isArray(apiOrders)) return []
+
+  return apiOrders.map(order => {
+    // Convert payment_status to payment number
+    const paymentStatusValue = (order.payment_status || '').toLowerCase()
+    let payment = 2 // default: Pending
+    if (paymentStatusValue === 'completed' || paymentStatusValue === 'paid')
+      payment = 1 // Paid
+    else if (paymentStatusValue === 'failed')
+      payment = 4 // Failed
+    else if (paymentStatusValue === 'refunded')
+      payment = 5 // Refunded
+    else if (paymentStatusValue === 'cancelled')
+      payment = 3 // Cancelled
+    else if (paymentStatusValue === 'pending') payment = 2 // Pending
+
+    // Shipping status should come from shipping_status in API response
+    const shippingStatusValue = (order.shipping_status || '').toLowerCase()
+    const orderStatusValue = (order.status || '').toLowerCase()
+
+    const statusValue = shippingStatusValue || (statusConfig[orderStatusValue] ? orderStatusValue : 'pending')
+
+    const status = getStatusDisplay(statusValue)
+
+    // Convert payment_method to method
+    const method = order.payment_method === 'paypal' ? 'paypalLogo' : 'mastercard'
+
+    // Parse created_at date
+    const createdDate = new Date(order.created_at)
+    const date = createdDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+    const time = createdDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+    return {
+      id: order.id,
+      order: order.id.toString(),
+      customer: order.customer_name || order.customer_email.split('@')[0],
+      email: order.customer_email,
+      avatar: null, // Will use initials
+      payment: payment,
+      status: status,
+      statusValue: statusValue, // Keep original value for color mapping
+      spent: parseFloat(order.total_amount),
+      method: method,
+      date: date,
+      time: time,
+      methodNumber: Math.floor(Math.random() * 9000) + 1000 // Random for display
+    }
+  })
 }
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
@@ -95,11 +163,17 @@ const columnHelper = createColumnHelper()
 const OrderListTable = ({ orderData }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[orderData])
+  const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
   // Hooks
   const { lang: locale } = useParams()
+
+  // Convert API data to table format when orderData changes
+  useEffect(() => {
+    const convertedData = convertApiDataToTableFormat(orderData)
+    setData(convertedData)
+  }, [orderData])
 
   // Vars
   const paypal = '/images/apps/ecommerce/paypal.png'
@@ -139,12 +213,6 @@ const OrderListTable = ({ orderData }) => {
           >{`#${row.original.order}`}</Typography>
         )
       }),
-      columnHelper.accessor('date', {
-        header: 'Date',
-        cell: ({ row }) => (
-          <Typography>{`${new Date(row.original.date).toDateString()}, ${row.original.time}`}</Typography>
-        )
-      }),
       columnHelper.accessor('customer', {
         header: 'Customers',
         cell: ({ row }) => (
@@ -153,7 +221,7 @@ const OrderListTable = ({ orderData }) => {
             <div className='flex flex-col'>
               <Typography
                 component={Link}
-                href={getLocalizedUrl('/apps/ecommerce/customers/details/879861', locale)}
+                href={getLocalizedUrl(`/apps/ecommerce/orders/details/${row.original.order}`, locale)}
                 color='text.primary'
                 className='font-medium hover:text-primary'
               >
@@ -162,6 +230,12 @@ const OrderListTable = ({ orderData }) => {
               <Typography variant='body2'>{row.original.email}</Typography>
             </div>
           </div>
+        )
+      }),
+      columnHelper.accessor('date', {
+        header: 'Date',
+        cell: ({ row }) => (
+          <Typography>{`${new Date(row.original.date).toDateString()}, ${row.original.time}`}</Typography>
         )
       }),
       columnHelper.accessor('payment', {
@@ -181,11 +255,11 @@ const OrderListTable = ({ orderData }) => {
         )
       }),
       columnHelper.accessor('status', {
-        header: 'Status',
+        header: 'Shipping Status',
         cell: ({ row }) => (
           <Chip
             label={row.original.status}
-            color={statusChipColor[row.original.status].color}
+            color={getStatusColor(row.original.statusValue)}
             variant='tonal'
             size='small'
           />

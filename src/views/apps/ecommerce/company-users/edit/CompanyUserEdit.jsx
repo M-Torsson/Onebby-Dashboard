@@ -13,6 +13,7 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import MenuItem from '@mui/material/MenuItem'
 import CustomTextField from '@core/components/mui/TextField'
+import AddressManagement from '@components/address-management/AddressManagement'
 
 const CompanyUserEdit = ({ companyId }) => {
   const router = useRouter()
@@ -126,197 +127,210 @@ const CompanyUserEdit = ({ companyId }) => {
   }
 
   return (
-    <Grid container spacing={6}>
-      {/* Header Card */}
-      <Grid item xs={12}>
-        <Card>
-          <CardContent>
-            <Typography variant='h5' className='font-bold'>
-              Edit Company #{companyId} {formData.company_name ? `- ${formData.company_name}` : ''}
-            </Typography>
-            <Typography variant='body2' color='text.secondary'>
-              Update company information and approval status
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Alerts */}
-      {error && (
-        <Grid item xs={12}>
-          <Alert severity='error' onClose={() => setError('')}>
-            {error}
-          </Alert>
+    <>
+      <Grid container spacing={6} justifyContent='center'>
+        {/* Header Card */}
+        <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+          <Card>
+            <CardContent>
+              <Typography variant='h5' className='font-bold'>
+                Edit Company #{companyId} {formData.company_name ? `- ${formData.company_name}` : ''}
+              </Typography>
+              <Typography variant='body2' color='text.secondary'>
+                Update company information and approval status
+              </Typography>
+            </CardContent>
+          </Card>
         </Grid>
-      )}
-      {success && (
-        <Grid item xs={12}>
-          <Alert severity='success' onClose={() => setSuccess('')}>
-            {success}
-          </Alert>
+
+        {/* Alerts */}
+        {error && (
+          <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+            <Alert severity='error' onClose={() => setError('')}>
+              {error}
+            </Alert>
+          </Grid>
+        )}
+        {success && (
+          <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+            <Alert severity='success' onClose={() => setSuccess('')}>
+              {success}
+            </Alert>
+          </Grid>
+        )}
+
+        {/* Company Information Card */}
+        <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+          <Card>
+            <CardHeader title='Company Information' subheader='Basic company details' />
+            <Divider />
+            <CardContent>
+              <Grid container spacing={5}>
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Company Name'
+                    placeholder='Acme Corporation'
+                    value={formData.company_name}
+                    onChange={e => setFormData({ ...formData, company_name: e.target.value })}
+                    error={!formData.company_name}
+                    helperText={!formData.company_name ? 'Company name is required' : ' '}
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-building text-textSecondary me-2' />
+                      }
+                    }}
+                    required
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Email Address'
+                    type='email'
+                    placeholder='company@example.com'
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    error={!formData.email}
+                    helperText={!formData.email ? 'Email is required' : 'Primary contact email'}
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-mail text-textSecondary me-2' />
+                      }
+                    }}
+                    required
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='PEC (Certified Email)'
+                    type='email'
+                    placeholder='pec@company.it'
+                    value={formData.pec}
+                    onChange={e => setFormData({ ...formData, pec: e.target.value })}
+                    helperText='Certified email for official communications'
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-mail-check text-textSecondary me-2' />
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='VAT Number'
+                    placeholder='IT12345678901'
+                    value={formData.vat_number}
+                    onChange={e => setFormData({ ...formData, vat_number: e.target.value })}
+                    error={!formData.vat_number}
+                    helperText={!formData.vat_number ? 'VAT number is required' : 'European VAT identification number'}
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-receipt-tax text-textSecondary me-2' />
+                      }
+                    }}
+                    required
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Tax Code'
+                    placeholder='ABC123XYZ'
+                    value={formData.tax_code}
+                    onChange={e => setFormData({ ...formData, tax_code: e.target.value })}
+                    helperText='Company fiscal/tax identification code'
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-certificate text-textSecondary me-2' />
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <Divider className='my-2' />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Approval Status'
+                    value={formData.approval_status}
+                    onChange={e => setFormData({ ...formData, approval_status: e.target.value })}
+                    helperText='Current approval state of the company'
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                  >
+                    <MenuItem value='approved'>
+                      <div className='flex items-center gap-2 w-full'>
+                        <i className='tabler-circle-check text-success' />
+                        <span>Approved</span>
+                      </div>
+                    </MenuItem>
+                    <MenuItem value='pending'>
+                      <div className='flex items-center gap-2 w-full'>
+                        <i className='tabler-clock text-warning' />
+                        <span>Pending</span>
+                      </div>
+                    </MenuItem>
+                    <MenuItem value='rejected'>
+                      <div className='flex items-center gap-2 w-full'>
+                        <i className='tabler-x text-error' />
+                        <span>Rejected</span>
+                      </div>
+                    </MenuItem>
+                  </CustomTextField>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
         </Grid>
-      )}
 
-      {/* Company Information Card */}
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader 
-            title='Company Information' 
-            subheader='Basic company details'
-          />
-          <Divider />
-          <CardContent>
-            <Grid container spacing={5}>
-              <Grid item xs={12}>
-                <CustomTextField
-                  fullWidth
-                  label='Company Name'
-                  placeholder='Acme Corporation'
-                  value={formData.company_name}
-                  onChange={e => setFormData({ ...formData, company_name: e.target.value })}
-                  error={!formData.company_name}
-                  helperText={!formData.company_name ? 'Company name is required' : ' '}
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-building text-textSecondary me-2' />
-                    }
-                  }}
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <CustomTextField
-                  fullWidth
-                  label='Email Address'
-                  type='email'
-                  placeholder='company@example.com'
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  error={!formData.email}
-                  helperText={!formData.email ? 'Email is required' : 'Primary contact email'}
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-mail text-textSecondary me-2' />
-                    }
-                  }}
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <CustomTextField
-                  fullWidth
-                  label='PEC (Certified Email)'
-                  type='email'
-                  placeholder='pec@company.it'
-                  value={formData.pec}
-                  onChange={e => setFormData({ ...formData, pec: e.target.value })}
-                  helperText='Certified email for official communications'
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-mail-check text-textSecondary me-2' />
-                    }
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <CustomTextField
-                  fullWidth
-                  label='VAT Number'
-                  placeholder='IT12345678901'
-                  value={formData.vat_number}
-                  onChange={e => setFormData({ ...formData, vat_number: e.target.value })}
-                  error={!formData.vat_number}
-                  helperText={!formData.vat_number ? 'VAT number is required' : 'European VAT identification number'}
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-receipt-tax text-textSecondary me-2' />
-                    }
-                  }}
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <CustomTextField
-                  fullWidth
-                  label='Tax Code'
-                  placeholder='ABC123XYZ'
-                  value={formData.tax_code}
-                  onChange={e => setFormData({ ...formData, tax_code: e.target.value })}
-                  helperText='Company fiscal/tax identification code'
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-certificate text-textSecondary me-2' />
-                    }
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Divider className='my-2' />
-              </Grid>
-
-              <Grid item xs={12}>
-                <CustomTextField
-                  select
-                  fullWidth
-                  label='Approval Status'
-                  value={formData.approval_status}
-                  onChange={e => setFormData({ ...formData, approval_status: e.target.value })}
-                  helperText='Current approval state of the company'
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                >
-                  <MenuItem value='approved'>
-                    <div className='flex items-center gap-2 w-full'>
-                      <i className='tabler-circle-check text-success' />
-                      <span>Approved</span>
-                    </div>
-                  </MenuItem>
-                  <MenuItem value='pending'>
-                    <div className='flex items-center gap-2 w-full'>
-                      <i className='tabler-clock text-warning' />
-                      <span>Pending</span>
-                    </div>
-                  </MenuItem>
-                  <MenuItem value='rejected'>
-                    <div className='flex items-center gap-2 w-full'>
-                      <i className='tabler-x text-error' />
-                      <span>Rejected</span>
-                    </div>
-                  </MenuItem>
-                </CustomTextField>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
+        {/* Address Management Card */}
+        <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+          <AddressManagement userId={companyId} addressType='company' />
+        </Grid>
       </Grid>
 
-      {/* Action Buttons */}
-      <Grid item xs={12}>
-        <div className='flex gap-4 justify-end'>
-          <Button variant='contained' onClick={handleSaveCompany} disabled={loading} startIcon={loading ? <CircularProgress size={20} /> : <i className='tabler-device-floppy' />}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-          <Button variant='tonal' color='secondary' onClick={handleCancel} disabled={loading} startIcon={<i className='tabler-x' />}>
-            Cancel
-          </Button>
-        </div>
-      </Grid>
-    </Grid>
+      {/* Action Buttons - Outside Grid at Bottom */}
+      <div className='flex gap-4 justify-end mt-6'>
+        <Button
+          variant='tonal'
+          color='secondary'
+          onClick={handleCancel}
+          disabled={loading}
+          startIcon={<i className='tabler-x' />}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant='contained'
+          onClick={handleSaveCompany}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} /> : <i className='tabler-device-floppy' />}
+        >
+          {loading ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
+    </>
   )
 }
 

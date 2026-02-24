@@ -18,6 +18,9 @@ import MenuList from '@mui/material/MenuList'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
+
+// Auth Utils
+import { clearAuthToken } from '@/utils/authTokenManager'
 import Button from '@mui/material/Button'
 
 // Hook Imports
@@ -74,11 +77,15 @@ const UserDropdown = ({ dictionary = { common: {} } }) => {
   }
 
   const handleUserLogout = () => {
-    // Clear all authentication data from localStorage
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('tokenType')
+    console.log('[UserDropdown] Logging out...')
+
+    // Clear all authentication data using centralized token manager
+    clearAuthToken()
+
+    // Clear additional user data
     localStorage.removeItem('username')
-    localStorage.removeItem('isAuthenticated')
+
+    console.log('[UserDropdown] Redirecting to login page')
 
     // Redirect to login page
     router.push(getLocalizedUrl('/login', locale))

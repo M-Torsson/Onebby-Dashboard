@@ -8,20 +8,24 @@ import ShippingActivity from './ShippingActivityCard'
 import CustomerDetails from './CustomerDetailsCard'
 import ShippingAddress from './ShippingAddressCard'
 import BillingAddress from './BillingAddressCard'
+import PaymentDetailsCard from './PaymentDetailsCard'
 
-const OrderDetails = ({ orderData, order }) => {
+const OrderDetails = ({ orderData, order, onUpdate }) => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <OrderDetailHeader orderData={orderData} order={order} />
+        <OrderDetailHeader orderData={orderData} order={order} onUpdate={onUpdate} />
       </Grid>
       <Grid size={{ xs: 12, md: 8 }}>
         <Grid container spacing={6}>
           <Grid size={{ xs: 12 }}>
-            <OrderDetailsCard />
+            <OrderDetailsCard orderData={orderData} />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <ShippingActivity order={order} />
+            <PaymentDetailsCard orderId={orderData?.id} onUpdate={onUpdate} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <ShippingActivity order={order} orderData={orderData} />
           </Grid>
         </Grid>
       </Grid>
@@ -31,10 +35,10 @@ const OrderDetails = ({ orderData, order }) => {
             <CustomerDetails orderData={orderData} />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <ShippingAddress />
+            <ShippingAddress orderData={orderData} />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <BillingAddress />
+            <BillingAddress orderData={orderData} />
           </Grid>
         </Grid>
       </Grid>

@@ -13,6 +13,7 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import MenuItem from '@mui/material/MenuItem'
 import CustomTextField from '@core/components/mui/TextField'
+import AddressManagement from '@components/address-management/AddressManagement'
 
 const UserEdit = ({ userId }) => {
   const router = useRouter()
@@ -122,143 +123,157 @@ const UserEdit = ({ userId }) => {
   }
 
   return (
-    <Grid container spacing={6}>
-      {/* Header Card */}
-      <Grid item xs={12}>
-        <Card>
-          <CardContent>
-            <Typography variant='h5' className='font-bold'>
-              Edit User #{userId} {formData.first_name && formData.last_name ? `- ${formData.first_name} ${formData.last_name}` : ''}
-            </Typography>
-            <Typography variant='body2' color='text.secondary'>
-              Update user information and account settings
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Alerts */}
-      {error && (
-        <Grid item xs={12}>
-          <Alert severity='error' onClose={() => setError('')}>
-            {error}
-          </Alert>
+    <>
+      <Grid container spacing={6} justifyContent='center'>
+        {/* Header Card */}
+        <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+          <Card>
+            <CardContent>
+              <Typography variant='h5' className='font-bold'>
+                Edit User #{userId}{' '}
+                {formData.first_name && formData.last_name ? `- ${formData.first_name} ${formData.last_name}` : ''}
+              </Typography>
+              <Typography variant='body2' color='text.secondary'>
+                Update user information and account settings
+              </Typography>
+            </CardContent>
+          </Card>
         </Grid>
-      )}
-      {success && (
-        <Grid item xs={12}>
-          <Alert severity='success' onClose={() => setSuccess('')}>
-            {success}
-          </Alert>
+
+        {/* Alerts */}
+        {error && (
+          <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+            <Alert severity='error' onClose={() => setError('')}>
+              {error}
+            </Alert>
+          </Grid>
+        )}
+        {success && (
+          <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+            <Alert severity='success' onClose={() => setSuccess('')}>
+              {success}
+            </Alert>
+          </Grid>
+        )}
+
+        {/* Basic Information Card */}
+        <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+          <Card>
+            <CardHeader title='Basic Information' subheader='Personal details of the user' />
+            <Divider />
+            <CardContent>
+              <Grid container spacing={5}>
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Title'
+                    value={formData.title}
+                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                  >
+                    <MenuItem value=''>
+                      <em>None</em>
+                    </MenuItem>
+                    <MenuItem value='Mr'>Mr</MenuItem>
+                    <MenuItem value='Mrs'>Mrs</MenuItem>
+                    <MenuItem value='Ms'>Ms</MenuItem>
+                    <MenuItem value='Dr'>Dr</MenuItem>
+                  </CustomTextField>
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='First Name'
+                    placeholder='John'
+                    value={formData.first_name}
+                    onChange={e => setFormData({ ...formData, first_name: e.target.value })}
+                    error={!formData.first_name}
+                    helperText={!formData.first_name ? 'First name is required' : ' '}
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-user text-textSecondary me-2' />
+                      }
+                    }}
+                    required
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Last Name'
+                    placeholder='Doe'
+                    value={formData.last_name}
+                    onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                    error={!formData.last_name}
+                    helperText={!formData.last_name ? 'Last name is required' : ' '}
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-user text-textSecondary me-2' />
+                      }
+                    }}
+                    required
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Email Address'
+                    type='email'
+                    placeholder='john.doe@example.com'
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    error={!formData.email}
+                    helperText={!formData.email ? 'Email is required' : 'User will receive notifications at this email'}
+                    InputLabelProps={{ shrink: true }}
+                    FormHelperTextProps={{ style: { minHeight: '20px' } }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <i className='tabler-mail text-textSecondary me-2' />
+                      }
+                    }}
+                    required
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
         </Grid>
-      )}
 
-      {/* Basic Information Card */}
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader 
-            title='Basic Information' 
-            subheader='Personal details of the user'
-          />
-          <Divider />
-          <CardContent>
-            <Grid container spacing={5}>
-              <Grid item xs={12} sm={4}>
-                <CustomTextField
-                  select
-                  fullWidth
-                  label='Title'
-                  value={formData.title}
-                  onChange={e => setFormData({ ...formData, title: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                >
-                  <MenuItem value=''>
-                    <em>None</em>
-                  </MenuItem>
-                  <MenuItem value='Mr'>Mr</MenuItem>
-                  <MenuItem value='Mrs'>Mrs</MenuItem>
-                  <MenuItem value='Ms'>Ms</MenuItem>
-                  <MenuItem value='Dr'>Dr</MenuItem>
-                </CustomTextField>
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <CustomTextField
-                  fullWidth
-                  label='First Name'
-                  placeholder='John'
-                  value={formData.first_name}
-                  onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                  error={!formData.first_name}
-                  helperText={!formData.first_name ? 'First name is required' : ' '}
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-user text-textSecondary me-2' />
-                    }
-                  }}
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <CustomTextField
-                  fullWidth
-                  label='Last Name'
-                  placeholder='Doe'
-                  value={formData.last_name}
-                  onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                  error={!formData.last_name}
-                  helperText={!formData.last_name ? 'Last name is required' : ' '}
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-user text-textSecondary me-2' />
-                    }
-                  }}
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <CustomTextField
-                  fullWidth
-                  label='Email Address'
-                  type='email'
-                  placeholder='john.doe@example.com'
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  error={!formData.email}
-                  helperText={!formData.email ? 'Email is required' : 'User will receive notifications at this email'}
-                  InputLabelProps={{ shrink: true }}
-                  FormHelperTextProps={{ style: { minHeight: '20px' } }}
-                  slotProps={{
-                    input: {
-                      startAdornment: <i className='tabler-mail text-textSecondary me-2' />
-                    }
-                  }}
-                  required
-                />
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
+        {/* Address Management Card */}
+        <Grid size={{ xs: 12, md: 11, lg: 9 }}>
+          <AddressManagement userId={userId} addressType='customer' />
+        </Grid>
       </Grid>
 
-      {/* Action Buttons */}
-      <Grid item xs={12}>
-        <div className='flex gap-4 justify-end'>
-          <Button variant='contained' onClick={handleSaveUser} disabled={loading} startIcon={loading ? <CircularProgress size={20} /> : <i className='tabler-device-floppy' />}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-          <Button variant='tonal' color='secondary' onClick={handleCancel} disabled={loading} startIcon={<i className='tabler-x' />}>
-            Cancel
-          </Button>
-        </div>
-      </Grid>
-    </Grid>
+      {/* Action Buttons - Outside Grid at Bottom */}
+      <div className='flex gap-4 justify-end mt-6'>
+        <Button
+          variant='tonal'
+          color='secondary'
+          onClick={handleCancel}
+          disabled={loading}
+          startIcon={<i className='tabler-x' />}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant='contained'
+          onClick={handleSaveUser}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} /> : <i className='tabler-device-floppy' />}
+        >
+          {loading ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
+    </>
   )
 }
 

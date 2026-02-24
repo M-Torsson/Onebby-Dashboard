@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -45,50 +45,57 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
   return itemRank.passed
 }
 
-const orderData = [
-  {
-    productName: 'OnePlus 7 Pro',
-    productImage: '/images/apps/ecommerce/product-21.png',
-    brand: 'OnePluse',
-    price: 799,
-    quantity: 1,
-    total: 799
-  },
-  {
-    productName: 'Magic Mouse',
-    productImage: '/images/apps/ecommerce/product-22.png',
-    brand: 'Google',
-    price: 89,
-    quantity: 1,
-    total: 89
-  },
-  {
-    productName: 'Wooden Chair',
-    productImage: '/images/apps/ecommerce/product-23.png',
-    brand: 'Insofar',
-    price: 289,
-    quantity: 2,
-    total: 578
-  },
-  {
-    productName: 'Air Jorden',
-    productImage: '/images/apps/ecommerce/product-24.png',
-    brand: 'Nike',
-    price: 299,
-    quantity: 2,
-    total: 598
-  }
-]
-
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const OrderTable = () => {
+const OrderTable = ({ orderData }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
-
-  const [data, setData] = useState(...[orderData])
+  const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+
+  // Convert API items to table format
+  useEffect(() => {
+    if (orderData?.items && Array.isArray(orderData.items)) {
+      const formattedItems = orderData.items.map(item => {
+        // Parse delivery_option and warranty_option if they exist
+        let deliveryOption = null
+        let warrantyOption = null
+
+        try {
+          if (item.delivery_option && typeof item.delivery_option === 'string') {
+            deliveryOption = JSON.parse(item.delivery_option)
+          } else if (item.delivery_option && typeof item.delivery_option === 'object') {
+            deliveryOption = item.delivery_option
+          }
+        } catch (e) {
+          console.error('[OrderDetailsCard] Failed to parse delivery_option:', e)
+        }
+
+        try {
+          if (item.warranty_option && typeof item.warranty_option === 'string') {
+            warrantyOption = JSON.parse(item.warranty_option)
+          } else if (item.warranty_option && typeof item.warranty_option === 'object') {
+            warrantyOption = item.warranty_option
+          }
+        } catch (e) {
+          console.error('[OrderDetailsCard] Failed to parse warranty_option:', e)
+        }
+
+        return {
+          productName: item.product_name_en || item.product_title?.split(' – ')[0] || item.product_title,
+          productImage: item.product_image || '/images/apps/ecommerce/product-1.png',
+          brand: item.product_sku || 'N/A',
+          price: parseFloat(item.unit_price),
+          quantity: item.quantity,
+          total: parseFloat(item.subtotal),
+          deliveryOption: deliveryOption,
+          warrantyOption: warrantyOption
+        }
+      })
+      setData(formattedItems)
+    }
+  }, [orderData])
 
   const columns = useMemo(
     () => [
@@ -119,18 +126,34 @@ const OrderTable = () => {
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <img src={row.original.productImage} alt={row.original.productName} height={34} className='rounded' />
-            <div className='flex flex-col items-start'>
-              <Typography color='text.primary' className='font-medium'>
+            <div className='flex flex-col items-start max-w-[450px]'>
+              <Typography
+                color='text.primary'
+                className='font-medium truncate max-w-full'
+                title={row.original.productName}
+              >
                 {row.original.productName}
               </Typography>
-              <Typography variant='body2'>{row.original.brand}</Typography>
+              <Typography variant='body2' className='text-gray-600'>
+                {row.original.brand}
+              </Typography>
+              {row.original.deliveryOption && (
+                <Typography variant='caption' className='text-success'>
+                  🚚 {row.original.deliveryOption.option} (+€{parseFloat(row.original.deliveryOption.price).toFixed(2)})
+                </Typography>
+              )}
+              {row.original.warrantyOption && (
+                <Typography variant='caption' className='text-info'>
+                  🛡️ {row.original.warrantyOption.title} (+€{parseFloat(row.original.warrantyOption.price).toFixed(2)})
+                </Typography>
+              )}
             </div>
           </div>
         )
       }),
       columnHelper.accessor('price', {
         header: 'Price',
-        cell: ({ row }) => <Typography>{`$${row.original.price}`}</Typography>
+        cell: ({ row }) => <Typography>€{row.original.price.toFixed(2)}</Typography>
       }),
       columnHelper.accessor('quantity', {
         header: 'Qty',
@@ -138,7 +161,7 @@ const OrderTable = () => {
       }),
       columnHelper.accessor('total', {
         header: 'Total',
-        cell: ({ row }) => <Typography>{`$${row.original.total}`}</Typography>
+        cell: ({ row }) => <Typography>€{row.original.total.toFixed(2)}</Typography>
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,8 +183,7 @@ const OrderTable = () => {
         pageSize: 10
       }
     },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+    enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
@@ -233,18 +255,49 @@ const OrderTable = () => {
   )
 }
 
-const OrderDetailsCard = () => {
+const OrderDetailsCard = ({ orderData }) => {
+  // Calculate totals from API data
+  const subtotal = orderData?.subtotal ? parseFloat(orderData.subtotal) : 0
+  const shippingCost = orderData?.shipping_cost ? parseFloat(orderData.shipping_cost) : 0
+  const tax = orderData?.tax_amount ? parseFloat(orderData.tax_amount) : orderData?.tax ? parseFloat(orderData.tax) : 0
+  const total = orderData?.total_amount ? parseFloat(orderData.total_amount) : 0
+  const currency = orderData?.currency || 'EUR'
+
+  // Calculate delivery and warranty costs from items
+  const deliveryTotal =
+    orderData?.items?.reduce((sum, item) => {
+      try {
+        let deliveryOption = null
+        if (item.delivery_option && typeof item.delivery_option === 'string') {
+          deliveryOption = JSON.parse(item.delivery_option)
+        } else if (item.delivery_option && typeof item.delivery_option === 'object') {
+          deliveryOption = item.delivery_option
+        }
+        return sum + (deliveryOption ? parseFloat(deliveryOption.price || 0) : 0)
+      } catch (e) {
+        return sum
+      }
+    }, 0) || 0
+
+  const warrantyTotal =
+    orderData?.items?.reduce((sum, item) => {
+      try {
+        let warrantyOption = null
+        if (item.warranty_option && typeof item.warranty_option === 'string') {
+          warrantyOption = JSON.parse(item.warranty_option)
+        } else if (item.warranty_option && typeof item.warranty_option === 'object') {
+          warrantyOption = item.warranty_option
+        }
+        return sum + (warrantyOption ? parseFloat(warrantyOption.price || 0) : 0)
+      } catch (e) {
+        return sum
+      }
+    }, 0) || 0
+
   return (
     <Card>
-      <CardHeader
-        title='Order Details'
-        action={
-          <Typography component={Link} color='primary.main' className='font-medium'>
-            Edit
-          </Typography>
-        }
-      />
-      <OrderTable />
+      <CardHeader title='Order Details' />
+      <OrderTable orderData={orderData} />
       <CardContent className='flex justify-end'>
         <div>
           <div className='flex items-center gap-12'>
@@ -252,15 +305,39 @@ const OrderDetailsCard = () => {
               Subtotal:
             </Typography>
             <Typography color='text.primary' className='font-medium'>
-              $2,093
+              {currency === 'EUR' ? '€' : '$'}
+              {subtotal.toFixed(2)}
             </Typography>
           </div>
+          {deliveryTotal > 0 && (
+            <div className='flex items-center gap-12'>
+              <Typography color='text.primary' className='min-is-[100px]'>
+                Delivery Services:
+              </Typography>
+              <Typography color='text.primary' className='font-medium text-success'>
+                {currency === 'EUR' ? '€' : '$'}
+                {deliveryTotal.toFixed(2)}
+              </Typography>
+            </div>
+          )}
+          {warrantyTotal > 0 && (
+            <div className='flex items-center gap-12'>
+              <Typography color='text.primary' className='min-is-[100px]'>
+                Warranty Services:
+              </Typography>
+              <Typography color='text.primary' className='font-medium text-info'>
+                {currency === 'EUR' ? '€' : '$'}
+                {warrantyTotal.toFixed(2)}
+              </Typography>
+            </div>
+          )}
           <div className='flex items-center gap-12'>
             <Typography color='text.primary' className='min-is-[100px]'>
               Shipping Fee:
             </Typography>
             <Typography color='text.primary' className='font-medium'>
-              $2
+              {currency === 'EUR' ? '€' : '$'}
+              {shippingCost.toFixed(2)}
             </Typography>
           </div>
           <div className='flex items-center gap-12'>
@@ -268,7 +345,8 @@ const OrderDetailsCard = () => {
               Tax:
             </Typography>
             <Typography color='text.primary' className='font-medium'>
-              $28
+              {currency === 'EUR' ? '€' : '$'}
+              {tax.toFixed(2)}
             </Typography>
           </div>
           <div className='flex items-center gap-12'>
@@ -276,7 +354,8 @@ const OrderDetailsCard = () => {
               Total:
             </Typography>
             <Typography color='text.primary' className='font-medium'>
-              $2113
+              {currency === 'EUR' ? '€' : '$'}
+              {total.toFixed(2)}
             </Typography>
           </div>
         </div>

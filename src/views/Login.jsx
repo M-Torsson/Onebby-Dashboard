@@ -29,6 +29,8 @@ import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 import { useImageVariant } from '@core/hooks/useImageVariant'
 import { useSettings } from '@core/hooks/useSettings'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { setAuthToken, debugAuthStatus } from '@/utils/authTokenManager'
+
 const LoginIllustration = styled('img')(({ theme }) => ({
   zIndex: 2,
   blockSize: 'auto',
@@ -166,14 +168,22 @@ const Login = ({ mode }) => {
 
       // Check if login was successful
       if (response.ok && result.access_token) {
-        console.log('[LOGIN] Storing auth data and redirecting...')
-        // Store authentication data with Bearer prefix
-        localStorage.setItem('accessToken', `Bearer ${result.access_token}`)
-        localStorage.setItem('tokenType', result.token_type)
+        console.log('[LOGIN] Storing auth data...')
+
+        // Store authentication token using centralized manager
+        setAuthToken(result.access_token, result.token_type)
+
+        // Store additional user data
         localStorage.setItem('username', data.username)
         localStorage.setItem('email', data.username + '@onebby.com')
         localStorage.setItem('password', data.password)
-        localStorage.setItem('isAuthenticated', 'true')
+
+        console.log('[LOGIN] Token stored successfully')
+
+        // Debug auth status
+        debugAuthStatus()
+
+        console.log('[LOGIN] Redirecting to dashboard...')
 
         // Redirect to dashboard
         const redirectURL = searchParams.get('redirectTo') ?? '/dashboards/ecommerce'
@@ -214,7 +224,6 @@ const Login = ({ mode }) => {
           <form
             noValidate
             autoComplete='off'
-            action={() => {}}
             onSubmit={handleSubmit(onSubmit)}
             className='flex flex-col gap-6'
           >

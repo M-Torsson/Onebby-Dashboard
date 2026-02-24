@@ -1,30 +1,87 @@
+'use client'
+
+// React Imports
+import { useState, useEffect } from 'react'
+
+// MUI Imports
+import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
+import Alert from '@mui/material/Alert'
+
 // Component Imports
 import OrderList from '@views/apps/ecommerce/orders/list'
 
-// Data Imports
-import { getEcommerceData } from '@/app/server/actions'
+// API Imports
+import { getAllOrders } from '@/services/ordersApi'
 
-/**
- * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
- * ! `.env` file found at root of your project and also update the API endpoints like `/apps/ecommerce` in below example.
- * ! Also, remove the above server action import and the action itself from the `src/app/server/actions.ts` file to clean up unused code
- * ! because we've used the server action for getting our static data.
- */
-/* const getEcommerceData = async () => {
-  // Vars
-  const res = await fetch(`${process.env.API_URL}/apps/ecommerce`)
+// Hook Imports
+import useAuthToken from '@/hooks/useAuthToken'
 
-  if (!res.ok) {
-    throw new Error('Failed to fetch ecommerce data')
+const OrdersListPage = () => {
+  // Auth hook - syncs NextAuth session with localStorage
+  const { isAuthenticated, isLoading: authLoading } = useAuthToken()
+
+  // States
+  const [orderData, setOrderData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch orders when component mounts and user is authenticated
+  useEffect(() => {
+    const fetchOrders = async () => {
+      // Wait for auth to load
+      if (authLoading) {
+        console.log('[Orders List] Waiting for auth to load...')
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError(null)
+
+        console.log('[Orders List] Fetching orders... isAuthenticated:', isAuthenticated)
+
+        // Fetch all orders from API
+        const orders = await getAllOrders({ limit: 100 })
+
+        console.log('[Orders List] Orders fetched successfully:', orders?.length || 0)
+        setOrderData(orders)
+      } catch (err) {
+        console.error('[Orders List] Error fetching orders:', err)
+
+        // Check if it's an authentication error
+        if (err.message?.includes('401') || err.message?.includes('403')) {
+          setError('Please login to view orders. Your session may have expired.')
+        } else {
+          setError(err.message || 'Failed to fetch orders')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [isAuthenticated, authLoading])
+
+  // Loading state
+  if (loading || authLoading) {
+    return (
+      <Box display='flex' justifyContent='center' alignItems='center' minHeight='400px'>
+        <CircularProgress />
+      </Box>
+    )
   }
 
-  return res.json()
-} */
-const OrdersListPage = async () => {
-  // Vars
-  const data = await getEcommerceData()
+  // Error state
+  if (error) {
+    return (
+      <Box p={4}>
+        <Alert severity='error'>{error}</Alert>
+      </Box>
+    )
+  }
 
-  return <OrderList orderData={data?.orderData} />
+  return <OrderList orderData={orderData} />
 }
 
 export default OrdersListPage
