@@ -32,7 +32,7 @@ const horizontalMenuData = dictionary => [
         children: [
           {
             label: dictionary['navigation'].dashboard,
-            href: '/apps/ecommerce/dashboard'
+            href: '/dashboards/crm'
           },
           {
             label: dictionary['navigation'].brands,
@@ -110,7 +110,7 @@ const horizontalMenuData = dictionary => [
             href: '/apps/invoice/add'
           }
         ]
-      },
+      }
       // {
       //   label: dictionary['navigation'].user,
       //   icon: 'tabler-user',

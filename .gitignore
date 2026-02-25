@@ -92,6 +92,13 @@ NETLIFY_DEPLOY.md
 RESTART_SERVER_NOW.txt
 URGENT_API_KEY_NEEDED.txt
 add-defender-exclusion.ps1
+API_TOKEN_FIXED.md
+AUTH_TOKEN_DEBUG_GUIDE.md
+DASHBOARD_LIVE_APIS.md
+TOKEN_ISSUE_FIXED_FINAL.md
+
+# Internal debug pages
+src/app/[[]lang[]]/(dashboard)/(private)/auth-debug/
 
 # Test files
 test-delivery-api.ps1

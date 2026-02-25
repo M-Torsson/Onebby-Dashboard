@@ -7,7 +7,7 @@ const verticalMenuData = dictionary => [
   {
     label: dictionary['navigation'].dashboard,
     icon: 'tabler-smart-home',
-    href: '/apps/ecommerce/dashboard'
+    href: '/dashboards/crm'
   },
 
   // eCommerce Management
