@@ -39,7 +39,34 @@ const paymentStatusConfig = {
   refunded: { text: 'Refunded', color: 'secondary' }
 }
 
-// Provider display names
+// Provider display names with icons
+const providerConfig = {
+  payplug: {
+    name: 'Payplug',
+    icon: 'tabler-credit-card',
+    color: 'primary',
+    bgColor: 'primary.lighterOpacity'
+  },
+  floa: {
+    name: 'Floa',
+    icon: 'tabler-wallet',
+    color: 'warning',
+    bgColor: 'warning.lighterOpacity'
+  },
+  findomestic: {
+    name: 'Findomestic',
+    icon: 'tabler-building-bank',
+    color: 'info',
+    bgColor: 'info.lighterOpacity'
+  },
+  mock: {
+    name: 'Test (Mock)',
+    icon: 'tabler-flask',
+    color: 'secondary',
+    bgColor: 'action.hover'
+  }
+}
+
 const providerNames = {
   payplug: 'Payplug',
   floa: 'Floa',
@@ -198,12 +225,43 @@ const PaymentDetailsCard = ({ orderId, onUpdate }) => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Typography variant='body2'>{providerNames[payment.provider] || payment.provider}</Typography>
-                        {payment.provider_payment_id && (
-                          <Typography variant='caption' color='text.secondary'>
-                            {payment.provider_payment_id}
-                          </Typography>
-                        )}
+                        {(() => {
+                          const providerInfo = providerConfig[payment.provider]
+                          if (providerInfo) {
+                            return (
+                              <div className='flex items-center gap-2'>
+                                <div
+                                  className='flex justify-center items-center rounded px-2 py-1'
+                                  style={{ backgroundColor: `var(--mui-palette-${providerInfo.color}-lighterOpacity)` }}
+                                >
+                                  <i className={`${providerInfo.icon} text-${providerInfo.color} text-base`} />
+                                </div>
+                                <div className='flex flex-col'>
+                                  <Typography variant='body2' className='font-medium'>
+                                    {providerInfo.name}
+                                  </Typography>
+                                  {payment.provider_payment_id && (
+                                    <Typography variant='caption' color='text.secondary'>
+                                      {payment.provider_payment_id}
+                                    </Typography>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          }
+                          return (
+                            <div>
+                              <Typography variant='body2'>
+                                {providerNames[payment.provider] || payment.provider}
+                              </Typography>
+                              {payment.provider_payment_id && (
+                                <Typography variant='caption' color='text.secondary'>
+                                  {payment.provider_payment_id}
+                                </Typography>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Typography variant='body2'>

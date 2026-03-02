@@ -173,7 +173,7 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
   }, [overview])
 
   return (
-    <Grid container spacing={6}>
+    <Grid container spacing={6} sx={{ alignItems: 'stretch' }}>
       <Grid size={{ xs: 12 }}>
         <StatisticsOverviewCard loading={loading} stats={overview} />
       </Grid>
@@ -217,18 +217,14 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
         </Grid>
       ))}
 
-      <Grid size={{ xs: 12, lg: 6 }} className='flex'>
-        <div className='is-full h-full'>
-          <LatestProductsList loading={loading} products={products} />
-        </div>
+      <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex' }}>
+        <LatestProductsList loading={loading} products={products} />
       </Grid>
 
-      <Grid size={{ xs: 12, lg: 6 }} className='flex'>
-        <div className='flex flex-col gap-6 is-full h-full'>
+      <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex' }}>
+        <div className='flex flex-col gap-6 w-full'>
           <PaymentsTrendCard loading={loading} payments={payments} />
-          <div className='flex-1 min-h-0'>
-            <RecentPaymentsTable loading={loading} payments={payments} />
-          </div>
+          <RecentPaymentsTable loading={loading} payments={payments} />
         </div>
       </Grid>
     </Grid>

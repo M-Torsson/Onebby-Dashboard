@@ -13,6 +13,7 @@ import TimelineContent from '@mui/lab/TimelineContent'
 import TimelineSeparator from '@mui/lab/TimelineSeparator'
 import TimelineConnector from '@mui/lab/TimelineConnector'
 import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
 import { styled } from '@mui/material/styles'
 import MuiTimeline from '@mui/lab/Timeline'
 
@@ -188,7 +189,18 @@ const ShippingActivity = ({ orderData }) => {
 
   // Show shipping info header
   const shippingInfo = orderData ? (
-    <div className='flex flex-col gap-2 mb-4 p-3 bg-gray-50 rounded'>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        mb: 4,
+        p: 3,
+        bgcolor: 'action.hover',
+        borderRadius: 1,
+        border: theme => `1px solid ${theme.palette.divider}`
+      }}
+    >
       <Typography variant='body2'>
         <strong>Shipping Method:</strong>{' '}
         {orderData.shipping_method?.charAt(0).toUpperCase() + orderData.shipping_method?.slice(1) || 'Standard'}
@@ -223,7 +235,7 @@ const ShippingActivity = ({ orderData }) => {
         <strong>Status:</strong>{' '}
         {shippingStatusMap[orderData.shipping_status] || orderData.shipping_status || 'Pending'}
       </Typography>
-    </div>
+    </Box>
   ) : null
 
   return (

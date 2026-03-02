@@ -19,6 +19,50 @@ const statusMap = {
   rejected: { label: 'Rejected', color: 'error' }
 }
 
+// تكوين طرق الدفع مع الأيقونات
+const paymentMethodConfig = {
+  Payplug: {
+    icon: 'tabler-credit-card',
+    color: 'primary',
+    label: 'PayPlug'
+  },
+  payplug: {
+    icon: 'tabler-credit-card',
+    color: 'primary',
+    label: 'PayPlug'
+  },
+  floa: {
+    icon: 'tabler-wallet',
+    color: 'warning',
+    label: 'Floa'
+  },
+  Floa: {
+    icon: 'tabler-wallet',
+    color: 'warning',
+    label: 'Floa'
+  },
+  paypal: {
+    icon: 'tabler-brand-paypal',
+    color: 'info',
+    label: 'PayPal'
+  },
+  PayPal: {
+    icon: 'tabler-brand-paypal',
+    color: 'info',
+    label: 'PayPal'
+  },
+  mastercard: {
+    icon: 'tabler-credit-card',
+    color: 'secondary',
+    label: 'Mastercard'
+  },
+  Mastercard: {
+    icon: 'tabler-credit-card',
+    color: 'secondary',
+    label: 'Mastercard'
+  }
+}
+
 const formatDate = value => {
   if (!value) return '-'
 
@@ -62,8 +106,6 @@ const RecentPaymentsTable = ({ loading, payments = [] }) => {
       sx={{
         border: `1px solid ${theme.palette.divider}`,
         boxShadow: theme.shadows[2],
-        overflow: 'hidden',
-        height: '100%',
         display: 'flex',
         flexDirection: 'column'
       }}
@@ -84,10 +126,30 @@ const RecentPaymentsTable = ({ loading, payments = [] }) => {
         }
         sx={{
           '& .MuiCardHeader-title': { fontWeight: 700 },
-          '& .MuiCardHeader-subheader': { color: 'text.secondary' }
+          '& .MuiCardHeader-subheader': { color: 'text.secondary' },
+          flexShrink: 0
         }}
       />
-      <Box className='grow min-h-0 overflow-auto'>
+      <Box
+        sx={{
+          minHeight: 0,
+          maxHeight: '400px',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'action.hover'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'action.selected',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'action.disabled'
+            }
+          }
+        }}
+      >
         <table className={tableStyles.table} style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead className='uppercase bg-action-hover/40'>
             <tr className='border-be'>
@@ -133,20 +195,54 @@ const RecentPaymentsTable = ({ loading, payments = [] }) => {
                       style={{ animationDelay: `${index * 150}ms` }}
                     >
                       <td className='pis-6 pli-2 plb-3'>
-                        <div className='flex flex-col min-is-0'>
-                          <Typography
-                            color='text.primary'
-                            sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                          >
-                            {`${truncate(payment.provider, 24)} • ${truncate(payment.method, 14)}`}
-                          </Typography>
-                          <Typography
-                            variant='body2'
-                            color='text.disabled'
-                            sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                          >
-                            {`#${payment.id}`}
-                          </Typography>
+                        <div className='flex items-center gap-2 min-is-0'>
+                          {(() => {
+                            const methodInfo = paymentMethodConfig[payment.method]
+                            if (methodInfo) {
+                              return (
+                                <div className='flex items-center gap-2'>
+                                  <div
+                                    className='flex justify-center items-center rounded p-1'
+                                    style={{ backgroundColor: `var(--mui-palette-${methodInfo.color}-lighterOpacity)` }}
+                                  >
+                                    <i className={`${methodInfo.icon} text-${methodInfo.color} text-sm`} />
+                                  </div>
+                                  <div className='flex flex-col min-is-0'>
+                                    <Typography
+                                      color='text.primary'
+                                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                    >
+                                      {methodInfo.label} • {truncate(payment.provider, 16)}
+                                    </Typography>
+                                    <Typography
+                                      variant='body2'
+                                      color='text.disabled'
+                                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                    >
+                                      {`#${payment.id}`}
+                                    </Typography>
+                                  </div>
+                                </div>
+                              )
+                            }
+                            return (
+                              <div className='flex flex-col min-is-0'>
+                                <Typography
+                                  color='text.primary'
+                                  sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                >
+                                  {`${truncate(payment.provider, 24)} • ${truncate(payment.method, 14)}`}
+                                </Typography>
+                                <Typography
+                                  variant='body2'
+                                  color='text.disabled'
+                                  sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                >
+                                  {`#${payment.id}`}
+                                </Typography>
+                              </div>
+                            )
+                          })()}
                         </div>
                       </td>
                       <td className='pli-2 plb-3'>

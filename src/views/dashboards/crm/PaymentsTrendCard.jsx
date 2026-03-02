@@ -31,6 +31,19 @@ const formatCurrency = (amount, currency = 'EUR') => {
   }).format(toNumber(amount))
 }
 
+const formatCompactCurrency = (amount, currency = 'EUR') => {
+  const num = toNumber(amount)
+  if (num === 0) return ''
+
+  if (num >= 1000000) {
+    return `€${(num / 1000000).toFixed(1)}M`
+  } else if (num >= 1000) {
+    return `€${(num / 1000).toFixed(1)}K`
+  } else {
+    return `€${num.toFixed(0)}`
+  }
+}
+
 const PaymentsTrendCard = ({ loading, payments = [] }) => {
   const theme = useTheme()
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -57,6 +70,7 @@ const PaymentsTrendCard = ({ loading, payments = [] }) => {
     const monthlyTotals = Array.from({ length: 12 }, () => 0)
     const now = new Date()
     const isCurrentYear = selectedYear === now.getFullYear()
+    const currentMonthIndex = now.getMonth()
 
     payments.forEach(payment => {
       const date = new Date(payment?.createdAt || payment?.created_at || 0)
@@ -82,7 +96,8 @@ const PaymentsTrendCard = ({ loading, payments = [] }) => {
     return {
       points: monthlyTotals,
       total,
-      currency: payments[0]?.currency || 'EUR'
+      currency: payments[0]?.currency || 'EUR',
+      currentMonthIndex: isCurrentYear ? currentMonthIndex : -1
     }
   }, [payments, selectedYear])
 
@@ -98,14 +113,16 @@ const PaymentsTrendCard = ({ loading, payments = [] }) => {
     return values.map((value, index) => {
       const normalized = max > 0 ? value / max : 0
       const height = value > 0 ? minHeight + normalized * (maxHeight - minHeight) : emptyHeight
+      const isCurrentMonth = index === summary.currentMonthIndex
 
       return {
         key: `${index}-${value}`,
         height,
-        active: value > 0
+        active: value > 0,
+        isCurrentMonth
       }
     })
-  }, [summary.points])
+  }, [summary.points, summary.currentMonthIndex])
 
   const pointsSignature = useMemo(() => summary.points.join('|'), [summary.points])
 
@@ -175,17 +192,20 @@ const PaymentsTrendCard = ({ loading, payments = [] }) => {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
               <Box
                 sx={{
-                  minBlockSize: 142,
+                  minBlockSize: 180,
                   display: 'flex',
                   alignItems: 'flex-end',
                   justifyContent: 'space-between',
                   gap: 0.25,
                   px: { xs: 0.5, sm: 1 },
-                  pb: 0.2
+                  pb: 0.2,
+                  pt: 2
                 }}
               >
                 {bars.map((bar, index) => {
                   const reveal = clamp01((drawProgress - index * 0.03) / 0.9)
+                  const monthValue = summary.points[index]
+                  const showAmount = monthValue >= 0.01
 
                   return (
                     <Box
@@ -193,10 +213,29 @@ const PaymentsTrendCard = ({ loading, payments = [] }) => {
                       sx={{
                         flex: 1,
                         display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'flex-end'
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                        gap: 1
                       }}
                     >
+                      <Box sx={{ minHeight: '1.5em', display: 'flex', alignItems: 'center' }}>
+                        {showAmount && (
+                          <Typography
+                            variant='caption'
+                            sx={{
+                              fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                              fontWeight: bar.isCurrentMonth ? 700 : 600,
+                              color: bar.isCurrentMonth ? 'primary.main' : 'text.secondary',
+                              opacity: reveal,
+                              transition: 'opacity 220ms ease',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {formatCompactCurrency(monthValue, summary.currency)}
+                          </Typography>
+                        )}
+                      </Box>
                       <Box
                         sx={{
                           inlineSize: { xs: 24, sm: 28, md: 60 },
@@ -213,11 +252,18 @@ const PaymentsTrendCard = ({ loading, payments = [] }) => {
                             inlineSize: '100%',
                             blockSize: `${bar.height}px`,
                             borderRadius: 2,
-                            background: `linear-gradient(180deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
-                            opacity: bar.active ? 0.28 + reveal * 0.72 : 0.08,
+                            background: bar.isCurrentMonth
+                              ? `linear-gradient(180deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
+                              : `linear-gradient(180deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+                            opacity: bar.isCurrentMonth ? 1 : bar.active ? 0.28 + reveal * 0.72 : 0.08,
                             transform: `scaleY(${reveal})`,
                             transformOrigin: 'bottom',
-                            boxShadow: reveal > 0.7 && bar.active ? `0 0 10px ${theme.palette.primary.main}55` : 'none',
+                            boxShadow:
+                              bar.isCurrentMonth && reveal > 0.7
+                                ? `0 2px 16px ${theme.palette.primary.main}88`
+                                : reveal > 0.7 && bar.active
+                                  ? `0 0 10px ${theme.palette.primary.main}55`
+                                  : 'none',
                             transition: 'opacity 220ms ease, box-shadow 220ms ease'
                           }}
                         />

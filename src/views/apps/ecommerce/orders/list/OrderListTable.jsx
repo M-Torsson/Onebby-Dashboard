@@ -79,17 +79,35 @@ const convertApiDataToTableFormat = apiOrders => {
 
   return apiOrders.map(order => {
     // Convert payment_status to payment number
-    const paymentStatusValue = (order.payment_status || '').toLowerCase()
+    const paymentStatusValue = (order.payment_status || '').toLowerCase().trim()
+
     let payment = 2 // default: Pending
-    if (paymentStatusValue === 'completed' || paymentStatusValue === 'paid')
+
+    // Check for completed/paid status
+    if (
+      paymentStatusValue === 'completed' ||
+      paymentStatusValue === 'paid' ||
+      paymentStatusValue === 'success' ||
+      paymentStatusValue === 'successful'
+    ) {
       payment = 1 // Paid
-    else if (paymentStatusValue === 'failed')
+    }
+    // Check for failed status
+    else if (paymentStatusValue === 'failed' || paymentStatusValue === 'error' || paymentStatusValue === 'declined') {
       payment = 4 // Failed
-    else if (paymentStatusValue === 'refunded')
+    }
+    // Check for refunded status
+    else if (paymentStatusValue === 'refunded' || paymentStatusValue === 'refund') {
       payment = 5 // Refunded
-    else if (paymentStatusValue === 'cancelled')
+    }
+    // Check for cancelled status
+    else if (paymentStatusValue === 'cancelled' || paymentStatusValue === 'canceled') {
       payment = 3 // Cancelled
-    else if (paymentStatusValue === 'pending') payment = 2 // Pending
+    }
+    // Check for pending status
+    else if (paymentStatusValue === 'pending' || paymentStatusValue === 'processing' || paymentStatusValue === '') {
+      payment = 2 // Pending
+    }
 
     // Shipping status should come from shipping_status in API response
     const shippingStatusValue = (order.shipping_status || '').toLowerCase()
@@ -99,8 +117,17 @@ const convertApiDataToTableFormat = apiOrders => {
 
     const status = getStatusDisplay(statusValue)
 
-    // Convert payment_method to method
-    const method = order.payment_method === 'paypal' ? 'paypalLogo' : 'mastercard'
+    // Convert payment_method to method with support for PayPlug and Floa
+    let method = 'mastercard' // default
+    const paymentMethod = (order.payment_method || '').toLowerCase()
+
+    if (paymentMethod === 'paypal' || paymentMethod.includes('paypal')) {
+      method = 'paypal'
+    } else if (paymentMethod === 'payplug' || paymentMethod.includes('payplug')) {
+      method = 'payplug'
+    } else if (paymentMethod === 'floa' || paymentMethod.includes('floa')) {
+      method = 'floa'
+    }
 
     // Parse created_at date
     const createdDate = new Date(order.created_at)
@@ -118,6 +145,7 @@ const convertApiDataToTableFormat = apiOrders => {
       statusValue: statusValue, // Keep original value for color mapping
       spent: parseFloat(order.total_amount),
       method: method,
+      paymentTransactionId: order.payment_transaction_id || '', // معرف الدفع
       date: date,
       time: time,
       methodNumber: Math.floor(Math.random() * 9000) + 1000 // Random for display
@@ -174,10 +202,6 @@ const OrderListTable = ({ orderData }) => {
     const convertedData = convertApiDataToTableFormat(orderData)
     setData(convertedData)
   }, [orderData])
-
-  // Vars
-  const paypal = '/images/apps/ecommerce/paypal.png'
-  const mastercard = '/images/apps/ecommerce/mastercard.png'
 
   const columns = useMemo(
     () => [
@@ -267,19 +291,88 @@ const OrderListTable = ({ orderData }) => {
       }),
       columnHelper.accessor('method', {
         header: 'Method',
-        cell: ({ row }) => (
-          <div className='flex items-center'>
-            <div className='flex justify-center items-center bg-[#F6F8FA] rounded-sm is-[29px] bs-[18px]'>
-              <img
-                src={row.original.method === 'mastercard' ? mastercard : paypal}
-                height={row.original.method === 'mastercard' ? 11 : 14}
-              />
+        cell: ({ row }) => {
+          const method = row.original.method
+          const transactionId = row.original.paymentTransactionId
+
+          // عرض PayPlug
+          if (method === 'payplug') {
+            return (
+              <div className='flex items-center gap-2'>
+                <div className='flex justify-center items-center bg-primary-lighterOpacity rounded-sm px-2 py-1'>
+                  <i className='tabler-credit-card text-primary text-base' />
+                </div>
+                <div className='flex flex-col'>
+                  <Typography className='font-medium' variant='body2'>
+                    PayPlug
+                  </Typography>
+                  {transactionId && (
+                    <Typography variant='caption' color='text.secondary'>
+                      {transactionId.substring(0, 12)}...
+                    </Typography>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
+          // عرض Floa
+          if (method === 'floa') {
+            return (
+              <div className='flex items-center gap-2'>
+                <div className='flex justify-center items-center bg-warning-lighterOpacity rounded-sm px-2 py-1'>
+                  <i className='tabler-wallet text-warning text-base' />
+                </div>
+                <div className='flex flex-col'>
+                  <Typography className='font-medium' variant='body2'>
+                    Floa
+                  </Typography>
+                  {transactionId && (
+                    <Typography variant='caption' color='text.secondary'>
+                      {transactionId}
+                    </Typography>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
+          // عرض PayPal
+          if (method === 'paypal') {
+            return (
+              <div className='flex items-center gap-2'>
+                <div className='flex justify-center items-center bg-info-lighterOpacity rounded-sm px-2 py-1'>
+                  <i className='tabler-brand-paypal text-info text-base' />
+                </div>
+                <div className='flex flex-col'>
+                  <Typography className='font-medium' variant='body2'>
+                    PayPal
+                  </Typography>
+                  <Typography variant='caption' color='text.secondary'>
+                    ...@gmail.com
+                  </Typography>
+                </div>
+              </div>
+            )
+          }
+
+          // عرض Mastercard (افتراضي)
+          return (
+            <div className='flex items-center gap-2'>
+              <div className='flex justify-center items-center bg-secondary-lighterOpacity rounded-sm px-2 py-1'>
+                <i className='tabler-credit-card text-secondary text-base' />
+              </div>
+              <div className='flex flex-col'>
+                <Typography className='font-medium' variant='body2'>
+                  Mastercard
+                </Typography>
+                <Typography variant='caption' color='text.secondary'>
+                  ...{row.original.methodNumber}
+                </Typography>
+              </div>
             </div>
-            <Typography>
-              {`...${row.original.method === 'mastercard' ? row.original.methodNumber : '@gmail.com'}`}
-            </Typography>
-          </div>
-        )
+          )
+        }
       }),
       columnHelper.accessor('action', {
         header: 'Action',

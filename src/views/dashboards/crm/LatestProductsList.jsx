@@ -38,12 +38,17 @@ const shortenTitle = (title, maxLength = 52) => {
 
 const LatestProductsList = ({ loading, products = [] }) => {
   return (
-    <Card sx={{ blockSize: '100%' }}>
+    <Card
+      sx={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       <CardHeader title='Newest products added to catalog' subheader='Latest 10 Products' />
       <CardContent
         className='flex flex-col gap-3'
         sx={{
-          minBlockSize: 620,
           '@keyframes productRowEnter': {
             from: { opacity: 0, transform: 'translateY(10px)' },
             to: { opacity: 1, transform: 'translateY(0)' }
