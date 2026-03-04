@@ -22,7 +22,7 @@ const OrderDetails = ({ orderData, order, onUpdate }) => {
             <OrderDetailsCard orderData={orderData} />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <PaymentDetailsCard orderId={orderData?.id} onUpdate={onUpdate} />
+            <PaymentDetailsCard orderData={orderData} onUpdate={onUpdate} />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <ShippingActivity order={order} orderData={orderData} />

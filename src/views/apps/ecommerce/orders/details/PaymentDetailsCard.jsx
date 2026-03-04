@@ -9,129 +9,114 @@ import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
-import Button from '@mui/material/Button'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
 import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
 import Alert from '@mui/material/Alert'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-
-// Component Imports
-import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
-import RefundPaymentDialog from '@components/dialogs/refund-payment-dialog'
 
 // API Imports
-import { getPaymentsByOrderId, checkPaymentStatus } from '@/services/paymentsApi'
+import { verifyPayment } from '@/services/paymentsApi'
 
 // Payment status configuration
 const paymentStatusConfig = {
   pending: { text: 'Pending', color: 'warning' },
   processing: { text: 'Processing', color: 'info' },
   completed: { text: 'Completed', color: 'success' },
+  approved: { text: 'Approved', color: 'success' },
+  created: { text: 'Created', color: 'info' },
   failed: { text: 'Failed', color: 'error' },
   cancelled: { text: 'Cancelled', color: 'secondary' },
   refunded: { text: 'Refunded', color: 'secondary' }
 }
 
-// Provider display names with icons
-const providerConfig = {
-  payplug: {
-    name: 'Payplug',
-    icon: 'tabler-credit-card',
-    color: 'primary',
-    bgColor: 'primary.lighterOpacity'
-  },
-  floa: {
-    name: 'Floa',
-    icon: 'tabler-wallet',
-    color: 'warning',
-    bgColor: 'warning.lighterOpacity'
-  },
-  findomestic: {
-    name: 'Findomestic',
-    icon: 'tabler-building-bank',
-    color: 'info',
-    bgColor: 'info.lighterOpacity'
-  },
-  mock: {
-    name: 'Test (Mock)',
-    icon: 'tabler-flask',
-    color: 'secondary',
-    bgColor: 'action.hover'
-  }
-}
-
-const providerNames = {
-  payplug: 'Payplug',
-  floa: 'Floa',
-  findomestic: 'Findomestic',
-  mock: 'Test (Mock)'
-}
-
-// Payment method display names
-const paymentMethodNames = {
-  credit_card: 'Credit Card',
-  bnpl_3x: 'Buy Now Pay Later (3x)',
-  bnpl_4x: 'Buy Now Pay Later (4x)',
-  installments_6m: 'Installments (6 months)',
-  installments_12m: 'Installments (12 months)',
-  installments_24m: 'Installments (24 months)'
-}
-
-const PaymentDetailsCard = ({ orderId, onUpdate }) => {
+const PaymentDetailsCard = ({ orderData, onUpdate }) => {
   // States
-  const [payments, setPayments] = useState([])
+  const [paymentDetails, setPaymentDetails] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [checkingStatus, setCheckingStatus] = useState({})
 
-  // Fetch payments when component mounts
+  // Fetch payment details when component mounts or order changes
   useEffect(() => {
-    if (orderId) {
-      fetchPayments()
-    }
-  }, [orderId])
+    let isMounted = true
 
-  const fetchPayments = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await getPaymentsByOrderId(orderId)
-      setPayments(data.payments || [])
-    } catch (err) {
-      console.error('Error fetching payments:', err)
-      setError(err.message || 'Failed to fetch payments')
-    } finally {
-      setLoading(false)
-    }
-  }
+    const loadPaymentDetails = async () => {
+      if (!orderData) return
 
-  const handleCheckStatus = async paymentId => {
-    try {
-      setCheckingStatus(prev => ({ ...prev, [paymentId]: true }))
-      await checkPaymentStatus(paymentId)
-      // Refresh payments after checking status
-      await fetchPayments()
-      if (onUpdate) onUpdate()
-    } catch (err) {
-      console.error('Error checking payment status:', err)
-      setError(err.message || 'Failed to check payment status')
-    } finally {
-      setCheckingStatus(prev => ({ ...prev, [paymentId]: false }))
-    }
-  }
+      try {
+        setLoading(true)
+        setError(null)
 
-  const handleRefundSuccess = async () => {
-    // Refresh payments after refund
-    await fetchPayments()
-    if (onUpdate) onUpdate()
-  }
+        // Extract payment_id from orderData - try payment_transaction_id first (for PayPlug)
+        const paymentId =
+          orderData?.payment_transaction_id || // ✅ Try this first (e.g., "pay_7juxionqDVnhomH90EkPSO")
+          orderData?.transaction_id ||
+          orderData?.payment_info?.payment_id || // May be string or number
+          orderData?.payment_id ||
+          orderData?.paymentId ||
+          orderData?.paypal_payment_id ||
+          orderData?.paypal_order_id ||
+          orderData?.payplug_payment_id ||
+          orderData?.floa_payment_id ||
+          orderData?.floa_deal_id ||
+          orderData?.external_payment_id ||
+          orderData?.provider_payment_id
+
+        if (!paymentId) {
+          console.warn('⚠️ [PaymentDetailsCard] No payment_id found in order data')
+          if (isMounted) {
+            setError('Payment ID not found in order data.')
+            setPaymentDetails(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        // Convert to string (API expects string, not number)
+        const paymentIdString = String(paymentId)
+
+        console.log('[PaymentDetailsCard] Calling verify_payment with payment_id:', paymentIdString)
+
+        const data = await verifyPayment(paymentIdString)
+
+        if (!isMounted) return
+
+        // If data is null, payment was not found in provider system (expected case)
+        if (data === null) {
+          console.warn('⚠️ [PaymentDetailsCard] Payment not found in provider system, showing basic info')
+          setError('Payment not found in payment provider. Showing basic information from order data.')
+          setPaymentDetails(null)
+        } else {
+          console.log('[PaymentDetailsCard] Payment verified successfully')
+          setPaymentDetails(data)
+        }
+      } catch (err) {
+        if (!isMounted) return
+
+        // Only log unexpected errors
+        console.error('❌ [PaymentDetailsCard] Unexpected error fetching payment:', err.message)
+
+        // Handle specific error cases
+        let errorMessage = err.message || 'Failed to fetch payment details'
+
+        if (errorMessage.includes('500')) {
+          errorMessage = 'Payment provider error. Please try again later.'
+        } else if (errorMessage.includes('authentication') || errorMessage.includes('API_KEY')) {
+          errorMessage = 'Authentication error. Please contact support.'
+        }
+
+        setError(errorMessage)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadPaymentDetails()
+
+    return () => {
+      isMounted = false
+    }
+  }, [orderData?.id]) // Only re-run when order ID changes
 
   // Format date
   const formatDate = dateString => {
@@ -149,6 +134,7 @@ const PaymentDetailsCard = ({ orderId, onUpdate }) => {
 
   // Format amount
   const formatAmount = amount => {
+    if (!amount) return 'N/A'
     return `€${parseFloat(amount).toFixed(2)}`
   }
 
@@ -170,7 +156,61 @@ const PaymentDetailsCard = ({ orderId, onUpdate }) => {
       <Card>
         <CardHeader title='Payment Details' />
         <CardContent>
-          <Alert severity='error'>{error}</Alert>
+          <Alert severity='warning' className='mb-4'>
+            {error}
+          </Alert>
+
+          {/* Show basic payment info from orderData even if verification failed */}
+          {orderData && (
+            <Box>
+              <Typography variant='subtitle2' className='mb-3'>
+                Basic Payment Information:
+              </Typography>
+
+              {/* Payment Method */}
+              <Box className='flex items-center justify-between gap-4 mb-3'>
+                <Typography variant='body2' color='text.secondary'>
+                  Payment Method:
+                </Typography>
+                <Chip label={orderData.payment_method || 'N/A'} color='primary' size='small' variant='tonal' />
+              </Box>
+
+              {/* Payment Status */}
+              <Box className='flex items-center justify-between gap-4 mb-3'>
+                <Typography variant='body2' color='text.secondary'>
+                  Payment Status:
+                </Typography>
+                <Chip
+                  label={orderData.payment_status || 'N/A'}
+                  color={orderData.payment_status === 'paid' ? 'success' : 'warning'}
+                  size='small'
+                  variant='tonal'
+                />
+              </Box>
+
+              {/* Payment ID */}
+              {orderData.payment_info?.payment_id && (
+                <Box className='flex items-center justify-between gap-4 mb-3'>
+                  <Typography variant='body2' color='text.secondary'>
+                    Payment ID:
+                  </Typography>
+                  <Typography variant='body2' className='font-medium'>
+                    {orderData.payment_info.payment_id}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Total Amount */}
+              <Box className='flex items-center justify-between gap-4'>
+                <Typography variant='body2' color='text.secondary'>
+                  Total Amount:
+                </Typography>
+                <Typography variant='h6' className='font-semibold'>
+                  {formatAmount(orderData.total_amount)}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </CardContent>
       </Card>
     )
@@ -180,147 +220,124 @@ const PaymentDetailsCard = ({ orderId, onUpdate }) => {
     <Card>
       <CardHeader title='Payment Details' />
       <CardContent>
-        {payments.length === 0 ? (
+        {!paymentDetails ? (
           <Alert severity='info'>
-            <Typography variant='body2'>No payments found for this order yet.</Typography>
+            <Typography variant='body2'>No payment information found for this order yet.</Typography>
           </Alert>
         ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Provider</TableCell>
-                  <TableCell>Method</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell align='right'>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {payments.map(payment => {
-                  const statusInfo = paymentStatusConfig[payment.status] || {
-                    text: payment.status,
-                    color: 'default'
-                  }
-                  const canRefund = payment.status === 'completed' && !payment.refunded_at
+          <Box>
+            {/* Payment Provider/Method */}
+            <Box className='flex items-center justify-between gap-4 mb-4'>
+              <Typography variant='body2' color='text.secondary'>
+                Payment Method:
+              </Typography>
+              <Chip label={orderData?.payment_method || 'N/A'} color='primary' size='small' variant='tonal' />
+            </Box>
 
-                  return (
-                    <TableRow key={payment.id}>
-                      <TableCell>
-                        <Typography variant='body2' className='font-medium'>
-                          #{payment.id}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={statusInfo.text} color={statusInfo.color} size='small' variant='tonal' />
-                      </TableCell>
-                      <TableCell>
-                        <Typography className='font-medium'>{formatAmount(payment.amount)}</Typography>
-                        {payment.refunded_at && (
-                          <Typography variant='caption' color='error'>
-                            Refunded on {formatDate(payment.refunded_at)}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const providerInfo = providerConfig[payment.provider]
-                          if (providerInfo) {
-                            return (
-                              <div className='flex items-center gap-2'>
-                                <div
-                                  className='flex justify-center items-center rounded px-2 py-1'
-                                  style={{ backgroundColor: `var(--mui-palette-${providerInfo.color}-lighterOpacity)` }}
-                                >
-                                  <i className={`${providerInfo.icon} text-${providerInfo.color} text-base`} />
-                                </div>
-                                <div className='flex flex-col'>
-                                  <Typography variant='body2' className='font-medium'>
-                                    {providerInfo.name}
-                                  </Typography>
-                                  {payment.provider_payment_id && (
-                                    <Typography variant='caption' color='text.secondary'>
-                                      {payment.provider_payment_id}
-                                    </Typography>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          }
-                          return (
-                            <div>
-                              <Typography variant='body2'>
-                                {providerNames[payment.provider] || payment.provider}
-                              </Typography>
-                              {payment.provider_payment_id && (
-                                <Typography variant='caption' color='text.secondary'>
-                                  {payment.provider_payment_id}
-                                </Typography>
-                              )}
-                            </div>
-                          )
-                        })()}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant='body2'>
-                          {paymentMethodNames[payment.payment_method] || payment.payment_method}
-                        </Typography>
-                        {payment.payment_info?.card_last4 && (
-                          <Typography variant='caption' color='text.secondary'>
-                            •••• {payment.payment_info.card_last4}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant='body2'>{formatDate(payment.created_at)}</Typography>
-                      </TableCell>
-                      <TableCell align='right'>
-                        <div className='flex items-center justify-end gap-2'>
-                          <Tooltip title='Check Status'>
-                            <span>
-                              <IconButton
-                                size='small'
-                                onClick={() => handleCheckStatus(payment.id)}
-                                disabled={checkingStatus[payment.id]}
-                              >
-                                {checkingStatus[payment.id] ? (
-                                  <CircularProgress size={20} />
-                                ) : (
-                                  <i className='tabler-refresh' />
-                                )}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          {canRefund && (
-                            <OpenDialogOnElementClick
-                              element={IconButton}
-                              elementProps={{
-                                size: 'small',
-                                color: 'error',
-                                children: (
-                                  <Tooltip title='Refund'>
-                                    <i className='tabler-cash-off' />
-                                  </Tooltip>
-                                )
-                              }}
-                              dialog={RefundPaymentDialog}
-                              dialogProps={{
-                                paymentId: payment.id,
-                                amount: payment.amount,
-                                onSuccess: handleRefundSuccess
-                              }}
-                            />
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+            {/* Payment ID */}
+            <Box className='flex items-center justify-between gap-4 mb-4'>
+              <Typography variant='body2' color='text.secondary'>
+                Transaction ID:
+              </Typography>
+              <Typography variant='body1' className='font-medium'>
+                {paymentDetails.transaction_number || paymentDetails.payment_id}
+              </Typography>
+            </Box>
+
+            {/* Status */}
+            <Box className='flex items-center justify-between gap-4 mb-4'>
+              <Typography variant='body2' color='text.secondary'>
+                Status:
+              </Typography>
+              <Chip
+                label={paymentStatusConfig[paymentDetails.status]?.text || paymentDetails.status}
+                color={paymentStatusConfig[paymentDetails.status]?.color || 'default'}
+                size='small'
+                variant='tonal'
+              />
+            </Box>
+
+            {/* Amount */}
+            <Box className='flex items-center justify-between gap-4 mb-4'>
+              <Typography variant='body2' color='text.secondary'>
+                Amount:
+              </Typography>
+              <Typography variant='h6' className='font-semibold'>
+                {formatAmount(paymentDetails.amount)}
+              </Typography>
+            </Box>
+
+            {/* Payment Status */}
+            <Box className='flex items-center justify-between gap-4 mb-4'>
+              <Typography variant='body2' color='text.secondary'>
+                Paid:
+              </Typography>
+              <Chip
+                label={paymentDetails.is_paid ? 'Yes' : 'No'}
+                color={paymentDetails.is_paid ? 'success' : 'error'}
+                size='small'
+                variant='tonal'
+              />
+            </Box>
+
+            {/* Customer Email */}
+            {paymentDetails.customer_email && (
+              <Box className='flex items-center justify-between gap-4 mb-4'>
+                <Typography variant='body2' color='text.secondary'>
+                  Customer Email:
+                </Typography>
+                <Typography variant='body2'>{paymentDetails.customer_email}</Typography>
+              </Box>
+            )}
+
+            {/* Deal Status (Floa) */}
+            {paymentDetails.deal_status && (
+              <Box className='flex items-center justify-between gap-4 mb-4'>
+                <Typography variant='body2' color='text.secondary'>
+                  Deal Status:
+                </Typography>
+                <Chip
+                  label={paymentDetails.deal_status}
+                  color={paymentDetails.deal_status === 'APPROVED' ? 'success' : 'warning'}
+                  size='small'
+                  variant='tonal'
+                />
+              </Box>
+            )}
+
+            {/* Order Status (PayPal) */}
+            {paymentDetails.order_status && (
+              <Box className='flex items-center justify-between gap-4 mb-4'>
+                <Typography variant='body2' color='text.secondary'>
+                  Order Status:
+                </Typography>
+                <Chip
+                  label={paymentDetails.order_status}
+                  color={paymentDetails.order_status === 'COMPLETED' ? 'success' : 'warning'}
+                  size='small'
+                  variant='tonal'
+                />
+              </Box>
+            )}
+
+            {/* Paid At */}
+            {paymentDetails.paid_at && (
+              <Box className='flex items-center justify-between gap-4 mb-4'>
+                <Typography variant='body2' color='text.secondary'>
+                  Paid At:
+                </Typography>
+                <Typography variant='body2'>{formatDate(paymentDetails.paid_at)}</Typography>
+              </Box>
+            )}
+
+            {/* Date */}
+            <Box className='flex items-center justify-between gap-4'>
+              <Typography variant='body2' color='text.secondary'>
+                Created At:
+              </Typography>
+              <Typography variant='body2'>{formatDate(paymentDetails.created_at)}</Typography>
+            </Box>
+          </Box>
         )}
       </CardContent>
     </Card>

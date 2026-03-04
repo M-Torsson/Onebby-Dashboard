@@ -109,7 +109,30 @@ export const getOrderById = async orderId => {
       )
     }
 
-    return await response.json()
+    const orderData = await response.json()
+
+    console.log('=== Order API Response ===')
+    console.log('[ordersApi] Order ID:', orderId)
+    console.log('[ordersApi] Order data keys:', Object.keys(orderData))
+    console.log('[ordersApi] Payment method:', orderData.payment_method)
+    console.log('[ordersApi] Payment status:', orderData.payment_status)
+    console.log('[ordersApi] Payment info:', orderData.payment_info)
+    console.log('[ordersApi] Looking for payment_id in these fields:', {
+      'payment_info.payment_id': orderData.payment_info?.payment_id, // ✅ Correct!
+      payment_id: orderData.payment_id,
+      paymentId: orderData.paymentId,
+      payment_transaction_id: orderData.payment_transaction_id,
+      transaction_id: orderData.transaction_id,
+      paypal_payment_id: orderData.paypal_payment_id,
+      paypal_order_id: orderData.paypal_order_id,
+      payplug_payment_id: orderData.payplug_payment_id,
+      floa_payment_id: orderData.floa_payment_id,
+      external_payment_id: orderData.external_payment_id,
+      provider_payment_id: orderData.provider_payment_id
+    })
+    console.log('[ordersApi] Full order data (first 500 chars):', JSON.stringify(orderData).substring(0, 500))
+
+    return orderData
   } catch (error) {
     console.error('Error fetching order:', error)
     throw error

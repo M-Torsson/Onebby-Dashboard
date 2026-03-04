@@ -88,7 +88,8 @@ const convertApiDataToTableFormat = apiOrders => {
       paymentStatusValue === 'completed' ||
       paymentStatusValue === 'paid' ||
       paymentStatusValue === 'success' ||
-      paymentStatusValue === 'successful'
+      paymentStatusValue === 'successful' ||
+      paymentStatusValue === 'approved'
     ) {
       payment = 1 // Paid
     }
@@ -109,6 +110,14 @@ const convertApiDataToTableFormat = apiOrders => {
       payment = 2 // Pending
     }
 
+    // Log payment info for debugging (PayPal, PayPlug, Floa)
+    const paymentMethod = (order.payment_method || '').toLowerCase()
+    if (paymentMethod.includes('paypal') || paymentMethod.includes('payplug') || paymentMethod.includes('floa')) {
+      console.log(
+        `💰 Order #${order.id} | Method: ${order.payment_method} | Status: ${order.payment_status} → ${payment === 1 ? '✅ Paid' : payment === 2 ? '⏳ Pending' : '❌ Other'}`
+      )
+    }
+
     // Shipping status should come from shipping_status in API response
     const shippingStatusValue = (order.shipping_status || '').toLowerCase()
     const orderStatusValue = (order.status || '').toLowerCase()
@@ -119,7 +128,6 @@ const convertApiDataToTableFormat = apiOrders => {
 
     // Convert payment_method to method with support for PayPlug and Floa
     let method = 'mastercard' // default
-    const paymentMethod = (order.payment_method || '').toLowerCase()
 
     if (paymentMethod === 'paypal' || paymentMethod.includes('paypal')) {
       method = 'paypal'
@@ -348,9 +356,11 @@ const OrderListTable = ({ orderData }) => {
                   <Typography className='font-medium' variant='body2'>
                     PayPal
                   </Typography>
-                  <Typography variant='caption' color='text.secondary'>
-                    ...@gmail.com
-                  </Typography>
+                  {transactionId && (
+                    <Typography variant='caption' color='text.secondary'>
+                      {transactionId.length > 15 ? `${transactionId.substring(0, 15)}...` : transactionId}
+                    </Typography>
+                  )}
                 </div>
               </div>
             )
