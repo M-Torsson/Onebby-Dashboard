@@ -66,7 +66,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
 
   const fetchParentCategories = async () => {
     try {
-      const response = await fetch(`${CATEGORIES_BASE_URL}`)
+      const response = await fetch(`${CATEGORIES_BASE_URL}?limit=500`)
 
       if (response.ok) {
         const result = await response.json()
@@ -322,7 +322,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
       } else {
         const errorData = await response.json().catch(() => ({}))
         let errorMessage = `Failed to ${editId ? 'update' : 'create'} category`
-        
+
         if (errorData.detail) {
           if (typeof errorData.detail === 'string') {
             errorMessage = errorData.detail
@@ -332,7 +332,7 @@ const CategoryAdd = ({ dictionary = { common: {} } }) => {
             errorMessage = JSON.stringify(errorData.detail)
           }
         }
-        
+
         setError(errorMessage)
       }
     } catch (err) {

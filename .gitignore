@@ -98,6 +98,9 @@ DASHBOARD_LIVE_APIS.md
 TOKEN_ISSUE_FIXED_FINAL.md
 
 # Internal debug pages
+
+# API Config - contains sensitive configuration
+src/configs/apiConfig.js
 src/app/[[]lang[]]/(dashboard)/(private)/auth-debug/
 
 # Test files

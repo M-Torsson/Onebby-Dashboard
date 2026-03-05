@@ -100,7 +100,7 @@ const AddCategoryDrawer = props => {
 
   const fetchParentCategories = async () => {
     try {
-      const response = await fetch(`${CATEGORIES_BASE_URL}?parent_only=true`, {
+      const response = await fetch(`${CATEGORIES_BASE_URL}?parent_only=true&limit=500`, {
         headers: { 'X-API-Key': API_KEY }
       })
 

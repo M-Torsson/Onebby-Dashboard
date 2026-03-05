@@ -33,7 +33,7 @@ const StatisticsCard = () => {
     const fetchStats = async () => {
       try {
         const [categoriesRes, brandsRes, productsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/v1/categories?parent_only=true`, {
+          fetch(`${API_BASE_URL}/api/v1/categories?parent_only=true&limit=500`, {
             headers: { 'X-API-Key': API_KEY }
           }),
           fetch(`${API_BASE_URL}/api/admin/brands?skip=0&limit=1`, {

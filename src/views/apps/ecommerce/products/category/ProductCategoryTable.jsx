@@ -133,21 +133,77 @@ const ProductCategoryTable = ({ dictionary = { common: {} } }) => {
       setLoading(true)
       setError('')
 
-      // Fetch all categories once, then do pagination + search client-side.
-      // NOTE: GET لا يحتاج X-API-Key حسب التحديثات الجديدة
-      const response = await fetch(`${CATEGORIES_BASE_URL}?lang=en&limit=500&parent_only=true`)
+      // Fetch ALL categories (including subcategories) with pagination
+      const limit = 500
+      let skip = 0
+      let allCategories = []
+      let hasMore = true
 
-      if (response.ok) {
+      while (hasMore && skip < 10000) {
+        const url = `${CATEGORIES_BASE_URL}?lang=en&limit=${limit}&skip=${skip}&parent_only=false`
+        const response = await fetch(url, {
+          headers: API_KEY ? { 'X-API-Key': API_KEY } : {}
+        })
+
+        if (!response.ok) {
+          console.error('❌ Failed to fetch categories:', response.status, response.statusText)
+          const errorText = await response.text().catch(() => 'No error details')
+          console.error('Error details:', errorText)
+
+          if (skip === 0) {
+            // Failed on first request
+            setError(`Failed to load categories (${response.status})`)
+            break
+          } else {
+            // Failed on subsequent request, use what we have
+            break
+          }
+        }
+
         const result = await response.json()
         const categories = result.data || result || []
-        const total = result.meta?.total || categories.length
+        const categoriesArray = Array.isArray(categories) ? categories : []
 
-        setTotalCount(total)
-        setData(Array.isArray(categories) ? categories : [])
+        allCategories = allCategories.concat(categoriesArray)
+
+        // Check if there are more pages
+        const meta = result.meta || {}
+        const total = meta.total || 0
+
+        if (categoriesArray.length < limit || allCategories.length >= total) {
+          hasMore = false
+        } else {
+          skip += limit
+        }
+      }
+
+      // Sort by ID descending to show newest first
+      const sortedCategories = allCategories.sort((a, b) => {
+        const idA = Number(a.id) || 0
+        const idB = Number(b.id) || 0
+        return idB - idA // DESC: newest first
+      })
+
+      // Filter to show only parent categories for the main table
+      const parentCategories = sortedCategories.filter(cat => !cat.parent_id || cat.parent_id === null)
+
+      setTotalCount(parentCategories.length)
+      setData(parentCategories)
+
+      console.log('✅ Total categories loaded:', sortedCategories.length)
+      console.log('✅ Parent categories:', parentCategories.length)
+
+      // Check if Test exists
+      const testCategory = sortedCategories.find(
+        c => c.name?.toLowerCase() === 'test' || c.slug?.toLowerCase() === 'test' || Number(c.id) === 8679
+      )
+      if (testCategory) {
+        console.log('🔍 Found Test category:', testCategory)
       } else {
-        setError('Failed to load categories')
+        console.warn('⚠️ Test category (ID: 8679) NOT FOUND in API response')
       }
     } catch (err) {
+      console.error('❌ Error fetching categories:', err)
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
