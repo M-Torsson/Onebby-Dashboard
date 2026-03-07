@@ -16,7 +16,6 @@ import Tooltip from '@mui/material/Tooltip'
 import Divider from '@mui/material/Divider'
 import Avatar from '@mui/material/Avatar'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import Button from '@mui/material/Button'
 
 // Third Party Components
 import classnames from 'classnames'
@@ -66,7 +65,14 @@ const getAvatar = params => {
   }
 }
 
-const NotificationDropdown = ({ notifications, dictionary = { common: {} } }) => {
+const NotificationDropdown = ({
+  notifications = [],
+  dictionary = { common: {} },
+  loading = false,
+  onToggleRead,
+  onRemove,
+  onReadAll
+}) => {
   // States
   const [open, setOpen] = useState(false)
   const [notificationsState, setNotificationsState] = useState(notifications)
@@ -95,30 +101,44 @@ const NotificationDropdown = ({ notifications, dictionary = { common: {} } }) =>
   // Read notification when notification is clicked
   const handleReadNotification = (event, value, index) => {
     event.stopPropagation()
-    const newNotifications = [...notificationsState]
+    const targetNotification = notificationsState[index]
 
-    newNotifications[index].read = value
+    if (!targetNotification) return
+
+    const newNotifications = notificationsState.map((notification, notificationIndex) =>
+      notificationIndex === index ? { ...notification, read: value } : notification
+    )
+
     setNotificationsState(newNotifications)
+    onToggleRead?.(targetNotification.id, value)
   }
 
   // Remove notification when close icon is clicked
   const handleRemoveNotification = (event, index) => {
     event.stopPropagation()
+    const targetNotification = notificationsState[index]
+
+    if (!targetNotification) return
+
     const newNotifications = [...notificationsState]
 
     newNotifications.splice(index, 1)
     setNotificationsState(newNotifications)
+    onRemove?.(targetNotification.id)
   }
 
   // Read or unread all notifications when read all icon is clicked
   const readAllNotifications = () => {
-    const newNotifications = [...notificationsState]
+    const nextReadValue = !readAll
+    const newNotifications = notificationsState.map(notification => ({ ...notification, read: nextReadValue }))
 
-    newNotifications.forEach(notification => {
-      notification.read = !readAll
-    })
     setNotificationsState(newNotifications)
+    onReadAll?.(notificationsState.map(notification => notification.id).filter(Boolean), nextReadValue)
   }
+
+  useEffect(() => {
+    setNotificationsState(Array.isArray(notifications) ? notifications : [])
+  }, [notifications])
 
   useEffect(() => {
     const adjustPopoverHeight = () => {
@@ -131,6 +151,11 @@ const NotificationDropdown = ({ notifications, dictionary = { common: {} } }) =>
     }
 
     window.addEventListener('resize', adjustPopoverHeight)
+    adjustPopoverHeight()
+
+    return () => {
+      window.removeEventListener('resize', adjustPopoverHeight)
+    }
   }, [])
 
   return (
@@ -217,63 +242,72 @@ const NotificationDropdown = ({ notifications, dictionary = { common: {} } }) =>
                   </div>
                   <Divider />
                   <ScrollWrapper hidden={hidden}>
-                    {notificationsState.map((notification, index) => {
-                      const {
-                        title,
-                        subtitle,
-                        time,
-                        read,
-                        avatarImage,
-                        avatarIcon,
-                        avatarText,
-                        avatarColor,
-                        avatarSkin
-                      } = notification
+                    {loading ? (
+                      <div className='p-4'>
+                        <Typography variant='body2' color='text.secondary'>
+                          {dictionary.common?.loadingNotifications || 'Loading notifications...'}
+                        </Typography>
+                      </div>
+                    ) : notificationsState.length === 0 ? (
+                      <div className='p-4'>
+                        <Typography variant='body2' color='text.secondary'>
+                          {dictionary.common?.noNotifications || 'No notifications yet'}
+                        </Typography>
+                      </div>
+                    ) : (
+                      notificationsState.map((notification, index) => {
+                        const {
+                          id,
+                          title,
+                          subtitle,
+                          time,
+                          read,
+                          avatarImage,
+                          avatarIcon,
+                          avatarText,
+                          avatarColor,
+                          avatarSkin
+                        } = notification
 
-                      return (
-                        <div
-                          key={index}
-                          className={classnames('flex plb-3 pli-4 gap-3 cursor-pointer hover:bg-actionHover group', {
-                            'border-be': index !== notificationsState.length - 1
-                          })}
-                          onClick={e => handleReadNotification(e, true, index)}
-                        >
-                          {getAvatar({ avatarImage, avatarIcon, title, avatarText, avatarColor, avatarSkin })}
-                          <div className='flex flex-col flex-auto'>
-                            <Typography variant='body2' className='font-medium mbe-1' color='text.primary'>
-                              {title}
-                            </Typography>
-                            <Typography variant='caption' color='text.secondary' className='mbe-2'>
-                              {subtitle}
-                            </Typography>
-                            <Typography variant='caption' color='text.disabled'>
-                              {time}
-                            </Typography>
+                        return (
+                          <div
+                            key={id || index}
+                            className={classnames('flex plb-3 pli-4 gap-3 cursor-pointer hover:bg-actionHover group', {
+                              'border-be': index !== notificationsState.length - 1
+                            })}
+                            onClick={e => handleReadNotification(e, true, index)}
+                          >
+                            {getAvatar({ avatarImage, avatarIcon, title, avatarText, avatarColor, avatarSkin })}
+                            <div className='flex flex-col flex-auto'>
+                              <Typography variant='body2' className='font-medium mbe-1' color='text.primary'>
+                                {title}
+                              </Typography>
+                              <Typography variant='caption' color='text.secondary' className='mbe-2'>
+                                {subtitle}
+                              </Typography>
+                              <Typography variant='caption' color='text.disabled'>
+                                {time}
+                              </Typography>
+                            </div>
+                            <div className='flex flex-col items-end gap-2'>
+                              <Badge
+                                variant='dot'
+                                color={read ? 'secondary' : 'primary'}
+                                onClick={e => handleReadNotification(e, !read, index)}
+                                className={classnames('mbs-1 mie-1', {
+                                  'invisible group-hover:visible': read
+                                })}
+                              />
+                              <i
+                                className='tabler-x text-xl invisible group-hover:visible'
+                                onClick={e => handleRemoveNotification(e, index)}
+                              />
+                            </div>
                           </div>
-                          <div className='flex flex-col items-end gap-2'>
-                            <Badge
-                              variant='dot'
-                              color={read ? 'secondary' : 'primary'}
-                              onClick={e => handleReadNotification(e, !read, index)}
-                              className={classnames('mbs-1 mie-1', {
-                                'invisible group-hover:visible': read
-                              })}
-                            />
-                            <i
-                              className='tabler-x text-xl invisible group-hover:visible'
-                              onClick={e => handleRemoveNotification(e, index)}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })
+                    )}
                   </ScrollWrapper>
-                  <Divider />
-                  <div className='p-4'>
-                    <Button fullWidth variant='contained' size='small'>
-                      {dictionary.common?.viewAllNotifications || 'View All Notifications'}
-                    </Button>
-                  </div>
                 </div>
               </ClickAwayListener>
             </Paper>

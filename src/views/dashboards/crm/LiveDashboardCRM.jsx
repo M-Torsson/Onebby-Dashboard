@@ -18,6 +18,7 @@ import { getDashboardCRMLive } from '@/services/dashboardApi'
 import useAuthToken from '@/hooks/useAuthToken'
 import AnimatedStatNumber from '@views/dashboards/crm/AnimatedStatNumber'
 import AnimatedSemiArc from '@views/dashboards/crm/AnimatedSemiArc'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const formatCompact = value => {
   const number = Number(value || 0)
@@ -71,6 +72,7 @@ const defaultOverview = {
 
 const LiveDashboardCRM = ({ lang = 'ar' }) => {
   const { token, isAuthenticated, isLoading: authLoading } = useAuthToken()
+  const dictionary = useDictionary()
   const [loading, setLoading] = useState(true)
   const [overview, setOverview] = useState(defaultOverview)
   const [products, setProducts] = useState([])
@@ -125,8 +127,8 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
   const summaryCards = useMemo(() => {
     const baseCards = [
       {
-        title: 'Orders',
-        subtitle: 'Last Week',
+        title: dictionary?.dashboard?.orders || 'Orders',
+        subtitle: dictionary?.dashboard?.lastWeek || 'Last Week',
         value: overview.ordersLastWeek,
         changePct: overview.ordersLastWeekChangePct,
         icon: 'tabler-shopping-bag',
@@ -135,8 +137,8 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
         chipColor: changeColor(overview.ordersLastWeekChangePct)
       },
       {
-        title: 'Sales',
-        subtitle: 'Last Year',
+        title: dictionary?.dashboard?.sales || 'Sales',
+        subtitle: dictionary?.dashboard?.lastYear || 'Last Year',
         value: overview.salesLastYear,
         changePct: overview.salesLastYearChangePct,
         icon: 'tabler-chart-line',
@@ -145,8 +147,8 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
         chipColor: changeColor(overview.salesLastYearChangePct)
       },
       {
-        title: 'Total Profit',
-        subtitle: 'Last Week',
+        title: dictionary?.dashboard?.totalProfit || 'Total Profit',
+        subtitle: dictionary?.dashboard?.lastWeek || 'Last Week',
         value: overview.profitLastWeek,
         changePct: overview.profitLastWeekChangePct,
         icon: 'tabler-credit-card',
@@ -155,8 +157,8 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
         chipColor: changeColor(overview.profitLastWeekChangePct)
       },
       {
-        title: 'Total Sales',
-        subtitle: 'Last Week',
+        title: dictionary?.dashboard?.totalSales || 'Total Sales',
+        subtitle: dictionary?.dashboard?.lastWeek || 'Last Week',
         value: overview.salesLastWeek,
         changePct: overview.salesLastWeekChangePct,
         icon: 'tabler-currency-dollar',
@@ -170,7 +172,7 @@ const LiveDashboardCRM = ({ lang = 'ar' }) => {
       ...card,
       gaugePercent: normalizeGaugePercent(card.changePct)
     }))
-  }, [overview])
+  }, [overview, dictionary])
 
   return (
     <Grid container spacing={6} sx={{ alignItems: 'stretch' }}>

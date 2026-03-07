@@ -76,34 +76,6 @@ const verticalMenuData = dictionary => [
     href: '/apps/ecommerce/company-users/list'
   },
 
-  // Invoice Management
-  {
-    label: dictionary['navigation'].invoice,
-    icon: 'tabler-file-description',
-    children: [
-      {
-        label: dictionary['navigation'].list,
-        href: '/apps/invoice/list'
-      },
-      {
-        label: dictionary['navigation'].preview,
-        href: '/apps/invoice/preview/4987',
-        exactMatch: false,
-        activeUrl: '/apps/invoice/preview'
-      },
-      {
-        label: dictionary['navigation'].edit,
-        href: '/apps/invoice/edit/4987',
-        exactMatch: false,
-        activeUrl: '/apps/invoice/edit'
-      },
-      {
-        label: dictionary['navigation'].add,
-        href: '/apps/invoice/add'
-      }
-    ]
-  },
-
   // User Management
   // {
   //   label: dictionary['navigation'].user,

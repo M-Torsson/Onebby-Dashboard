@@ -18,8 +18,10 @@ import Alert from '@mui/material/Alert'
 
 // API Imports
 import { updateOrder } from '@/services/ordersApi'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
+  const dictionary = useDictionary()
   // States
   const [formData, setFormData] = useState({
     status: orderData?.status || '',
@@ -58,7 +60,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
       })
 
       if (Object.keys(updateData).length === 0) {
-        setError('No changes to update')
+        setError(dictionary?.orders?.noChangesToUpdate || 'No changes to update')
         setLoading(false)
         return
       }
@@ -79,7 +81,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
       }, 1000)
     } catch (err) {
       console.error('Error updating order:', err)
-      setError(err.message || 'Failed to update order')
+      setError(err.message || dictionary?.common?.networkError || 'Failed to update order')
     } finally {
       setLoading(false)
     }
@@ -96,7 +98,9 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth='md' fullWidth>
-      <DialogTitle>Update Order #{orderData?.id}</DialogTitle>
+      <DialogTitle>
+        {(dictionary?.orders?.updateOrderTitle || 'Update Order #{id}').replace('{id}', orderData?.id || '')}
+      </DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity='error' className='mb-4'>
@@ -105,7 +109,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
         )}
         {success && (
           <Alert severity='success' className='mb-4'>
-            Order updated successfully!
+            {dictionary?.orders?.orderUpdatedSuccess || 'Order updated successfully!'}
           </Alert>
         )}
 
@@ -115,7 +119,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
             <TextField
               select
               fullWidth
-              label='Order Status'
+              label={dictionary?.orders?.orderStatusLabel || 'Order Status'}
               value={formData.status}
               onChange={handleChange('status')}
               disabled={loading}
@@ -126,10 +130,10 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
                 sx: { '& .MuiSelect-select': { paddingRight: '40px !important' } }
               }}
             >
-              <MenuItem value='pending'>Pending</MenuItem>
-              <MenuItem value='confirmed'>Confirmed</MenuItem>
-              <MenuItem value='completed'>Completed</MenuItem>
-              <MenuItem value='cancelled'>Cancelled</MenuItem>
+              <MenuItem value='pending'>{dictionary?.orders?.pending || 'Pending'}</MenuItem>
+              <MenuItem value='confirmed'>{dictionary?.orders?.confirmed || 'Confirmed'}</MenuItem>
+              <MenuItem value='completed'>{dictionary?.orders?.completed || 'Completed'}</MenuItem>
+              <MenuItem value='cancelled'>{dictionary?.orders?.cancelled || 'Cancelled'}</MenuItem>
             </TextField>
           </Grid>
 
@@ -137,7 +141,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
             <TextField
               select
               fullWidth
-              label='Payment Status'
+              label={dictionary?.orders?.paymentStatusLabel || 'Payment Status'}
               value={formData.payment_status}
               onChange={handleChange('payment_status')}
               disabled={loading}
@@ -148,10 +152,10 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
                 sx: { '& .MuiSelect-select': { paddingRight: '40px !important' } }
               }}
             >
-              <MenuItem value='pending'>Pending</MenuItem>
-              <MenuItem value='completed'>Completed</MenuItem>
-              <MenuItem value='failed'>Failed</MenuItem>
-              <MenuItem value='refunded'>Refunded</MenuItem>
+              <MenuItem value='pending'>{dictionary?.orders?.pending || 'Pending'}</MenuItem>
+              <MenuItem value='completed'>{dictionary?.orders?.completed || 'Completed'}</MenuItem>
+              <MenuItem value='failed'>{dictionary?.orders?.failed || 'Failed'}</MenuItem>
+              <MenuItem value='refunded'>{dictionary?.orders?.refunded || 'Refunded'}</MenuItem>
             </TextField>
           </Grid>
 
@@ -160,7 +164,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
             <TextField
               select
               fullWidth
-              label='Shipping Status'
+              label={dictionary?.orders?.shippingStatusLabel || 'Shipping Status'}
               value={formData.shipping_status}
               onChange={handleChange('shipping_status')}
               disabled={loading}
@@ -171,20 +175,20 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
                 sx: { '& .MuiSelect-select': { paddingRight: '40px !important' } }
               }}
             >
-              <MenuItem value='pending'>Pending</MenuItem>
-              <MenuItem value='shipped'>Shipped</MenuItem>
-              <MenuItem value='delivered'>Delivered</MenuItem>
+              <MenuItem value='pending'>{dictionary?.orders?.pending || 'Pending'}</MenuItem>
+              <MenuItem value='shipped'>{dictionary?.orders?.shipped || 'Shipped'}</MenuItem>
+              <MenuItem value='delivered'>{dictionary?.orders?.delivered || 'Delivered'}</MenuItem>
             </TextField>
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Shipping Method'
+              label={dictionary?.orders?.shippingMethodLabel || 'Shipping Method'}
               value={formData.shipping_method}
               onChange={handleChange('shipping_method')}
               disabled={loading}
-              placeholder='e.g., standard, express'
+              placeholder={dictionary?.orders?.shippingMethodPlaceholder || 'e.g., standard, express'}
               InputLabelProps={{
                 sx: { whiteSpace: 'nowrap' }
               }}
@@ -195,11 +199,11 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
           <Grid item xs={12} sm={12}>
             <TextField
               fullWidth
-              label='Tracking Number'
+              label={dictionary?.orders?.trackingNumberLabel || 'Tracking Number'}
               value={formData.tracking_number}
               onChange={handleChange('tracking_number')}
               disabled={loading}
-              placeholder='Enter tracking number'
+              placeholder={dictionary?.orders?.trackingNumberPlaceholder || 'Enter tracking number'}
               InputLabelProps={{
                 sx: { whiteSpace: 'nowrap' }
               }}
@@ -210,13 +214,13 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
           <Grid item xs={12} sm={12}>
             <TextField
               fullWidth
-              label='Admin Note'
+              label={dictionary?.orders?.adminNote || 'Admin Note'}
               value={formData.admin_note}
               onChange={handleChange('admin_note')}
               disabled={loading}
               multiline
               rows={3}
-              placeholder='Add optional admin note...'
+              placeholder={dictionary?.orders?.adminNotePlaceholder || 'Add optional admin note...'}
               InputLabelProps={{
                 sx: { whiteSpace: 'nowrap' }
               }}
@@ -226,7 +230,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
       </DialogContent>
       <DialogActions className='px-6 pb-6'>
         <Button onClick={handleClose} disabled={loading} color='secondary' variant='outlined'>
-          Cancel
+          {dictionary?.common?.cancel || 'Cancel'}
         </Button>
         <Button
           onClick={handleSubmit}
@@ -234,7 +238,7 @@ const UpdateOrderDialog = ({ open, setOpen, orderData, onUpdate }) => {
           variant='contained'
           startIcon={loading && <CircularProgress size={20} />}
         >
-          {loading ? 'Updating...' : 'Update Order'}
+          {loading ? dictionary?.common?.updating || 'Updating...' : dictionary?.orders?.updateOrder || 'Update Order'}
         </Button>
       </DialogActions>
     </Dialog>

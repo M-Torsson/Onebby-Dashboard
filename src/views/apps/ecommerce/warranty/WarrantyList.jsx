@@ -39,9 +39,9 @@ import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import tableStyles from '@core/styles/table.module.css'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/admin`
-const WARRANTY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -71,6 +71,7 @@ const columnHelper = createColumnHelper()
 
 const WarrantyList = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
+  const dict = useDictionary()
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -89,7 +90,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
       setLoading(true)
       setError('')
       const response = await fetch(`${V1_BASE_URL}/warranties?skip=0&limit=500&active_only=false`, {
-        headers: { 'X-API-Key': WARRANTY_API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
@@ -98,10 +99,10 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
         setData(warranties)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || errorData.message || 'Failed to load warranties')
+        setError(errorData.detail || errorData.message || dict?.warranty?.loadFailed || 'Failed to load warranties')
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(dict?.warranty?.networkError || 'Network error. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -118,26 +119,26 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
     try {
       const response = await fetch(`${V1_BASE_URL}/warranties/${warrantyToDelete.id}?soft_delete=true`, {
         method: 'DELETE',
-        headers: { 'X-API-Key': WARRANTY_API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
-        setSuccess('Warranty deleted successfully!')
+        setSuccess(dict?.warranty?.deletedSuccess || 'Warranty deleted successfully!')
         setDeleteDialogOpen(false)
         setWarrantyToDelete(null)
-        
+
         // Refresh the list after deletion
         await fetchWarranties()
-        
+
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || 'Failed to delete warranty')
+        setError(errorData.detail || dict?.warranty?.deleteFailed || 'Failed to delete warranty')
         setDeleteDialogOpen(false)
         setWarrantyToDelete(null)
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(dict?.warranty?.networkError || 'Network error. Please try again.')
       setDeleteDialogOpen(false)
       setWarrantyToDelete(null)
     }
@@ -172,7 +173,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
         )
       },
       columnHelper.accessor('title', {
-        header: 'Warranty',
+        header: dict?.warranty?.warranty || 'Warranty',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             {row.original.image && (
@@ -184,50 +185,52 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
             )}
             <div className='flex flex-col' style={{ maxWidth: '300px' }}>
               <Typography color='text.primary' className='font-medium' noWrap>
-                {row.original.title || 'Untitled'}
+                {row.original.title || dict?.warranty?.untitled || 'Untitled'}
               </Typography>
               <Typography variant='body2' color='text.secondary' noWrap>
-                {row.original.subtitle || 'No subtitle'}
+                {row.original.subtitle || dict?.warranty?.noSubtitle || 'No subtitle'}
               </Typography>
             </div>
           </div>
         )
       }),
       columnHelper.accessor('price', {
-        header: 'Price',
+        header: dict?.warranty?.price || 'Price',
         cell: ({ row }) => {
           const price = row.original.price || 0
-          return (
-            <Typography className='font-medium'>
-              €{parseFloat(price).toFixed(2)}
-            </Typography>
-          )
+          return <Typography className='font-medium'>€{parseFloat(price).toFixed(2)}</Typography>
         }
       }),
       columnHelper.accessor('features', {
-        header: 'Features',
-        cell: ({ row }) => (
-          <Chip
-            label={`${row.original.features?.length || 0} feature${row.original.features?.length !== 1 ? 's' : ''}`}
-            variant='tonal'
-            color='info'
-            size='small'
-          />
-        )
+        header: dict?.warranty?.features || 'Features',
+        cell: ({ row }) => {
+          const count = row.original.features?.length || 0
+          return (
+            <Chip
+              label={`${count} ${count !== 1 ? dict?.warranty?.featuresPlural || 'features' : dict?.warranty?.feature || 'feature'}`}
+              variant='tonal'
+              color='info'
+              size='small'
+            />
+          )
+        }
       }),
       columnHelper.accessor('categories', {
-        header: 'Categories',
-        cell: ({ row }) => (
-          <Chip
-            label={`${row.original.categories?.length || 0} categor${row.original.categories?.length !== 1 ? 'ies' : 'y'}`}
-            variant='tonal'
-            color='primary'
-            size='small'
-          />
-        )
+        header: dict?.delivery?.categories || 'Categories',
+        cell: ({ row }) => {
+          const count = row.original.categories?.length || 0
+          return (
+            <Chip
+              label={`${count} ${count !== 1 ? dict?.warranty?.categoriesPlural || 'categories' : dict?.warranty?.category || 'category'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          )
+        }
       }),
       columnHelper.accessor('action', {
-        header: 'Action',
+        header: dict?.actions?.edit || 'Action',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <IconButton size='small' onClick={() => handleEditWarranty(row.original)}>
@@ -275,7 +278,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
   if (loading) {
     return (
       <Card>
-        <CardHeader title='Warranty Settings' />
+        <CardHeader title={dict?.warranty?.warrantySettings || 'Warranty Settings'} />
         <div className='flex justify-center items-center min-h-[400px]'>
           <CircularProgress />
         </div>
@@ -286,7 +289,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
   return (
     <>
       <Card>
-        <CardHeader title='Warranty Settings' />
+        <CardHeader title={dict?.warranty?.warrantySettings || 'Warranty Settings'} />
         {error && (
           <Alert severity='error' onClose={() => setError('')} className='m-6'>
             {error}
@@ -301,7 +304,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Warranties'
+            placeholder={dict?.warranty?.searchWarranties || 'Search Warranties'}
             className='is-full sm:is-auto'
           />
           <div className='flex gap-4'>
@@ -320,7 +323,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
               onClick={() => router.push('/apps/ecommerce/warranty/add')}
               startIcon={<i className='tabler-plus' />}
             >
-              Add Warranty
+              {dict?.warranty?.addWarranty || 'Add Warranty'}
             </Button>
           </div>
         </div>
@@ -355,7 +358,7 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                    No warranties found
+                    {dict?.warranty?.noWarrantiesFound || 'No warranties found'}
                   </td>
                 </tr>
               </tbody>
@@ -379,18 +382,19 @@ const WarrantyList = ({ dictionary = { common: {} } }) => {
       </Card>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Warranty</DialogTitle>
+        <DialogTitle>{dict?.warranty?.deleteWarrantyTitle || 'Delete Warranty'}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this warranty? This action cannot be undone.
+            {dict?.warranty?.deleteWarrantyMessage ||
+              'Are you sure you want to delete this warranty? This action cannot be undone.'}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
-            Cancel
+            {dict?.warranty?.cancel || 'Cancel'}
           </Button>
           <Button onClick={confirmDeleteWarranty} variant='contained' color='error'>
-            Delete
+            {dict?.warranty?.delete || 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

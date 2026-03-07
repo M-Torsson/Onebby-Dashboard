@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography'
 import ConfirmationDialog from '@components/dialogs/confirmation-dialog'
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
 import UpdateOrderDialog from '@components/dialogs/update-order-dialog'
+import { useDictionary } from '@/hooks/useDictionary'
 
 export const paymentStatus = {
   completed: { text: 'Paid', color: 'success' },
@@ -39,6 +40,7 @@ export const statusChipColor = {
 const OrderDetailHeader = ({ orderData, order, onUpdate }) => {
   // States
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false)
+  const dictionary = useDictionary()
 
   // Vars
   const buttonProps = (children, color, variant) => ({
@@ -48,35 +50,41 @@ const OrderDetailHeader = ({ orderData, order, onUpdate }) => {
   })
 
   // Get shipping status from API
-  const shippingStatus = orderData?.shipping_status || 'pending'
-  const displayStatus = statusChipColor[shippingStatus]?.status || shippingStatus
-  const statusColor = statusChipColor[shippingStatus]?.color || 'default'
-
   // Parse date
   const orderDate = orderData?.created_at ? new Date(orderData.created_at) : new Date()
   const dateStr = orderDate.toDateString()
   const timeStr = orderDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 
   // Get payment status safely
-  const paymentInfo = getPaymentStatus(orderData?.payment_status)
+  const paymentInfo = (() => {
+    const statusMap = {
+      completed: { text: dictionary?.orders?.paid || 'Paid', color: 'success' },
+      pending: { text: dictionary?.orders?.pending || 'Pending', color: 'warning' },
+      cancelled: { text: dictionary?.orders?.cancelled || 'Cancelled', color: 'secondary' },
+      refunded: { text: dictionary?.orders?.refunded || 'Refunded', color: 'secondary' },
+      failed: { text: dictionary?.orders?.failed || 'Failed', color: 'error' }
+    }
+
+    return statusMap[orderData?.payment_status] || getPaymentStatus(orderData?.payment_status)
+  })()
 
   return (
     <>
       <div className='flex flex-wrap justify-between sm:items-center max-sm:flex-col gap-y-4'>
         <div className='flex flex-col items-start gap-1'>
           <div className='flex items-center gap-2'>
-            <Typography variant='h5'>{`Order #${order}`}</Typography>
+            <Typography variant='h5'>{`${dictionary?.orders?.orderNo || 'Order #'}${order}`}</Typography>
             <Chip variant='tonal' label={paymentInfo.text} color={paymentInfo.color} size='small' />
           </div>
           <Typography>{`${dateStr}, ${timeStr} (ET)`}</Typography>
         </div>
         <div className='flex gap-2'>
           <Button variant='contained' color='primary' onClick={() => setOpenUpdateDialog(true)}>
-            Update Order
+            {dictionary?.orders?.updateOrder || 'Update Order'}
           </Button>
           <OpenDialogOnElementClick
             element={Button}
-            elementProps={buttonProps('Delete Order', 'error', 'tonal')}
+            elementProps={buttonProps(dictionary?.orders?.deleteOrder || 'Delete Order', 'error', 'tonal')}
             dialog={ConfirmationDialog}
             dialogProps={{ type: 'delete-order' }}
           />

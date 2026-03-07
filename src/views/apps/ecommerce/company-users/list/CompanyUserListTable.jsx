@@ -47,6 +47,7 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -81,7 +82,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 
 const columnHelper = createColumnHelper()
 
-const ApprovalStatusButton = ({ company, onStatusChange }) => {
+const ApprovalStatusButton = ({ company, onStatusChange, labels }) => {
   const [anchorEl, setAnchorEl] = useState(null)
 
   const handleClick = event => {
@@ -129,7 +130,7 @@ const ApprovalStatusButton = ({ company, onStatusChange }) => {
   return (
     <>
       <Chip
-        label={company.approval_status}
+        label={labels?.[company.approval_status] || company.approval_status}
         color={getStatusColor(company.approval_status)}
         size='small'
         variant='tonal'
@@ -140,15 +141,15 @@ const ApprovalStatusButton = ({ company, onStatusChange }) => {
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <MenuItem onClick={() => handleStatusChange('approved')}>
           <i className='tabler-check text-success me-2' />
-          Approved
+          {labels?.approved || 'Approved'}
         </MenuItem>
         <MenuItem onClick={() => handleStatusChange('pending')}>
           <i className='tabler-clock text-warning me-2' />
-          Pending
+          {labels?.pending || 'Pending'}
         </MenuItem>
         <MenuItem onClick={() => handleStatusChange('rejected')}>
           <i className='tabler-x text-error me-2' />
-          Rejected
+          {labels?.rejected || 'Rejected'}
         </MenuItem>
       </Menu>
     </>
@@ -156,6 +157,15 @@ const ApprovalStatusButton = ({ company, onStatusChange }) => {
 }
 
 const CompanyUserListTable = () => {
+  const dictionary = useDictionary()
+  const companyDictionary = dictionary?.companies || {}
+  const actionDictionary = dictionary?.actions || {}
+  const paginationLabels = {
+    showing: companyDictionary.showing || 'Showing',
+    to: companyDictionary.to || 'to',
+    of: companyDictionary.of || 'of',
+    entries: companyDictionary.entries || 'entries'
+  }
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [rowSelection, setRowSelection] = useState({})
@@ -250,7 +260,7 @@ const CompanyUserListTable = () => {
         )
       },
       columnHelper.accessor('company_name', {
-        header: 'Company',
+        header: companyDictionary.company || 'COMPANY',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <CustomAvatar skin='light' size={34}>
@@ -266,7 +276,7 @@ const CompanyUserListTable = () => {
         )
       }),
       columnHelper.accessor('id', {
-        header: 'Company ID',
+        header: companyDictionary.companyId || 'COMPANY ID',
         cell: ({ row }) => (
           <Typography color='text.primary' className='font-medium'>
             #{row.original.id}
@@ -274,28 +284,30 @@ const CompanyUserListTable = () => {
         )
       }),
       columnHelper.accessor('vat_number', {
-        header: 'VAT Number',
+        header: companyDictionary.vatNumber || 'VAT NUMBER',
         cell: ({ row }) => <Typography>{row.original.vat_number}</Typography>
       }),
       columnHelper.accessor('tax_code', {
-        header: 'Tax Code',
+        header: companyDictionary.taxCode || 'TAX CODE',
         cell: ({ row }) => (
           <Typography>{row.original.tax_code || <span className='text-gray-400'>N/A</span>}</Typography>
         )
       }),
       columnHelper.accessor('approval_status', {
-        header: 'Status',
-        cell: ({ row }) => <ApprovalStatusButton company={row.original} onStatusChange={fetchCompanies} />
+        header: companyDictionary.status || 'STATUS',
+        cell: ({ row }) => (
+          <ApprovalStatusButton company={row.original} onStatusChange={fetchCompanies} labels={companyDictionary} />
+        )
       }),
       columnHelper.accessor('created_at', {
-        header: 'Registered',
+        header: companyDictionary.registered || 'REGISTERED',
         cell: ({ row }) => {
           const date = new Date(row.original.created_at)
-          return <Typography>{date.toLocaleDateString()}</Typography>
+          return <Typography>{date.toLocaleDateString(locale)}</Typography>
         }
       }),
       columnHelper.accessor('actions', {
-        header: 'Actions',
+        header: companyDictionary.actions || 'ACTIONS',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton onClick={() => handleEditCompany(row.original)}>
@@ -306,12 +318,12 @@ const CompanyUserListTable = () => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Edit',
+                  text: actionDictionary.edit || 'Edit',
                   icon: 'tabler-edit',
                   menuItemProps: { onClick: () => handleEditCompany(row.original) }
                 },
                 {
-                  text: 'Delete',
+                  text: actionDictionary.delete || 'Delete',
                   icon: 'tabler-trash',
                   menuItemProps: { onClick: () => handleDeleteCompany(row.original) }
                 }
@@ -322,7 +334,21 @@ const CompanyUserListTable = () => {
         enableSorting: false
       })
     ],
-    []
+    [
+      actionDictionary.delete,
+      actionDictionary.edit,
+      companyDictionary.actions,
+      companyDictionary.approved,
+      companyDictionary.company,
+      companyDictionary.companyId,
+      companyDictionary.pending,
+      companyDictionary.registered,
+      companyDictionary.rejected,
+      companyDictionary.status,
+      companyDictionary.taxCode,
+      companyDictionary.vatNumber,
+      locale
+    ]
   )
 
   const table = useReactTable({
@@ -357,7 +383,7 @@ const CompanyUserListTable = () => {
     return (
       <Card>
         <CardContent>
-          <Typography>Loading companies...</Typography>
+          <Typography>{companyDictionary.loadingCompanies || 'Loading companies...'}</Typography>
         </CardContent>
       </Card>
     )
@@ -365,111 +391,112 @@ const CompanyUserListTable = () => {
 
   return (
     <>
-    <Card>
-      <CardContent className='flex justify-between flex-wrap max-sm:flex-col sm:items-center gap-4'>
-        <DebouncedInput
-          value={globalFilter ?? ''}
-          onChange={value => setGlobalFilter(String(value))}
-          placeholder='Search Companies'
-          className='max-sm:is-full'
-        />
-        <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
-          <CustomTextField
-            select
-            value={table.getState().pagination.pageSize}
-            onChange={e => table.setPageSize(Number(e.target.value))}
-            className='is-full sm:is-[70px]'
-          >
-            <MenuItem value='10'>10</MenuItem>
-            <MenuItem value='25'>25</MenuItem>
-            <MenuItem value='50'>50</MenuItem>
-            <MenuItem value='100'>100</MenuItem>
-          </CustomTextField>
-          <Button
-            variant='tonal'
+      <Card>
+        <CardContent className='flex justify-between flex-wrap max-sm:flex-col sm:items-center gap-4'>
+          <DebouncedInput
+            value={globalFilter ?? ''}
+            onChange={value => setGlobalFilter(String(value))}
+            placeholder={companyDictionary.searchCompanies || 'Search Companies'}
             className='max-sm:is-full'
-            color='secondary'
-            startIcon={<i className='tabler-upload' />}
-          >
-            Export
-          </Button>
+          />
+          <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+            <CustomTextField
+              select
+              value={table.getState().pagination.pageSize}
+              onChange={e => table.setPageSize(Number(e.target.value))}
+              className='is-full sm:is-[70px]'
+            >
+              <MenuItem value='10'>10</MenuItem>
+              <MenuItem value='25'>25</MenuItem>
+              <MenuItem value='50'>50</MenuItem>
+              <MenuItem value='100'>100</MenuItem>
+            </CustomTextField>
+            <Button
+              variant='tonal'
+              className='max-sm:is-full'
+              color='secondary'
+              startIcon={<i className='tabler-upload' />}
+            >
+              {companyDictionary.export || actionDictionary.export || 'Export'}
+            </Button>
+          </div>
+        </CardContent>
+        <div className='overflow-x-auto'>
+          <table className={tableStyles.table}>
+            <thead>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id}>
+                      {header.isPlaceholder ? null : (
+                        <>
+                          <div
+                            className={classnames({
+                              'flex items-center': header.column.getIsSorted(),
+                              'cursor-pointer select-none': header.column.getCanSort()
+                            })}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {{
+                              asc: <i className='tabler-chevron-up text-xl' />,
+                              desc: <i className='tabler-chevron-down text-xl' />
+                            }[header.column.getIsSorted()] ?? null}
+                          </div>
+                        </>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            {table.getFilteredRowModel().rows.length === 0 ? (
+              <tbody>
+                <tr>
+                  <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
+                    {dictionary?.discounts?.noDataAvailable || 'No data available'}
+                  </td>
+                </tr>
+              </tbody>
+            ) : (
+              <tbody>
+                {table
+                  .getRowModel()
+                  .rows.slice(0, table.getState().pagination.pageSize)
+                  .map(row => {
+                    return (
+                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            )}
+          </table>
         </div>
-      </CardContent>
-      <div className='overflow-x-auto'>
-        <table className={tableStyles.table}>
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          className={classnames({
-                            'flex items-center': header.column.getIsSorted(),
-                            'cursor-pointer select-none': header.column.getCanSort()
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <i className='tabler-chevron-up text-xl' />,
-                            desc: <i className='tabler-chevron-down text-xl' />
-                          }[header.column.getIsSorted()] ?? null}
-                        </div>
-                      </>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          {table.getFilteredRowModel().rows.length === 0 ? (
-            <tbody>
-              <tr>
-                <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                  No data available
-                </td>
-              </tr>
-            </tbody>
-          ) : (
-            <tbody>
-              {table
-                .getRowModel()
-                .rows.slice(0, table.getState().pagination.pageSize)
-                .map(row => {
-                  return (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  )
-                })}
-            </tbody>
-          )}
-        </table>
-      </div>
-      <TablePaginationComponent table={table} />
-    </Card>
+        <TablePaginationComponent table={table} labels={paginationLabels} />
+      </Card>
 
-    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-      <DialogTitle>Delete Company</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          Are you sure you want to delete this company? This action cannot be undone.
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
-          Cancel
-        </Button>
-        <Button onClick={confirmDeleteCompany} color='error' variant='contained'>
-          Delete
-        </Button>
-      </DialogActions>
-    </Dialog>
-  </>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>{companyDictionary.deleteCompanyTitle || 'Delete Company'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {companyDictionary.deleteCompanyMessage ||
+              'Are you sure you want to delete this company? This action cannot be undone.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
+            {dictionary?.delivery?.cancel || 'Cancel'}
+          </Button>
+          <Button onClick={confirmDeleteCompany} color='error' variant='contained'>
+            {actionDictionary.delete || 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }
 

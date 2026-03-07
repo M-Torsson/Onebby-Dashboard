@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
@@ -21,6 +22,7 @@ const getAvatar = params => {
 }
 
 const CustomerDetails = ({ orderData }) => {
+  const dictionary = useDictionary()
   // Extract customer info from orderData
   const customerInfo = orderData?.customer_info || {}
   const billingAddress = orderData?.billing_address || {}
@@ -38,22 +40,27 @@ const CustomerDetails = ({ orderData }) => {
   // Prioritize company name, then full name, then fallback to Guest
   const customerName =
     companyName ||
-    (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || orderData?.customer_name || 'Guest')
+    (firstName && lastName
+      ? `${firstName} ${lastName}`
+      : firstName || lastName || orderData?.customer_name || dictionary?.orders?.guest || 'Guest')
 
-  const customerEmail = customerInfo?.email || orderData?.customer_email || 'N/A'
-  const customerPhone = customerInfo?.phone || billingAddress?.phone || 'N/A'
+  const customerEmail = customerInfo?.email || orderData?.customer_email || dictionary?.orders?.notAvailable || 'N/A'
+  const customerPhone = customerInfo?.phone || billingAddress?.phone || dictionary?.orders?.notAvailable || 'N/A'
 
   return (
     <Card>
       <CardContent className='flex flex-col gap-6'>
-        <Typography variant='h5'>Customer details</Typography>
+        <Typography variant='h5'>{dictionary?.orders?.customerDetails || 'Customer details'}</Typography>
         <div className='flex items-center gap-3'>
           {getAvatar({ avatar: '', customer: customerName })}
           <div className='flex flex-col'>
             <Typography color='text.primary' className='font-medium'>
               {customerName}
             </Typography>
-            <Typography>Customer ID: #{orderData?.customer_info?.user_id || orderData?.user_id || 'Guest'}</Typography>
+            <Typography>
+              {dictionary?.orders?.customerIdLabel || 'Customer ID:'} #
+              {orderData?.customer_info?.user_id || orderData?.user_id || dictionary?.orders?.guest || 'Guest'}
+            </Typography>
           </div>
         </div>
         <div className='flex items-center gap-3'>
@@ -61,15 +68,19 @@ const CustomerDetails = ({ orderData }) => {
             <i className='tabler-shopping-cart' />
           </CustomAvatar>
           <Typography color='text.primary' className='font-medium'>
-            {orderData?.items_count || orderData?.items?.length || 0} Items
+            {orderData?.items_count || orderData?.items?.length || 0} {dictionary?.orders?.itemsLabel || 'Items'}
           </Typography>
         </div>
         <div className='flex flex-col gap-1'>
           <Typography color='text.primary' className='font-medium'>
-            Contact info
+            {dictionary?.orders?.contactInfo || 'Contact info'}
           </Typography>
-          <Typography>Email: {customerEmail}</Typography>
-          <Typography>Mobile: {customerPhone}</Typography>
+          <Typography>
+            {dictionary?.orders?.emailLabel || 'Email:'} {customerEmail}
+          </Typography>
+          <Typography>
+            {dictionary?.orders?.mobileLabel || 'Mobile:'} {customerPhone}
+          </Typography>
         </div>
       </CardContent>
     </Card>

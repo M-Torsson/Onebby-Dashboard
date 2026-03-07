@@ -26,11 +26,14 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import CustomTextField from '@core/components/mui/TextField'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/v1`
 
 const DiscountAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
+  const liveDictionary = useDictionary()
+  const common = liveDictionary?.common || dictionary.common || {}
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
 
@@ -184,7 +187,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
           is_active: discount.is_active !== undefined ? discount.is_active : true
         })
       } else {
-        setError(`Failed to load discount campaign`)
+        setError(common?.discountLoadFailed || 'Failed to load discount campaign')
       }
     } catch (err) {
       setError(`Network error: ${err.message}`)
@@ -200,7 +203,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
       setLoading(true)
 
       if (!formData.name || formData.discount_value <= 0 || formData.target_ids.length === 0) {
-        setError('Name, discount value, and at least one target are required')
+        setError(common?.discountValidationError || 'Name, discount value, and at least one target are required')
         setLoading(false)
         return
       }
@@ -246,21 +249,25 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
             if (applyResponse.ok) {
               setSuccess(
                 editId
-                  ? 'Discount campaign updated and applied successfully!'
-                  : 'Discount campaign created and applied successfully!'
+                  ? common?.discountUpdateApplySuccess || 'Discount campaign updated and applied successfully!'
+                  : common?.discountCreateApplySuccess || 'Discount campaign created and applied successfully!'
               )
             } else {
               setSuccess(
                 editId
-                  ? 'Discount campaign updated but failed to apply. Please apply manually.'
-                  : 'Discount campaign created but failed to apply. Please apply manually.'
+                  ? common?.discountUpdateApplyFailed ||
+                      'Discount campaign updated but failed to apply. Please apply manually.'
+                  : common?.discountCreateApplyFailed ||
+                      'Discount campaign created but failed to apply. Please apply manually.'
               )
             }
           } catch (applyErr) {
             setSuccess(
               editId
-                ? 'Discount campaign updated but failed to apply. Please apply manually.'
-                : 'Discount campaign created but failed to apply. Please apply manually.'
+                ? common?.discountUpdateApplyFailed ||
+                    'Discount campaign updated but failed to apply. Please apply manually.'
+                : common?.discountCreateApplyFailed ||
+                    'Discount campaign created but failed to apply. Please apply manually.'
             )
           }
         }
@@ -276,7 +283,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
         } else if (errorData.detail) {
           errorMessage = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail)
         } else {
-          errorMessage = `Failed to ${editId ? 'update' : 'create'} discount campaign`
+          errorMessage = common?.discountSaveFailed || `Failed to ${editId ? 'update' : 'create'} discount campaign`
         }
         setError(errorMessage)
       }
@@ -478,23 +485,23 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
           <div>
             <Typography variant='h4' className='mbe-1'>
               {editId
-                ? dictionary.common?.editCampaign || 'Edit Discount Campaign'
-                : dictionary.common?.addNewCampaign || 'Add New Discount Campaign'}
+                ? common?.editCampaign || 'Edit Discount Campaign'
+                : common?.addNewCampaign || 'Add New Discount Campaign'}
             </Typography>
-            <Typography>{dictionary.common?.manageCampaignInfo || 'Manage your discount campaign'}</Typography>
+            <Typography>{common?.manageCampaignInfo || 'Manage your discount campaign'}</Typography>
           </div>
           <div className='flex flex-wrap max-sm:flex-col gap-4'>
             <Button variant='tonal' color='secondary' onClick={() => router.push('/apps/ecommerce/discounts/list')}>
-              {dictionary.common?.discard || 'Discard'}
+              {common?.discard || 'Discard'}
             </Button>
             <Button variant='contained' onClick={handleSaveDiscount} disabled={loading}>
               {loading
                 ? editId
-                  ? dictionary.common?.updating || 'Updating...'
-                  : dictionary.common?.creating || 'Creating...'
+                  ? common?.updating || 'Updating...'
+                  : common?.creating || 'Creating...'
                 : editId
-                  ? dictionary.common?.updateCampaign || 'Update Campaign'
-                  : dictionary.common?.createCampaign || 'Create Campaign'}
+                  ? common?.updateCampaign || 'Update Campaign'
+                  : common?.createCampaign || 'Create Campaign'}
             </Button>
           </div>
         </div>
@@ -517,14 +524,14 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
       <Grid size={{ xs: 12, md: 8 }}>
         <Card>
-          <CardHeader title={dictionary.common?.campaignDetails || 'Campaign Details'} />
+          <CardHeader title={common?.campaignDetails || 'Campaign Details'} />
           <CardContent>
             <Grid container spacing={4}>
               <Grid size={{ xs: 12 }}>
                 <CustomTextField
                   fullWidth
-                  label={dictionary.common?.campaignName || 'Campaign Name'}
-                  placeholder='e.g., Summer Sale'
+                  label={common?.campaignName || 'Campaign Name'}
+                  placeholder={common?.campaignNamePlaceholder || 'e.g., Summer Sale'}
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   required
@@ -533,14 +540,14 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <FormControl fullWidth>
-                  <InputLabel>{dictionary.common?.discountType || 'Discount Type'}</InputLabel>
+                  <InputLabel>{common?.discountType || 'Discount Type'}</InputLabel>
                   <Select
                     value={formData.discount_type}
-                    label={dictionary.common?.discountType || 'Discount Type'}
+                    label={common?.discountType || 'Discount Type'}
                     onChange={e => setFormData({ ...formData, discount_type: e.target.value })}
                   >
-                    <MenuItem value='percentage'>Percentage (%)</MenuItem>
-                    <MenuItem value='fixed'>Fixed Amount (€)</MenuItem>
+                    <MenuItem value='percentage'>{common?.percentage || 'Percentage (%)'}</MenuItem>
+                    <MenuItem value='fixed'>{common?.fixedAmount || 'Fixed Amount (€)'}</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -549,7 +556,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                 <CustomTextField
                   fullWidth
                   type='number'
-                  label={dictionary.common?.discountValue || 'Discount Value'}
+                  label={common?.discountValue || 'Discount Value'}
                   placeholder={formData.discount_type === 'percentage' ? 'e.g., 15' : 'e.g., 10.00'}
                   value={formData.discount_value}
                   onChange={e => setFormData({ ...formData, discount_value: e.target.value })}
@@ -568,14 +575,14 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
               <Grid size={{ xs: 12 }}>
                 <FormControl fullWidth>
-                  <InputLabel>{dictionary.common?.targetType || 'Target Type'}</InputLabel>
+                  <InputLabel>{common?.targetType || 'Target Type'}</InputLabel>
                   <Select
                     value={formData.target_type}
-                    label={dictionary.common?.targetType || 'Target Type'}
+                    label={common?.targetType || 'Target Type'}
                     onChange={e => setFormData({ ...formData, target_type: e.target.value, target_ids: [] })}
                   >
-                    <MenuItem value='category'>Category</MenuItem>
-                    <MenuItem value='product'>Product</MenuItem>
+                    <MenuItem value='category'>{common?.category || 'Category'}</MenuItem>
+                    <MenuItem value='product'>{common?.product || 'Product'}</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -585,8 +592,8 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                   <Grid size={{ xs: 12 }}>
                     <CustomTextField
                       fullWidth
-                      label={dictionary.common?.searchProduct || 'Search Product by ID or Name'}
-                      placeholder='Enter product ID or name...'
+                      label={common?.searchProductByIdOrName || 'Search Product by ID or Name'}
+                      placeholder={common?.searchProductPlaceholder || 'Enter product ID or name...'}
                       value={productSearchInput}
                       onChange={e => handleProductSearch(e.target.value)}
                       slotProps={{
@@ -635,7 +642,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                   {formData.target_ids.length > 0 && (
                     <Grid size={{ xs: 12 }}>
                       <Typography variant='subtitle2' className='mb-2'>
-                        {dictionary.common?.selectedProducts || 'Selected Products'}:
+                        {common?.selectedProducts || 'Selected Products'}:
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                         {formData.target_ids.map(productId => {
@@ -657,7 +664,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
               ) : (
                 <Grid size={{ xs: 12 }}>
                   <FormControl fullWidth>
-                    <InputLabel>{dictionary.common?.selectTargets || `Select ${formData.target_type}s`}</InputLabel>
+                    <InputLabel>{common?.selectTargets || `Select ${formData.target_type}s`}</InputLabel>
                     <Select
                       multiple
                       value={formData.target_ids}
@@ -672,7 +679,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                         })
                         setFormData({ ...formData, target_ids: selectedIds })
                       }}
-                      input={<OutlinedInput label={`Select ${formData.target_type}s`} />}
+                      input={<OutlinedInput label={common?.selectTargets || `Select ${formData.target_type}s`} />}
                       MenuProps={{
                         PaperProps: {
                           style: {
@@ -807,7 +814,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                 <CustomTextField
                   fullWidth
                   type='date'
-                  label={dictionary.common?.startDate || 'Start Date'}
+                  label={common?.startDate || 'Start Date'}
                   value={formData.start_date}
                   onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                   InputLabelProps={{ shrink: true }}
@@ -818,7 +825,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
                 <CustomTextField
                   fullWidth
                   type='date'
-                  label={dictionary.common?.endDate || 'End Date'}
+                  label={common?.endDate || 'End Date'}
                   value={formData.end_date}
                   onChange={e => setFormData({ ...formData, end_date: e.target.value })}
                   InputLabelProps={{ shrink: true }}
@@ -831,7 +838,7 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
 
       <Grid size={{ xs: 12, md: 4 }}>
         <Card>
-          <CardHeader title={dictionary.common?.settings || 'Settings'} />
+          <CardHeader title={common?.settings || 'Settings'} />
           <CardContent>
             <FormControlLabel
               control={
@@ -842,9 +849,9 @@ const DiscountAdd = ({ dictionary = { common: {} } }) => {
               }
               label={
                 <div>
-                  <Typography variant='body1'>{dictionary.common?.activeStatus || 'Active Status'}</Typography>
+                  <Typography variant='body1'>{common?.activeStatus || 'Active Status'}</Typography>
                   <Typography variant='body2' color='text.secondary'>
-                    {dictionary.common?.enableCampaign || 'Enable this discount campaign'}
+                    {common?.enableCampaign || 'Enable this discount campaign'}
                   </Typography>
                 </div>
               }

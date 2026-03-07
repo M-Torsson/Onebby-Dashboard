@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useDictionary } from '@/hooks/useDictionary'
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -30,9 +31,9 @@ import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/admin`
 const API_V1_BASE_URL = `${API_BASE_URL}/api/v1`
-const DELIVERY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const DeliveryAdd = ({ dictionary = { common: {} } }) => {
+  const dict = useDictionary()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -219,13 +220,13 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
     try {
       setFetchingData(true)
       const response = await fetch(`${V1_BASE_URL}/deliveries/${editId}`, {
-        headers: { 'X-API-Key': DELIVERY_API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
         const data = result.data || result
-        
+
         setFormData({
           days_from: data.days_from || '',
           days_to: data.days_to || '',
@@ -237,12 +238,14 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
         })
 
         if (data.options && data.options.length > 0) {
-          setOptionsList(data.options.map((opt, index) => ({
-            id: index + 1,
-            icon: opt.icon || '',
-            details: opt.details || '',
-            price: opt.price || ''
-          })))
+          setOptionsList(
+            data.options.map((opt, index) => ({
+              id: index + 1,
+              icon: opt.icon || '',
+              details: opt.details || '',
+              price: opt.price || ''
+            }))
+          )
         } else {
           setOptionsList([])
         }
@@ -273,9 +276,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
   }
 
   const handleOptionChange = (id, field, value) => {
-    setOptionsList(
-      optionsList.map(opt => (opt.id === id ? { ...opt, [field]: value } : opt))
-    )
+    setOptionsList(optionsList.map(opt => (opt.id === id ? { ...opt, [field]: value } : opt)))
   }
 
   const uploadImageToCloudinary = async file => {
@@ -320,9 +321,9 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
     try {
       setUploadingIcons(prev => ({ ...prev, [optionId]: true }))
       setError('')
-      
+
       const imageUrl = await uploadImageToCloudinary(file)
-      
+
       handleOptionChange(optionId, 'icon', imageUrl)
       setSuccess('Icon uploaded successfully!')
       setTimeout(() => setSuccess(''), 2000)
@@ -354,11 +355,13 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
             option_note: formData.option_note || ''
           }
         ],
-        options: formData.is_free_delivery ? [] : optionsList.map(opt => ({
-          icon: opt.icon || '',
-          details: opt.details || '',
-          price: parseFloat(opt.price) || 0
-        }))
+        options: formData.is_free_delivery
+          ? []
+          : optionsList.map(opt => ({
+              icon: opt.icon || '',
+              details: opt.details || '',
+              price: parseFloat(opt.price) || 0
+            }))
       }
 
       const url = editId ? `${V1_BASE_URL}/deliveries/${editId}` : `${V1_BASE_URL}/deliveries`
@@ -368,7 +371,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': DELIVERY_API_KEY
+          'X-API-Key': API_KEY
         },
         body: JSON.stringify(payload)
       })
@@ -381,7 +384,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
       } else {
         const errorData = await response.json().catch(() => ({}))
         let errorMessage = 'Failed to save delivery'
-        
+
         if (errorData.detail) {
           if (typeof errorData.detail === 'string') {
             errorMessage = errorData.detail
@@ -393,7 +396,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
         } else if (errorData.message) {
           errorMessage = errorData.message
         }
-        
+
         setError(errorMessage)
       }
     } catch (err) {
@@ -423,7 +426,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
             maxInlineSize: 'none !important',
             maxWidth: 'none !important'
           },
-          'main': {
+          main: {
             maxInlineSize: 'none !important',
             maxWidth: 'none !important'
           }
@@ -432,7 +435,11 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
 
       <Box sx={{ width: '100%', maxWidth: '1000px', margin: '24px auto', padding: '0 24px' }}>
         <Card>
-          <CardHeader title={editId ? 'Edit Delivery' : 'Add Delivery'} />
+          <CardHeader
+            title={
+              editId ? dict?.delivery?.editDelivery || 'Edit Delivery' : dict?.delivery?.addDelivery || 'Add Delivery'
+            }
+          />
           <CardContent>
             {error && (
               <Alert severity='error' onClose={() => setError('')} className='mb-4'>
@@ -449,11 +456,11 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
               {/* Estimated Delivery Time */}
               <Box>
                 <Typography variant='h6' className='mb-4'>
-                  Estimated delivery time
+                  {dict?.delivery?.estimatedDeliveryTime || 'Estimated delivery time'}
                 </Typography>
                 <Grid container spacing={4} alignItems='center'>
                   <Grid item xs={12} sm={2}>
-                    <Typography>Days from:</Typography>
+                    <Typography>{dict?.delivery?.daysFrom || 'Days from:'}</Typography>
                   </Grid>
                   <Grid item xs={12} sm={3}>
                     <CustomTextField
@@ -479,7 +486,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                     />
                   </Grid>
                   <Grid item xs={12} sm={2}>
-                    <Typography>To:</Typography>
+                    <Typography>{dict?.delivery?.to || 'To:'}</Typography>
                   </Grid>
                   <Grid item xs={12} sm={3}>
                     <CustomTextField
@@ -505,10 +512,10 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                     />
                   </Grid>
                 </Grid>
-                
+
                 {/* Note */}
                 <Typography variant='h6' className='mb-2 mt-4'>
-                  Note:
+                  {dict?.delivery?.note || 'Note:'}
                 </Typography>
                 <CustomTextField
                   fullWidth
@@ -516,7 +523,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                   rows={6}
                   value={formData.note}
                   onChange={e => setFormData({ ...formData, note: e.target.value })}
-                  placeholder='Option note:'
+                  placeholder={dict?.delivery?.optionNote || 'Option note:'}
                   sx={{
                     '& .MuiInputBase-input::placeholder': {
                       color: '#9e9e9e',
@@ -531,7 +538,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                 <Box>
                   {/* Options List */}
                   <Box className='flex items-center justify-between mb-4'>
-                    <Typography variant='h6'>Options:</Typography>
+                    <Typography variant='h6'>{dict?.delivery?.options || 'Options:'}</Typography>
                     <IconButton
                       color='primary'
                       onClick={handleAddOption}
@@ -549,18 +556,21 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                           Option {index + 1}
                         </Typography>
                         {optionsList.length > 1 && (
-                          <IconButton
-                            color='error'
-                            onClick={() => handleRemoveOption(option.id)}
-                            size='small'
-                          >
+                          <IconButton color='error' onClick={() => handleRemoveOption(option.id)} size='small'>
                             <i className='tabler-trash' />
                           </IconButton>
                         )}
                       </Box>
 
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            gap: 3,
+                            alignItems: 'flex-start',
+                            flexWrap: { xs: 'wrap', sm: 'nowrap' }
+                          }}
+                        >
                           <Box sx={{ flex: '0 0 auto' }}>
                             <Box
                               sx={{
@@ -620,8 +630,8 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                           <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 0 } }}>
                             <CustomTextField
                               fullWidth
-                              label='option details'
-                              placeholder='option details'
+                              label={dict?.delivery?.optionDetails || 'option details'}
+                              placeholder={dict?.delivery?.optionDetails || 'option details'}
                               value={option.details}
                               onChange={e => handleOptionChange(option.id, 'details', e.target.value)}
                             />
@@ -630,7 +640,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                           <Box sx={{ width: { xs: '100%', sm: 220 } }}>
                             <CustomTextField
                               fullWidth
-                              label='option price'
+                              label={dict?.delivery?.optionPrice || 'option price'}
                               placeholder='0.00'
                               type='text'
                               value={option.price}
@@ -656,16 +666,16 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
               {/* Select Category - Fixed Section - Always visible */}
               <Box sx={{ mt: 10, mb: 4 }}>
                 <FormControl fullWidth>
-                  <InputLabel>Select category</InputLabel>
+                  <InputLabel>{dict?.delivery?.selectCategory || 'Select category'}</InputLabel>
                   <Select
                     multiple
                     value={Array.isArray(formData.category_id) ? formData.category_id : []}
                     onChange={e => {
                       const newValue = e.target.value
                       const currentValue = formData.category_id || []
-                      
+
                       const added = newValue.filter(id => !currentValue.includes(id))
-                      
+
                       if (added.length > 0) {
                         const addedId = added[0]
                         const descendants = getAllDescendants(addedId)
@@ -676,7 +686,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                         setFormData({ ...formData, category_id: newValue })
                       }
                     }}
-                    input={<OutlinedInput label='Select category' />}
+                    input={<OutlinedInput label={dict?.delivery?.selectCategory || 'Select category'} />}
                     MenuProps={{
                       PaperProps: {
                         style: {
@@ -783,9 +793,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                             sx={{ p: 0, minWidth: 20 }}
                           >
                             <i
-                              className={
-                                expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
-                              }
+                              className={expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'}
                               style={{ fontSize: opt.depth === 0 ? '1rem' : '0.875rem' }}
                             />
                           </IconButton>
@@ -801,18 +809,18 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
               {/* Option Note - Fixed Section - Hidden when free delivery is checked */}
               {!formData.is_free_delivery && (
                 <Box sx={{ mb: 4 }}>
-                <Typography variant='subtitle2' className='mb-2'>
-                  Option note:
-                </Typography>
-                <CustomTextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  value={formData.option_note}
-                  onChange={e => setFormData({ ...formData, option_note: e.target.value })}
-                  placeholder='Option note:'
-                />
-              </Box>
+                  <Typography variant='subtitle2' className='mb-2'>
+                    {dict?.delivery?.optionNote || 'Option note:'}
+                  </Typography>
+                  <CustomTextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    value={formData.option_note}
+                    onChange={e => setFormData({ ...formData, option_note: e.target.value })}
+                    placeholder={dict?.delivery?.optionNote || 'Option note:'}
+                  />
+                </Box>
               )}
 
               {/* Free Delivery Checkbox */}
@@ -824,7 +832,7 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                       onChange={e => setFormData({ ...formData, is_free_delivery: e.target.checked })}
                     />
                   }
-                  label='Make this category as a free delivery'
+                  label={dict?.delivery?.makeFreeDelivery || 'Make this category as a free delivery'}
                 />
               </Box>
 
@@ -837,14 +845,18 @@ const DeliveryAdd = ({ dictionary = { common: {} } }) => {
                     disabled={loading}
                     startIcon={loading && <CircularProgress size={20} />}
                   >
-                    {loading ? 'Saving...' : editId ? 'Update Delivery' : 'Create Delivery'}
+                    {loading
+                      ? dict?.delivery?.saving || 'Saving...'
+                      : editId
+                        ? dict?.delivery?.updateDelivery || 'Update Delivery'
+                        : dict?.delivery?.createDelivery || 'Create Delivery'}
                   </Button>
                   <Button
                     variant='tonal'
                     color='secondary'
                     onClick={() => router.push('/apps/ecommerce/delivery/list')}
                   >
-                    Cancel
+                    {dict?.delivery?.cancel || 'Cancel'}
                   </Button>
                 </Box>
               </Box>

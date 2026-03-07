@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Skeleton from '@mui/material/Skeleton'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const formatDate = value => {
   if (!value) return '-'
@@ -37,6 +38,8 @@ const shortenTitle = (title, maxLength = 52) => {
 }
 
 const LatestProductsList = ({ loading, products = [] }) => {
+  const dictionary = useDictionary()
+
   return (
     <Card
       sx={{
@@ -45,7 +48,10 @@ const LatestProductsList = ({ loading, products = [] }) => {
         flexDirection: 'column'
       }}
     >
-      <CardHeader title='Newest products added to catalog' subheader='Latest 10 Products' />
+      <CardHeader
+        title={dictionary?.dashboard?.latestProducts || 'Latest Products'}
+        subheader={`${dictionary?.dashboard?.items || 'Items'}: ${products.length}`}
+      />
       <CardContent
         className='flex flex-col gap-3'
         sx={{

@@ -84,32 +84,6 @@ const horizontalMenuData = dictionary => [
         label: dictionary['navigation'].companyUsers || 'Company Users',
         icon: 'tabler-building',
         href: '/apps/ecommerce/company-users/list'
-      },
-      {
-        label: dictionary['navigation'].invoice,
-        icon: 'tabler-file-description',
-        children: [
-          {
-            label: dictionary['navigation'].list,
-            href: '/apps/invoice/list'
-          },
-          {
-            label: dictionary['navigation'].preview,
-            href: '/apps/invoice/preview/4987',
-            exactMatch: false,
-            activeUrl: '/apps/invoice/preview'
-          },
-          {
-            label: dictionary['navigation'].edit,
-            href: '/apps/invoice/edit/4987',
-            exactMatch: false,
-            activeUrl: '/apps/invoice/edit'
-          },
-          {
-            label: dictionary['navigation'].add,
-            href: '/apps/invoice/add'
-          }
-        ]
       }
       // {
       //   label: dictionary['navigation'].user,

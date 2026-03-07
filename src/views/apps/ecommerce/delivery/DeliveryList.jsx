@@ -39,9 +39,9 @@ import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import tableStyles from '@core/styles/table.module.css'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/admin`
-const DELIVERY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -71,6 +71,7 @@ const columnHelper = createColumnHelper()
 
 const DeliveryList = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
+  const dict = useDictionary()
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -89,7 +90,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
       setLoading(true)
       setError('')
       const response = await fetch(`${V1_BASE_URL}/deliveries`, {
-        headers: { 'X-API-Key': DELIVERY_API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
@@ -98,10 +99,12 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
         setData(deliveries)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || errorData.message || 'Failed to load delivery settings')
+        setError(
+          errorData.detail || errorData.message || dict?.delivery?.loadFailed || 'Failed to load delivery settings'
+        )
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(dict?.delivery?.networkError || 'Network error. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -118,26 +121,26 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
     try {
       const response = await fetch(`${V1_BASE_URL}/deliveries/${deliveryToDelete.id}`, {
         method: 'DELETE',
-        headers: { 'X-API-Key': DELIVERY_API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
-        setSuccess('Delivery setting deleted successfully!')
+        setSuccess(dict?.delivery?.deletedSuccess || 'Delivery setting deleted successfully!')
         setDeleteDialogOpen(false)
         setDeliveryToDelete(null)
-        
+
         // Refresh the list after deletion
         await fetchDeliveries()
-        
+
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.detail || 'Failed to delete delivery setting')
+        setError(errorData.detail || dict?.delivery?.deleteFailed || 'Failed to delete delivery setting')
         setDeleteDialogOpen(false)
         setDeliveryToDelete(null)
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(dict?.delivery?.networkError || 'Network error. Please try again.')
       setDeleteDialogOpen(false)
       setDeliveryToDelete(null)
     }
@@ -172,36 +175,39 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
         )
       },
       columnHelper.accessor('days_from', {
-        header: 'Delivery Time',
+        header: dict?.delivery?.deliveryTime || 'Delivery Time',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <div className='flex flex-col'>
               <Typography color='text.primary' className='font-medium'>
-                {row.original.days_from} - {row.original.days_to} Days
+                {row.original.days_from} - {row.original.days_to} {dict?.delivery?.days || 'Days'}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Estimated delivery time
+                {dict?.delivery?.estimatedDeliveryTime || 'Estimated delivery time'}
               </Typography>
             </div>
           </div>
         )
       }),
       columnHelper.accessor('options', {
-        header: 'Options',
-        cell: ({ row }) => (
-          <Chip
-            label={`${row.original.options?.length || 0} option${row.original.options?.length !== 1 ? 's' : ''}`}
-            variant='tonal'
-            color='info'
-            size='small'
-          />
-        )
+        header: dict?.delivery?.options?.replace(':', '') || 'Options',
+        cell: ({ row }) => {
+          const count = row.original.options?.length || 0
+          return (
+            <Chip
+              label={`${count} ${count !== 1 ? dict?.delivery?.optionsPlural || 'options' : dict?.delivery?.option || 'option'}`}
+              variant='tonal'
+              color='info'
+              size='small'
+            />
+          )
+        }
       }),
       columnHelper.accessor('is_free_delivery', {
-        header: 'Free Delivery',
+        header: dict?.delivery?.freeDelivery || 'Free Delivery',
         cell: ({ row }) => (
           <Chip
-            label={row.original.is_free_delivery ? 'Yes' : 'No'}
+            label={row.original.is_free_delivery ? dict?.delivery?.yes || 'Yes' : dict?.delivery?.no || 'No'}
             variant='tonal'
             color={row.original.is_free_delivery ? 'success' : 'default'}
             size='small'
@@ -209,18 +215,21 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
         )
       }),
       columnHelper.accessor('categories', {
-        header: 'Categories',
-        cell: ({ row }) => (
-          <Chip
-            label={`${row.original.categories?.length || 0} categor${row.original.categories?.length !== 1 ? 'ies' : 'y'}`}
-            variant='tonal'
-            color='primary'
-            size='small'
-          />
-        )
+        header: dict?.delivery?.categories || 'Categories',
+        cell: ({ row }) => {
+          const count = row.original.categories?.length || 0
+          return (
+            <Chip
+              label={`${count} ${count !== 1 ? dict?.delivery?.categoriesPlural || 'categories' : dict?.delivery?.category || 'category'}`}
+              variant='tonal'
+              color='primary'
+              size='small'
+            />
+          )
+        }
       }),
       columnHelper.accessor('action', {
-        header: 'Action',
+        header: dict?.actions?.edit || 'Action',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <IconButton size='small' onClick={() => handleEditDelivery(row.original)}>
@@ -268,7 +277,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
   if (loading) {
     return (
       <Card>
-        <CardHeader title='Delivery Settings' />
+        <CardHeader title={dict?.delivery?.deliverySettings || 'Delivery Settings'} />
         <div className='flex justify-center items-center min-h-[400px]'>
           <CircularProgress />
         </div>
@@ -279,7 +288,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
   return (
     <>
       <Card>
-        <CardHeader title='Delivery Settings' />
+        <CardHeader title={dict?.delivery?.deliverySettings || 'Delivery Settings'} />
         {error && (
           <Alert severity='error' onClose={() => setError('')} className='m-6'>
             {error}
@@ -294,7 +303,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Delivery Settings'
+            placeholder={dict?.delivery?.searchDeliveries || 'Search Delivery Settings'}
             className='is-full sm:is-auto'
           />
           <div className='flex gap-4'>
@@ -313,7 +322,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
               onClick={() => router.push('/apps/ecommerce/delivery/add')}
               startIcon={<i className='tabler-plus' />}
             >
-              Add Delivery Setting
+              {dict?.delivery?.addDeliverySetting || 'Add Delivery Setting'}
             </Button>
           </div>
         </div>
@@ -348,7 +357,7 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                    No delivery settings found
+                    {dict?.delivery?.noDeliveriesFound || 'No delivery settings found'}
                   </td>
                 </tr>
               </tbody>
@@ -372,18 +381,19 @@ const DeliveryList = ({ dictionary = { common: {} } }) => {
       </Card>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Delivery Setting</DialogTitle>
+        <DialogTitle>{dict?.delivery?.deleteDeliveryTitle || 'Delete Delivery Setting'}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this delivery setting? This action cannot be undone.
+            {dict?.delivery?.deleteDeliveryMessage ||
+              'Are you sure you want to delete this delivery setting? This action cannot be undone.'}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
-            Cancel
+            {dict?.delivery?.cancel || 'Cancel'}
           </Button>
           <Button onClick={confirmDeleteDelivery} variant='contained' color='error'>
-            Delete
+            {dict?.delivery?.delete || 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -21,6 +21,7 @@ import Box from '@mui/material/Box'
 
 // Components Imports
 import CustomTextField from '@core/components/mui/TextField'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
@@ -29,6 +30,8 @@ const ADMIN_BASE_URL = `${API_BASE_URL}/api/admin`
 
 const AddTaxDrawer = props => {
   const { open, handleClose, taxData, onSuccess } = props
+  const dictionary = useDictionary()
+  const common = dictionary?.common
 
   const [formData, setFormData] = useState({
     name: '',
@@ -66,7 +69,7 @@ const AddTaxDrawer = props => {
       setSuccess('')
 
       if (!formData.name || formData.rate < 0) {
-        setError('Name is required and rate must be a positive number')
+        setError(common?.taxValidationError || 'Name is required and rate must be a positive number')
         setLoading(false)
         return
       }
@@ -90,17 +93,21 @@ const AddTaxDrawer = props => {
       })
 
       if (response.ok) {
-        setSuccess(taxData ? 'Tax class updated successfully!' : 'Tax class created successfully!')
+        setSuccess(
+          taxData
+            ? common?.taxUpdatedSuccess || 'Tax class updated successfully!'
+            : common?.taxCreatedSuccess || 'Tax class created successfully!'
+        )
         onSuccess()
         setTimeout(() => {
           handleReset()
         }, 500)
       } else {
         const errorData = await response.json()
-        setError(errorData.detail || errorData.message || 'Failed to save tax class')
+        setError(errorData.detail || errorData.message || common?.taxSaveFailed || 'Failed to save tax class')
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(common?.networkError || 'Network error. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -127,7 +134,9 @@ const AddTaxDrawer = props => {
       sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
     >
       <div className='flex items-center justify-between p-6'>
-        <Typography variant='h5'>{taxData ? 'Edit Tax Class' : 'Add New Tax Class'}</Typography>
+        <Typography variant='h5'>
+          {taxData ? common?.editTaxClass || 'Edit Tax Class' : common?.addNewTaxClass || 'Add New Tax Class'}
+        </Typography>
         <IconButton size='small' onClick={handleReset}>
           <i className='tabler-x text-2xl' />
         </IconButton>
@@ -146,18 +155,18 @@ const AddTaxDrawer = props => {
         )}
         <form onSubmit={e => e.preventDefault()} className='flex flex-col gap-6'>
           <CustomTextField
-            label='Tax Name'
+            label={common?.taxName || 'Tax Name'}
             fullWidth
-            placeholder='e.g., Standard 22%'
+            placeholder={common?.taxNamePlaceholder || 'e.g., Standard 22%'}
             value={formData.name}
             onChange={e => setFormData({ ...formData, name: e.target.value })}
             required
           />
           <CustomTextField
-            label='Tax Rate (%)'
+            label={common?.taxRate || 'Tax Rate (%)'}
             fullWidth
             type='number'
-            placeholder='e.g., 22.0'
+            placeholder={common?.taxRatePlaceholder || 'e.g., 22.0'}
             value={formData.rate}
             onChange={e => setFormData({ ...formData, rate: e.target.value })}
             inputProps={{ min: 0, step: 0.01 }}
@@ -170,7 +179,7 @@ const AddTaxDrawer = props => {
                 onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
               />
             }
-            label='Active'
+            label={common?.active || 'Active'}
           />
           <Box className='flex gap-4'>
             <Button
@@ -180,10 +189,14 @@ const AddTaxDrawer = props => {
               disabled={loading}
               startIcon={loading && <CircularProgress size={20} color='inherit' />}
             >
-              {loading ? 'Saving...' : taxData ? 'Update' : 'Submit'}
+              {loading
+                ? common?.saving || 'Saving...'
+                : taxData
+                  ? common?.update || 'Update'
+                  : common?.submit || 'Submit'}
             </Button>
             <Button fullWidth variant='tonal' color='error' onClick={handleReset}>
-              Cancel
+              {common?.cancel || 'Cancel'}
             </Button>
           </Box>
         </form>

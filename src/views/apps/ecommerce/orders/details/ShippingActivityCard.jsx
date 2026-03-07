@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import { styled } from '@mui/material/styles'
 import MuiTimeline from '@mui/lab/Timeline'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Styled Timeline component
 const Timeline = styled(MuiTimeline)({
@@ -52,13 +53,14 @@ const formatDate = dateString => {
 }
 
 const ShippingActivity = ({ orderData }) => {
+  const dictionary = useDictionary()
   // Map shipping status to display text
   const shippingStatusMap = {
-    pending: 'Pending',
-    processing: 'Processing',
-    shipped: 'Shipped',
-    delivered: 'Delivered',
-    cancelled: 'Cancelled'
+    pending: dictionary?.orders?.pending || 'Pending',
+    processing: dictionary?.orders?.processing || 'Processing',
+    shipped: dictionary?.orders?.shipped || 'Shipped',
+    delivered: dictionary?.orders?.delivered || 'Delivered',
+    cancelled: dictionary?.orders?.cancelled || 'Cancelled'
   }
 
   // Generate timeline events based on order data
@@ -69,8 +71,8 @@ const ShippingActivity = ({ orderData }) => {
 
     // 1. Order Placed
     events.push({
-      title: `Order was placed (Order ID: #${orderData.id})`,
-      description: 'Your order has been placed successfully',
+      title: `${dictionary?.orders?.orderWasPlaced || 'Order was placed'} (Order ID: #${orderData.id})`,
+      description: dictionary?.orders?.orderPlacedSuccess || 'Your order has been placed successfully',
       date: formatDate(orderData.created_at),
       status: 'completed'
     })
@@ -78,8 +80,8 @@ const ShippingActivity = ({ orderData }) => {
     // 2. Payment Status
     if (orderData.payment_status === 'completed' || orderData.payment_status === 'paid') {
       events.push({
-        title: 'Payment Confirmed',
-        description: `Payment received via ${orderData.payment_method || 'N/A'}`,
+        title: dictionary?.orders?.paymentConfirmed || 'Payment Confirmed',
+        description: `${dictionary?.orders?.paymentReceived || 'Payment received via'} ${orderData.payment_method || dictionary?.orders?.notAvailable || 'N/A'}`,
         date: formatDate(orderData.created_at), // Usually same as order creation
         status: 'completed'
       })
@@ -88,8 +90,8 @@ const ShippingActivity = ({ orderData }) => {
     // 3. Processing
     if (orderData.shipping_status !== 'pending') {
       events.push({
-        title: 'Order Processing',
-        description: 'Your order is being prepared for shipment',
+        title: dictionary?.orders?.orderProcessing || 'Order Processing',
+        description: dictionary?.orders?.orderPreparingShipment || 'Your order is being prepared for shipment',
         date: formatDate(orderData.created_at),
         status: 'completed'
       })
@@ -98,10 +100,10 @@ const ShippingActivity = ({ orderData }) => {
     // 4. Shipped
     if (orderData.shipped_at || orderData.shipping_status === 'shipped' || orderData.shipping_status === 'delivered') {
       events.push({
-        title: 'Dispatched',
+        title: dictionary?.orders?.dispatched || 'Dispatched',
         description: orderData.tracking_number
-          ? `Package shipped via ${orderData.shipping_method || 'standard'} (Tracking: ${orderData.tracking_number})`
-          : `Package shipped via ${orderData.shipping_method || 'standard'}`,
+          ? `${dictionary?.orders?.packageShippedVia || 'Package shipped via'} ${orderData.shipping_method || 'standard'} (Tracking: ${orderData.tracking_number})`
+          : `${dictionary?.orders?.packageShippedVia || 'Package shipped via'} ${orderData.shipping_method || 'standard'}`,
         date: formatDate(orderData.shipped_at),
         status: 'completed'
       })
@@ -110,8 +112,8 @@ const ShippingActivity = ({ orderData }) => {
     // 5. In Transit
     if (orderData.shipping_status === 'shipped' || orderData.shipping_status === 'delivered') {
       events.push({
-        title: 'In Transit',
-        description: 'Package is on the way',
+        title: dictionary?.orders?.inTransit || 'In Transit',
+        description: dictionary?.orders?.packageOnTheWay || 'Package is on the way',
         date: formatDate(orderData.shipped_at),
         status: 'completed'
       })
@@ -120,17 +122,19 @@ const ShippingActivity = ({ orderData }) => {
     // 6. Delivered
     if (orderData.delivered_at || orderData.shipping_status === 'delivered') {
       events.push({
-        title: 'Delivered',
-        description: 'Package has been delivered successfully',
+        title: dictionary?.orders?.delivered || 'Delivered',
+        description: dictionary?.orders?.packageDelivered || 'Package has been delivered successfully',
         date: formatDate(orderData.delivered_at),
         status: 'completed'
       })
     } else {
       // Expected delivery
       events.push({
-        title: 'Delivery',
+        title: dictionary?.orders?.delivery || 'Delivery',
         description:
-          orderData.shipping_status === 'shipped' ? 'Package will be delivered soon' : 'Waiting for shipment',
+          orderData.shipping_status === 'shipped'
+            ? dictionary?.orders?.deliverySoon || 'Package will be delivered soon'
+            : dictionary?.orders?.waitingForShipment || 'Waiting for shipment',
         date: '',
         status: 'pending'
       })
@@ -202,11 +206,12 @@ const ShippingActivity = ({ orderData }) => {
       }}
     >
       <Typography variant='body2'>
-        <strong>Shipping Method:</strong>{' '}
+        <strong>{dictionary?.orders?.shippingMethod || 'Shipping Method:'}</strong>{' '}
         {orderData.shipping_method?.charAt(0).toUpperCase() + orderData.shipping_method?.slice(1) || 'Standard'}
       </Typography>
       <Typography variant='body2'>
-        <strong>Shipping Cost:</strong> €{parseFloat(orderData.shipping_cost || 0).toFixed(2)}
+        <strong>{dictionary?.orders?.shippingCost || 'Shipping Cost:'}</strong> €
+        {parseFloat(orderData.shipping_cost || 0).toFixed(2)}
       </Typography>
       {deliveryAndWarrantyOptions.deliveryOptions.length > 0 && (
         <div className='flex flex-col gap-1 mt-2'>
@@ -228,19 +233,22 @@ const ShippingActivity = ({ orderData }) => {
       )}
       {orderData.tracking_number && (
         <Typography variant='body2'>
-          <strong>Tracking Number:</strong> {orderData.tracking_number}
+          <strong>{dictionary?.orders?.trackingNumber || 'Tracking Number:'}</strong> {orderData.tracking_number}
         </Typography>
       )}
       <Typography variant='body2'>
-        <strong>Status:</strong>{' '}
-        {shippingStatusMap[orderData.shipping_status] || orderData.shipping_status || 'Pending'}
+        <strong>{dictionary?.orders?.status || 'Status:'}</strong>{' '}
+        {shippingStatusMap[orderData.shipping_status] ||
+          orderData.shipping_status ||
+          dictionary?.orders?.pending ||
+          'Pending'}
       </Typography>
     </Box>
   ) : null
 
   return (
     <Card>
-      <CardHeader title='Shipping Activity' />
+      <CardHeader title={dictionary?.orders?.shippingActivity || 'Shipping Activity'} />
       <CardContent>
         {shippingInfo}
         <Timeline>

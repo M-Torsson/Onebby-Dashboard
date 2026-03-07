@@ -9,6 +9,7 @@ import Skeleton from '@mui/material/Skeleton'
 
 import CustomAvatar from '@core/components/mui/Avatar'
 import AnimatedStatNumber from '@views/dashboards/crm/AnimatedStatNumber'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const formatCompact = value => {
   const number = Number(value || 0)
@@ -22,31 +23,33 @@ const formatCompact = value => {
 }
 
 const StatisticsOverviewCard = ({ loading, stats }) => {
+  const dictionary = useDictionary()
+
   const data = [
     {
       value: stats?.categories,
-      title: 'Categories',
+      title: dictionary?.dashboard?.categories || 'Categories',
       color: 'primary',
       icon: 'tabler-category',
       formatter: value => formatCompact(value)
     },
     {
       value: stats?.brands,
-      title: 'Brands',
+      title: dictionary?.dashboard?.brands || 'Brands',
       color: 'info',
       icon: 'tabler-award',
       formatter: value => formatCompact(value)
     },
     {
       value: stats?.products,
-      title: 'Products',
+      title: dictionary?.dashboard?.products || 'Products',
       color: 'error',
       icon: 'tabler-shopping-cart',
       formatter: value => formatCompact(value)
     },
     {
       value: stats?.revenue,
-      title: 'Revenue',
+      title: dictionary?.dashboard?.revenue || 'Revenue',
       color: 'success',
       icon: 'tabler-currency-dollar',
       formatter: value => `€${formatCompact(value)}`

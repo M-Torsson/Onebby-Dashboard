@@ -25,13 +25,14 @@ import GlobalStyles from '@mui/material/GlobalStyles'
 import MenuItem from '@mui/material/MenuItem'
 import CustomTextField from '@core/components/mui/TextField'
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const V1_BASE_URL = `${API_BASE_URL}/api/admin`
 const API_V1_BASE_URL = `${API_BASE_URL}/api/v1`
-const WARRANTY_API_KEY = 'OnebbyAPIKey2025P9mK7xL4rT8nW2qF5vB3cH6jD9zYaXbRcGdTeUf1MwNyQsV'
 
 const WarrantyAdd = ({ dictionary = { common: {} } }) => {
   const router = useRouter()
+  const dict = useDictionary()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
 
@@ -54,9 +55,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
     is_active: true
   })
 
-  const [featuresList, setFeaturesList] = useState([
-    { id: 1, key: '', value: '' }
-  ])
+  const [featuresList, setFeaturesList] = useState([{ id: 1, key: '', value: '' }])
 
   useEffect(() => {
     fetchCategories()
@@ -184,13 +183,13 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
     try {
       setFetchingData(true)
       const response = await fetch(`${V1_BASE_URL}/warranties/${editId}`, {
-        headers: { 'X-API-Key': WARRANTY_API_KEY }
+        headers: { 'X-API-Key': API_KEY }
       })
 
       if (response.ok) {
         const result = await response.json()
         const data = result.data || result
-        
+
         setFormData({
           title: data.title || '',
           price: data.price || '',
@@ -204,11 +203,13 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         setImagePreview(data.image || '')
 
         if (data.features && data.features.length > 0) {
-          setFeaturesList(data.features.map((feat, index) => ({
-            id: index + 1,
-            key: feat.key || '',
-            value: feat.value || ''
-          })))
+          setFeaturesList(
+            data.features.map((feat, index) => ({
+              id: index + 1,
+              key: feat.key || '',
+              value: feat.value || ''
+            }))
+          )
         } else {
           setFeaturesList([{ id: 1, key: '', value: '' }])
         }
@@ -240,9 +241,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
   }
 
   const handleFeatureChange = (id, field, value) => {
-    setFeaturesList(
-      featuresList.map(feat => (feat.id === id ? { ...feat, [field]: value } : feat))
-    )
+    setFeaturesList(featuresList.map(feat => (feat.id === id ? { ...feat, [field]: value } : feat)))
   }
 
   const uploadImageToCloudinary = async file => {
@@ -288,9 +287,9 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
     try {
       setUploadingImage(true)
       setError('')
-      
+
       const imageUrl = await uploadImageToCloudinary(file)
-      
+
       setImagePreview(imageUrl)
       setFormData({ ...formData, image: imageUrl })
       setSuccess('Image uploaded successfully!')
@@ -356,7 +355,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': WARRANTY_API_KEY
+          'X-API-Key': API_KEY
         },
         body: JSON.stringify(payload)
       })
@@ -369,7 +368,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
       } else {
         const errorData = await response.json().catch(() => ({}))
         let errorMessage = 'Failed to save warranty'
-        
+
         if (errorData.detail) {
           if (typeof errorData.detail === 'string') {
             errorMessage = errorData.detail
@@ -381,7 +380,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
         } else if (errorData.message) {
           errorMessage = errorData.message
         }
-        
+
         setError(errorMessage)
       }
     } catch (err) {
@@ -411,7 +410,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
             maxInlineSize: 'none !important',
             maxWidth: 'none !important'
           },
-          'main': {
+          main: {
             maxInlineSize: 'none !important',
             maxWidth: 'none !important'
           }
@@ -420,7 +419,11 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
 
       <Box sx={{ width: '100%', maxWidth: '1000px', margin: '24px auto', padding: '0 24px' }}>
         <Card>
-          <CardHeader title={editId ? 'Edit Warranty' : 'Add Warranty'} />
+          <CardHeader
+            title={
+              editId ? dict?.warranty?.editWarranty || 'Edit Warranty' : dict?.warranty?.addWarranty || 'Add Warranty'
+            }
+          />
           <CardContent>
             {error && (
               <Alert severity='error' onClose={() => setError('')} className='mb-4'>
@@ -437,11 +440,11 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
               {/* Title */}
               <Box>
                 <Typography variant='h6' className='mb-2'>
-                  Title
+                  {dict?.warranty?.title || 'Title'}
                 </Typography>
                 <CustomTextField
                   fullWidth
-                  placeholder='Enter warranty title'
+                  placeholder={dict?.warranty?.enterWarrantyTitle || 'Enter warranty title'}
                   value={formData.title}
                   onChange={e => setFormData({ ...formData, title: e.target.value })}
                 />
@@ -450,7 +453,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
               {/* Price */}
               <Box>
                 <Typography variant='h6' className='mb-2'>
-                  Price (in Euros)
+                  {dict?.warranty?.priceInEuros || 'Price (in Euros)'}
                 </Typography>
                 <CustomTextField
                   fullWidth
@@ -474,11 +477,11 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
               {/* Subtitle */}
               <Box>
                 <Typography variant='h6' className='mb-2'>
-                  Subtitle
+                  {dict?.warranty?.subtitle || 'Subtitle'}
                 </Typography>
                 <CustomTextField
                   fullWidth
-                  placeholder='Enter subtitle'
+                  placeholder={dict?.warranty?.enterSubtitle || 'Enter subtitle'}
                   value={formData.subtitle}
                   onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
                 />
@@ -487,7 +490,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
               {/* Meta Description */}
               <Box>
                 <Typography variant='h6' className='mb-2'>
-                  Meta Description
+                  {dict?.warranty?.metaDescription || 'Meta Description'}
                 </Typography>
                 <CustomTextField
                   fullWidth
@@ -495,14 +498,14 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                   rows={4}
                   value={formData.meta_description}
                   onChange={e => setFormData({ ...formData, meta_description: e.target.value })}
-                  placeholder='Enter meta description'
+                  placeholder={dict?.warranty?.enterMetaDescription || 'Enter meta description'}
                 />
               </Box>
 
               {/* Image Upload */}
               <Box>
                 <Typography variant='h6' className='mb-2'>
-                  Image
+                  {dict?.warranty?.image || 'Image'}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                   <Box
@@ -557,10 +560,10 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                   </Box>
                   <Box>
                     <Typography variant='body2' color='text.secondary'>
-                      Click to upload warranty image
+                      {dict?.warranty?.clickToUploadWarrantyImage || 'Click to upload warranty image'}
                     </Typography>
                     <Typography variant='caption' color='text.disabled'>
-                      Recommended size: 800x600px
+                      {dict?.warranty?.recommendedSize || 'Recommended size: 800x600px'}
                     </Typography>
                   </Box>
                 </Box>
@@ -569,7 +572,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
               {/* Features Section */}
               <Box>
                 <Box className='flex items-center justify-between mb-4'>
-                  <Typography variant='h6'>Features</Typography>
+                  <Typography variant='h6'>{dict?.warranty?.features || 'Features'}</Typography>
                   <IconButton
                     color='primary'
                     onClick={handleAddFeature}
@@ -584,14 +587,10 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                   <Card key={feature.id} className='mb-4 p-4 border'>
                     <Box className='flex items-center justify-between mb-3'>
                       <Typography variant='subtitle1' className='font-semibold'>
-                        Feature {index + 1}
+                        {dict?.warranty?.feature || 'Feature'} {index + 1}
                       </Typography>
                       {featuresList.length > 1 && (
-                        <IconButton
-                          color='error'
-                          onClick={() => handleRemoveFeature(feature.id)}
-                          size='small'
-                        >
+                        <IconButton color='error' onClick={() => handleRemoveFeature(feature.id)} size='small'>
                           <i className='tabler-trash' />
                         </IconButton>
                       )}
@@ -601,8 +600,8 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                       <Grid item xs={12} sm={6}>
                         <CustomTextField
                           fullWidth
-                          label='Key'
-                          placeholder='Feature key'
+                          label={dict?.warranty?.featureKey || 'Key'}
+                          placeholder={dict?.warranty?.featureKey || 'Feature key'}
                           value={feature.key}
                           onChange={e => handleFeatureChange(feature.id, 'key', e.target.value)}
                         />
@@ -610,8 +609,8 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                       <Grid item xs={12} sm={6}>
                         <CustomTextField
                           fullWidth
-                          label='Value'
-                          placeholder='Feature value'
+                          label={dict?.warranty?.featureValue || 'Value'}
+                          placeholder={dict?.warranty?.featureValue || 'Feature value'}
                           value={feature.value}
                           onChange={e => handleFeatureChange(feature.id, 'value', e.target.value)}
                         />
@@ -624,16 +623,16 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
               {/* Select Category */}
               <Box>
                 <FormControl fullWidth>
-                  <InputLabel>Select category</InputLabel>
+                  <InputLabel>{dict?.delivery?.selectCategory || 'Select category'}</InputLabel>
                   <Select
                     multiple
                     value={Array.isArray(formData.category_id) ? formData.category_id : []}
                     onChange={e => {
                       const newValue = e.target.value
                       const currentValue = formData.category_id || []
-                      
+
                       const added = newValue.filter(id => !currentValue.includes(id))
-                      
+
                       if (added.length > 0) {
                         const addedId = added[0]
                         const descendants = getAllDescendants(addedId)
@@ -644,7 +643,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                         setFormData({ ...formData, category_id: newValue })
                       }
                     }}
-                    input={<OutlinedInput label='Select category' />}
+                    input={<OutlinedInput label={dict?.delivery?.selectCategory || 'Select category'} />}
                     MenuProps={{
                       PaperProps: {
                         style: {
@@ -751,9 +750,7 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                             sx={{ p: 0, minWidth: 20 }}
                           >
                             <i
-                              className={
-                                expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'
-                              }
+                              className={expandedCategories?.[opt.id] ? 'tabler-chevron-down' : 'tabler-chevron-right'}
                               style={{ fontSize: opt.depth === 0 ? '1rem' : '0.875rem' }}
                             />
                           </IconButton>
@@ -775,14 +772,18 @@ const WarrantyAdd = ({ dictionary = { common: {} } }) => {
                     disabled={loading}
                     startIcon={loading && <CircularProgress size={20} />}
                   >
-                    {loading ? 'Saving...' : editId ? 'Update Warranty' : 'Create Warranty'}
+                    {loading
+                      ? dict?.delivery?.saving || 'Saving...'
+                      : editId
+                        ? dict?.warranty?.updateWarranty || 'Update Warranty'
+                        : dict?.warranty?.createWarranty || 'Create Warranty'}
                   </Button>
                   <Button
                     variant='tonal'
                     color='secondary'
                     onClick={() => router.push('/apps/ecommerce/warranty/list')}
                   >
-                    Cancel
+                    {dict?.warranty?.cancel || dict?.delivery?.cancel || 'Cancel'}
                   </Button>
                 </Box>
               </Box>

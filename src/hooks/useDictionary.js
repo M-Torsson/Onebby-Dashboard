@@ -10,28 +10,52 @@ import { useState, useEffect } from 'react'
 // Next Imports
 import { useParams } from 'next/navigation'
 
+// Config Imports
+import { i18n } from '@/configs/i18n'
+
+const dictionaryLoaders = {
+  en: () => import('@/data/dictionaries/en.json').then(module => module.default || module),
+  fr: () => import('@/data/dictionaries/fr.json').then(module => module.default || module),
+  it: () => import('@/data/dictionaries/it.json').then(module => module.default || module)
+}
+
 export const useDictionary = () => {
   const { lang } = useParams()
   const [dictionary, setDictionary] = useState({ common: {}, navigation: {} })
 
   useEffect(() => {
+    let isMounted = true
+
     const loadDictionary = async () => {
+      const normalizedLang = i18n.locales.includes(lang) ? lang : i18n.defaultLocale
+
       try {
-        const dict = await import(`@/data/dictionaries/${lang}.json`)
-        setDictionary(dict.default || dict)
+        const dict = await dictionaryLoaders[normalizedLang]()
+
+        if (isMounted) {
+          setDictionary(dict)
+        }
       } catch (error) {
-        // Fallback to English if the language file is not found
         try {
-          const dict = await import('@/data/dictionaries/en.json')
-          setDictionary(dict.default || dict)
+          const fallbackDictionary = await dictionaryLoaders[i18n.defaultLocale]()
+
+          if (isMounted) {
+            setDictionary(fallbackDictionary)
+          }
         } catch (fallbackError) {
-          // Failed to load fallback dictionary
+          if (isMounted) {
+            setDictionary({ common: {}, navigation: {} })
+          }
         }
       }
     }
 
     if (lang) {
       loadDictionary()
+    }
+
+    return () => {
+      isMounted = false
     }
   }, [lang])
 

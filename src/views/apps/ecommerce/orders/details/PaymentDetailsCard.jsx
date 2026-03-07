@@ -12,6 +12,7 @@ import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
 import Alert from '@mui/material/Alert'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // API Imports
 import { verifyPayment } from '@/services/paymentsApi'
@@ -29,6 +30,7 @@ const paymentStatusConfig = {
 }
 
 const PaymentDetailsCard = ({ orderData, onUpdate }) => {
+  const dictionary = useDictionary()
   // States
   const [paymentDetails, setPaymentDetails] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -63,7 +65,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
         if (!paymentId) {
           console.warn('⚠️ [PaymentDetailsCard] No payment_id found in order data')
           if (isMounted) {
-            setError('Payment ID not found in order data.')
+            setError(dictionary?.orders?.paymentIdNotFound || 'Payment ID not found in order data.')
             setPaymentDetails(null)
             setLoading(false)
           }
@@ -82,7 +84,10 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
         // If data is null, payment was not found in provider system (expected case)
         if (data === null) {
           console.warn('⚠️ [PaymentDetailsCard] Payment not found in provider system, showing basic info')
-          setError('Payment not found in payment provider. Showing basic information from order data.')
+          setError(
+            dictionary?.orders?.paymentNotFound ||
+              'Payment not found in payment provider. Showing basic information from order data.'
+          )
           setPaymentDetails(null)
         } else {
           console.log('[PaymentDetailsCard] Payment verified successfully')
@@ -98,9 +103,9 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
         let errorMessage = err.message || 'Failed to fetch payment details'
 
         if (errorMessage.includes('500')) {
-          errorMessage = 'Payment provider error. Please try again later.'
+          errorMessage = dictionary?.orders?.paymentProviderError || 'Payment provider error. Please try again later.'
         } else if (errorMessage.includes('authentication') || errorMessage.includes('API_KEY')) {
-          errorMessage = 'Authentication error. Please contact support.'
+          errorMessage = dictionary?.orders?.paymentAuthError || 'Authentication error. Please contact support.'
         }
 
         setError(errorMessage)
@@ -120,7 +125,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
 
   // Format date
   const formatDate = dateString => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return dictionary?.orders?.notAvailable || 'N/A'
     const date = new Date(dateString)
     return date.toLocaleString('en-US', {
       month: 'short',
@@ -134,14 +139,14 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
 
   // Format amount
   const formatAmount = amount => {
-    if (!amount) return 'N/A'
+    if (!amount) return dictionary?.orders?.notAvailable || 'N/A'
     return `€${parseFloat(amount).toFixed(2)}`
   }
 
   if (loading) {
     return (
       <Card>
-        <CardHeader title='Payment Details' />
+        <CardHeader title={dictionary?.orders?.paymentDetails || 'Payment Details'} />
         <CardContent>
           <Box display='flex' justifyContent='center' alignItems='center' minHeight='200px'>
             <CircularProgress />
@@ -154,7 +159,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
   if (error) {
     return (
       <Card>
-        <CardHeader title='Payment Details' />
+        <CardHeader title={dictionary?.orders?.paymentDetails || 'Payment Details'} />
         <CardContent>
           <Alert severity='warning' className='mb-4'>
             {error}
@@ -164,24 +169,29 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
           {orderData && (
             <Box>
               <Typography variant='subtitle2' className='mb-3'>
-                Basic Payment Information:
+                {dictionary?.orders?.basicPaymentInfo || 'Basic Payment Information'}
               </Typography>
 
               {/* Payment Method */}
               <Box className='flex items-center justify-between gap-4 mb-3'>
                 <Typography variant='body2' color='text.secondary'>
-                  Payment Method:
+                  {dictionary?.orders?.paymentMethod || 'Payment Method:'}
                 </Typography>
-                <Chip label={orderData.payment_method || 'N/A'} color='primary' size='small' variant='tonal' />
+                <Chip
+                  label={orderData.payment_method || dictionary?.orders?.notAvailable || 'N/A'}
+                  color='primary'
+                  size='small'
+                  variant='tonal'
+                />
               </Box>
 
               {/* Payment Status */}
               <Box className='flex items-center justify-between gap-4 mb-3'>
                 <Typography variant='body2' color='text.secondary'>
-                  Payment Status:
+                  {dictionary?.orders?.paymentStatus || 'Payment Status:'}
                 </Typography>
                 <Chip
-                  label={orderData.payment_status || 'N/A'}
+                  label={orderData.payment_status || dictionary?.orders?.notAvailable || 'N/A'}
                   color={orderData.payment_status === 'paid' ? 'success' : 'warning'}
                   size='small'
                   variant='tonal'
@@ -192,7 +202,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
               {orderData.payment_info?.payment_id && (
                 <Box className='flex items-center justify-between gap-4 mb-3'>
                   <Typography variant='body2' color='text.secondary'>
-                    Payment ID:
+                    {dictionary?.orders?.paymentId || 'Payment ID:'}
                   </Typography>
                   <Typography variant='body2' className='font-medium'>
                     {orderData.payment_info.payment_id}
@@ -203,7 +213,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
               {/* Total Amount */}
               <Box className='flex items-center justify-between gap-4'>
                 <Typography variant='body2' color='text.secondary'>
-                  Total Amount:
+                  {dictionary?.orders?.totalAmount || 'Total Amount:'}
                 </Typography>
                 <Typography variant='h6' className='font-semibold'>
                   {formatAmount(orderData.total_amount)}
@@ -218,26 +228,33 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
 
   return (
     <Card>
-      <CardHeader title='Payment Details' />
+      <CardHeader title={dictionary?.orders?.paymentDetails || 'Payment Details'} />
       <CardContent>
         {!paymentDetails ? (
           <Alert severity='info'>
-            <Typography variant='body2'>No payment information found for this order yet.</Typography>
+            <Typography variant='body2'>
+              {dictionary?.orders?.noPaymentInfo || 'No payment information found for this order yet.'}
+            </Typography>
           </Alert>
         ) : (
           <Box>
             {/* Payment Provider/Method */}
             <Box className='flex items-center justify-between gap-4 mb-4'>
               <Typography variant='body2' color='text.secondary'>
-                Payment Method:
+                {dictionary?.orders?.paymentMethod || 'Payment Method:'}
               </Typography>
-              <Chip label={orderData?.payment_method || 'N/A'} color='primary' size='small' variant='tonal' />
+              <Chip
+                label={orderData?.payment_method || dictionary?.orders?.notAvailable || 'N/A'}
+                color='primary'
+                size='small'
+                variant='tonal'
+              />
             </Box>
 
             {/* Payment ID */}
             <Box className='flex items-center justify-between gap-4 mb-4'>
               <Typography variant='body2' color='text.secondary'>
-                Transaction ID:
+                {dictionary?.orders?.transactionId || 'Transaction ID:'}
               </Typography>
               <Typography variant='body1' className='font-medium'>
                 {paymentDetails.transaction_number || paymentDetails.payment_id}
@@ -247,7 +264,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {/* Status */}
             <Box className='flex items-center justify-between gap-4 mb-4'>
               <Typography variant='body2' color='text.secondary'>
-                Status:
+                {dictionary?.orders?.status || 'Status:'}
               </Typography>
               <Chip
                 label={paymentStatusConfig[paymentDetails.status]?.text || paymentDetails.status}
@@ -260,7 +277,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {/* Amount */}
             <Box className='flex items-center justify-between gap-4 mb-4'>
               <Typography variant='body2' color='text.secondary'>
-                Amount:
+                {dictionary?.orders?.amount || 'Amount:'}
               </Typography>
               <Typography variant='h6' className='font-semibold'>
                 {formatAmount(paymentDetails.amount)}
@@ -270,10 +287,10 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {/* Payment Status */}
             <Box className='flex items-center justify-between gap-4 mb-4'>
               <Typography variant='body2' color='text.secondary'>
-                Paid:
+                {dictionary?.orders?.paidLabel || 'Paid:'}
               </Typography>
               <Chip
-                label={paymentDetails.is_paid ? 'Yes' : 'No'}
+                label={paymentDetails.is_paid ? dictionary?.delivery?.yes || 'Yes' : dictionary?.delivery?.no || 'No'}
                 color={paymentDetails.is_paid ? 'success' : 'error'}
                 size='small'
                 variant='tonal'
@@ -284,7 +301,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {paymentDetails.customer_email && (
               <Box className='flex items-center justify-between gap-4 mb-4'>
                 <Typography variant='body2' color='text.secondary'>
-                  Customer Email:
+                  {dictionary?.orders?.customerEmail || 'Customer Email:'}
                 </Typography>
                 <Typography variant='body2'>{paymentDetails.customer_email}</Typography>
               </Box>
@@ -294,7 +311,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {paymentDetails.deal_status && (
               <Box className='flex items-center justify-between gap-4 mb-4'>
                 <Typography variant='body2' color='text.secondary'>
-                  Deal Status:
+                  {dictionary?.orders?.dealStatus || 'Deal Status:'}
                 </Typography>
                 <Chip
                   label={paymentDetails.deal_status}
@@ -309,7 +326,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {paymentDetails.order_status && (
               <Box className='flex items-center justify-between gap-4 mb-4'>
                 <Typography variant='body2' color='text.secondary'>
-                  Order Status:
+                  {dictionary?.orders?.orderStatus || 'Order Status:'}
                 </Typography>
                 <Chip
                   label={paymentDetails.order_status}
@@ -324,7 +341,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {paymentDetails.paid_at && (
               <Box className='flex items-center justify-between gap-4 mb-4'>
                 <Typography variant='body2' color='text.secondary'>
-                  Paid At:
+                  {dictionary?.orders?.paidAt || 'Paid At:'}
                 </Typography>
                 <Typography variant='body2'>{formatDate(paymentDetails.paid_at)}</Typography>
               </Box>
@@ -333,7 +350,7 @@ const PaymentDetailsCard = ({ orderData, onUpdate }) => {
             {/* Date */}
             <Box className='flex items-center justify-between gap-4'>
               <Typography variant='body2' color='text.secondary'>
-                Created At:
+                {dictionary?.orders?.createdAt || 'Created At:'}
               </Typography>
               <Typography variant='body2'>{formatDate(paymentDetails.created_at)}</Typography>
             </Box>

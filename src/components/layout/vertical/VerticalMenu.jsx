@@ -114,17 +114,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           {dictionary['navigation'].companyUsers || 'Company Users'}
         </MenuItem>
 
-        <SubMenu label={dictionary['navigation'].invoice} icon={<i className='tabler-file-description' />}>
-          <MenuItem href={`/${locale}/apps/invoice/list`}>{dictionary['navigation'].list}</MenuItem>
-          <MenuItem href={`/${locale}/apps/invoice/preview/4987`} exactMatch={false} activeUrl='/apps/invoice/preview'>
-            {dictionary['navigation'].preview}
-          </MenuItem>
-          <MenuItem href={`/${locale}/apps/invoice/edit/4987`} exactMatch={false} activeUrl='/apps/invoice/edit'>
-            {dictionary['navigation'].edit}
-          </MenuItem>
-          <MenuItem href={`/${locale}/apps/invoice/add`}>{dictionary['navigation'].add}</MenuItem>
-        </SubMenu>
-
         <SubMenu label={dictionary['navigation'].pages} icon={<i className='tabler-settings' />}>
           <MenuItem href={`/${locale}/pages/user-profile`}>{dictionary['navigation'].userProfile}</MenuItem>
           <MenuItem href={`/${locale}/pages/account-settings`}>{dictionary['navigation'].accountSettings}</MenuItem>

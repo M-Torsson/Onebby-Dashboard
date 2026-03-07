@@ -40,6 +40,7 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -201,9 +202,36 @@ const OrderListTable = ({ orderData }) => {
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const dictionary = useDictionary()
 
   // Hooks
   const { lang: locale } = useParams()
+
+  const getPaymentInfo = statusCode => {
+    const statusMap = {
+      1: { text: dictionary?.orders?.paid || 'Paid', color: 'success', colorClassName: 'text-success' },
+      2: { text: dictionary?.orders?.pending || 'Pending', color: 'warning', colorClassName: 'text-warning' },
+      3: { text: dictionary?.orders?.cancelled || 'Cancelled', color: 'secondary', colorClassName: 'text-secondary' },
+      4: { text: dictionary?.orders?.failed || 'Failed', color: 'error', colorClassName: 'text-error' },
+      5: { text: dictionary?.orders?.refunded || 'Refunded', color: 'info', colorClassName: 'text-info' }
+    }
+
+    return statusMap[statusCode] || statusMap[2]
+  }
+
+  const getShippingStatusText = status => {
+    const statusMap = {
+      delivered: dictionary?.orders?.delivered || 'Delivered',
+      shipped: dictionary?.orders?.outForDelivery || 'Out for Delivery',
+      pending: dictionary?.orders?.pending || 'Pending',
+      cancelled: dictionary?.orders?.cancelled || 'Cancelled',
+      processing: dictionary?.orders?.processing || 'Processing',
+      confirmed: dictionary?.orders?.confirmed || 'Confirmed',
+      'ready-to-pickup': dictionary?.orders?.readyToPickup || 'Ready to Pickup'
+    }
+
+    return statusMap[status] || status?.charAt(0).toUpperCase() + status?.slice(1)
+  }
 
   // Convert API data to table format when orderData changes
   useEffect(() => {
@@ -236,7 +264,7 @@ const OrderListTable = ({ orderData }) => {
         )
       },
       columnHelper.accessor('order', {
-        header: 'Order',
+        header: dictionary?.orders?.order || 'ORDER',
         cell: ({ row }) => (
           <Typography
             component={Link}
@@ -246,7 +274,7 @@ const OrderListTable = ({ orderData }) => {
         )
       }),
       columnHelper.accessor('customer', {
-        header: 'Customers',
+        header: dictionary?.orders?.customers || 'CUSTOMERS',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             {getAvatar({ avatar: row.original.avatar, customer: row.original.customer })}
@@ -265,32 +293,31 @@ const OrderListTable = ({ orderData }) => {
         )
       }),
       columnHelper.accessor('date', {
-        header: 'Date',
+        header: dictionary?.orders?.date || 'DATE',
         cell: ({ row }) => (
           <Typography>{`${new Date(row.original.date).toDateString()}, ${row.original.time}`}</Typography>
         )
       }),
       columnHelper.accessor('payment', {
-        header: 'Payment',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i
-              className={classnames(
-                'tabler-circle-filled bs-2.5 is-2.5',
-                paymentStatus[row.original.payment].colorClassName
-              )}
-            />
-            <Typography color={`${paymentStatus[row.original.payment].color}.main`} className='font-medium'>
-              {paymentStatus[row.original.payment].text}
-            </Typography>
-          </div>
-        )
+        header: dictionary?.orders?.payment || 'PAYMENT',
+        cell: ({ row }) => {
+          const paymentInfo = getPaymentInfo(row.original.payment)
+
+          return (
+            <div className='flex items-center gap-1'>
+              <i className={classnames('tabler-circle-filled bs-2.5 is-2.5', paymentInfo.colorClassName)} />
+              <Typography color={`${paymentInfo.color}.main`} className='font-medium'>
+                {paymentInfo.text}
+              </Typography>
+            </div>
+          )
+        }
       }),
       columnHelper.accessor('status', {
-        header: 'Shipping Status',
+        header: dictionary?.orders?.shippingStatus || 'SHIPPING STATUS',
         cell: ({ row }) => (
           <Chip
-            label={row.original.status}
+            label={getShippingStatusText(row.original.statusValue)}
             color={getStatusColor(row.original.statusValue)}
             variant='tonal'
             size='small'
@@ -298,7 +325,7 @@ const OrderListTable = ({ orderData }) => {
         )
       }),
       columnHelper.accessor('method', {
-        header: 'Method',
+        header: dictionary?.orders?.method || 'METHOD',
         cell: ({ row }) => {
           const method = row.original.method
           const transactionId = row.original.paymentTransactionId
@@ -312,7 +339,7 @@ const OrderListTable = ({ orderData }) => {
                 </div>
                 <div className='flex flex-col'>
                   <Typography className='font-medium' variant='body2'>
-                    PayPlug
+                    {dictionary?.orders?.payplug || 'PayPlug'}
                   </Typography>
                   {transactionId && (
                     <Typography variant='caption' color='text.secondary'>
@@ -333,7 +360,7 @@ const OrderListTable = ({ orderData }) => {
                 </div>
                 <div className='flex flex-col'>
                   <Typography className='font-medium' variant='body2'>
-                    Floa
+                    {dictionary?.orders?.floa || 'Floa'}
                   </Typography>
                   {transactionId && (
                     <Typography variant='caption' color='text.secondary'>
@@ -354,7 +381,7 @@ const OrderListTable = ({ orderData }) => {
                 </div>
                 <div className='flex flex-col'>
                   <Typography className='font-medium' variant='body2'>
-                    PayPal
+                    {dictionary?.orders?.paypal || 'PayPal'}
                   </Typography>
                   {transactionId && (
                     <Typography variant='caption' color='text.secondary'>
@@ -374,7 +401,7 @@ const OrderListTable = ({ orderData }) => {
               </div>
               <div className='flex flex-col'>
                 <Typography className='font-medium' variant='body2'>
-                  Mastercard
+                  {dictionary?.orders?.mastercard || 'Mastercard'}
                 </Typography>
                 <Typography variant='caption' color='text.secondary'>
                   ...{row.original.methodNumber}
@@ -385,7 +412,7 @@ const OrderListTable = ({ orderData }) => {
         }
       }),
       columnHelper.accessor('action', {
-        header: 'Action',
+        header: dictionary?.orders?.action || 'ACTION',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <OptionMenu
@@ -393,13 +420,13 @@ const OrderListTable = ({ orderData }) => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'View',
+                  text: dictionary?.actions?.view || 'View',
                   icon: 'tabler-eye',
                   href: getLocalizedUrl(`/apps/ecommerce/orders/details/${row.original.order}`, locale),
                   linkProps: { className: 'flex items-center gap-2 is-full plb-2 pli-4' }
                 },
                 {
-                  text: 'Delete',
+                  text: dictionary?.actions?.delete || 'Delete',
                   icon: 'tabler-trash',
                   menuItemProps: {
                     onClick: () => setData(data?.filter(order => order.id !== row.original.id)),
@@ -414,7 +441,7 @@ const OrderListTable = ({ orderData }) => {
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data]
+    [data, dictionary]
   )
 
   const table = useReactTable({
@@ -466,7 +493,7 @@ const OrderListTable = ({ orderData }) => {
         <DebouncedInput
           value={globalFilter ?? ''}
           onChange={value => setGlobalFilter(String(value))}
-          placeholder='Search Order'
+          placeholder={dictionary?.orders?.searchOrder || 'Search Order'}
           className='sm:is-auto'
         />
         <div className='flex items-center max-sm:flex-col gap-4 max-sm:is-full is-auto'>
@@ -487,7 +514,7 @@ const OrderListTable = ({ orderData }) => {
             startIcon={<i className='tabler-upload' />}
             className='max-sm:is-full is-auto'
           >
-            Export
+            {dictionary?.orders?.export || dictionary?.actions?.export || 'Export'}
           </Button>
         </div>
       </CardContent>

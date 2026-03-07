@@ -9,6 +9,7 @@ import Skeleton from '@mui/material/Skeleton'
 import { useTheme } from '@mui/material/styles'
 
 import tableStyles from '@core/styles/table.module.css'
+import { useDictionary } from '@/hooks/useDictionary'
 
 const statusMap = {
   completed: { label: 'Completed', color: 'success' },
@@ -100,6 +101,7 @@ const truncate = (value, max = 26) => {
 
 const RecentPaymentsTable = ({ loading, payments = [] }) => {
   const theme = useTheme()
+  const dictionary = useDictionary()
 
   return (
     <Card
@@ -111,15 +113,15 @@ const RecentPaymentsTable = ({ loading, payments = [] }) => {
       }}
     >
       <CardHeader
-        title='Latest Payments'
-        subheader='Last 10 payment records'
+        title={dictionary?.dashboard?.recentPayments || 'Recent Payments'}
+        subheader={`${dictionary?.dashboard?.items || 'Items'}: ${payments.length}`}
         action={
           loading ? null : (
             <Chip
               size='small'
               variant='tonal'
               color='primary'
-              label={`${payments.length} Records`}
+              label={`${payments.length} ${dictionary?.dashboard?.items || 'Items'}`}
               sx={{ mt: 1.5, mr: 1.5, fontWeight: 600 }}
             />
           )

@@ -52,6 +52,7 @@ import AddTaxDrawer from './AddTaxDrawer'
 
 // Config Imports
 import { API_BASE_URL, API_KEY } from '@/configs/apiConfig'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -86,6 +87,8 @@ const columnHelper = createColumnHelper()
 
 const TaxClassTable = ({ dictionary = { common: {} } }) => {
   const { lang: locale } = useParams()
+  const liveDictionary = useDictionary()
+  const common = liveDictionary?.common || dictionary.common || {}
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -115,10 +118,10 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         const taxClasses = result.data || []
         setData(taxClasses)
       } else {
-        setError('Failed to load tax classes')
+        setError(common?.taxLoadFailed || 'Failed to load tax classes')
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(common?.networkError || 'Network error. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -139,7 +142,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
       })
 
       if (response.ok) {
-        setSuccess('Tax class deleted successfully!')
+        setSuccess(common?.taxDeletedSuccess || 'Tax class deleted successfully!')
         fetchTaxClasses()
         setDeleteDialogOpen(false)
         setTaxToDelete(null)
@@ -158,6 +161,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
             errorDetail.includes('integrity')
           ) {
             errorMessage =
+              common?.taxDeleteInUse ||
               'Cannot delete this tax class because it is currently assigned to one or more products. Please change the tax class for those products first, then try again.'
           } else if (errorData.detail) {
             errorMessage = errorData.detail
@@ -174,7 +178,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         setDeleteDialogOpen(false)
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(common?.networkError || 'Network error. Please try again.')
       setDeleteDialogOpen(false)
     }
   }
@@ -199,7 +203,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
     handleCloseDrawer()
   }
 
-  const handleToggleStatus = async (taxClass) => {
+  const handleToggleStatus = async taxClass => {
     try {
       const newStatus = !taxClass.is_active
       const response = await fetch(`${ADMIN_BASE_URL}/tax-classes/${taxClass.id}`, {
@@ -216,14 +220,18 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
       })
 
       if (response.ok) {
-        setSuccess(`Tax class ${newStatus ? 'activated' : 'deactivated'} successfully!`)
+        setSuccess(
+          newStatus
+            ? common?.taxActivatedSuccess || 'Tax class activated successfully!'
+            : common?.taxDeactivatedSuccess || 'Tax class deactivated successfully!'
+        )
         fetchTaxClasses()
         setTimeout(() => setSuccess(''), 3000)
       } else {
-        setError('Failed to update tax class status')
+        setError(common?.taxStatusUpdateFailed || 'Failed to update tax class status')
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError(common?.networkError || 'Network error. Please try again.')
     }
   }
 
@@ -252,7 +260,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         )
       },
       columnHelper.accessor('name', {
-        header: dictionary.common?.taxName || 'Tax Name',
+        header: common?.taxName || 'Tax Name',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <div className='flex flex-col'>
@@ -264,11 +272,11 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         )
       }),
       columnHelper.accessor('rate', {
-        header: dictionary.common?.taxRate || 'Tax Rate (%)',
+        header: common?.taxRate || 'Tax Rate (%)',
         cell: ({ row }) => <Typography color='text.primary'>{row.original.rate}%</Typography>
       }),
       columnHelper.accessor('is_active', {
-        header: dictionary.common?.status || 'Status',
+        header: common?.status || 'Status',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <Switch
@@ -277,11 +285,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
               color='success'
             />
             <Chip
-              label={
-                row.original.is_active
-                  ? dictionary.common?.active || 'Active'
-                  : dictionary.common?.inactive || 'Inactive'
-              }
+              label={row.original.is_active ? common?.active || 'Active' : common?.inactive || 'Inactive'}
               variant='tonal'
               color={row.original.is_active ? 'success' : 'error'}
               size='small'
@@ -290,7 +294,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         )
       }),
       columnHelper.accessor('created_at', {
-        header: dictionary.common?.createdAt || 'Created At',
+        header: common?.createdAt || 'Created At',
         cell: ({ row }) => (
           <Typography>
             {row.original.created_at ? new Date(row.original.created_at).toLocaleDateString() : '-'}
@@ -298,7 +302,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         )
       }),
       columnHelper.accessor('action', {
-        header: dictionary.common?.action || 'Action',
+        header: common?.action || 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton onClick={() => handleEditTax(row.original)}>
@@ -312,7 +316,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
         enableSorting: false
       })
     ],
-    []
+    [common]
   )
 
   const table = useReactTable({
@@ -346,7 +350,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
   if (loading) {
     return (
       <Card>
-        <CardHeader title={dictionary.common?.taxClasses || 'Tax Classes'} />
+        <CardHeader title={common?.taxClasses || 'Tax Classes'} />
         <div className='flex justify-center items-center min-h-[400px]'>
           <CircularProgress />
         </div>
@@ -357,7 +361,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
   return (
     <>
       <Card>
-        <CardHeader title={dictionary.common?.taxClasses || 'Tax Classes'} />
+        <CardHeader title={common?.taxClasses || 'Tax Classes'} />
         {error && (
           <Alert severity='error' onClose={() => setError('')} className='m-6'>
             {error}
@@ -372,7 +376,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
           <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
-            placeholder={dictionary.common?.searchTaxClasses || 'Search Tax Classes'}
+            placeholder={common?.searchTaxClasses || 'Search Tax Classes'}
             className='is-full sm:is-auto'
           />
           <div className='flex gap-4'>
@@ -387,7 +391,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
               <MenuItem value='50'>50</MenuItem>
             </CustomTextField>
             <Button variant='contained' onClick={handleAddTax} startIcon={<i className='tabler-plus' />}>
-              {dictionary.common?.addTaxClass || 'Add Tax Class'}
+              {common?.addTaxClass || 'Add Tax Class'}
             </Button>
           </div>
         </div>
@@ -422,7 +426,7 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                    {dictionary.common?.noTaxClassesAvailable || 'No tax classes available'}
+                    {common?.noTaxClassesAvailable || 'No tax classes available'}
                   </td>
                 </tr>
               </tbody>
@@ -449,18 +453,21 @@ const TaxClassTable = ({ dictionary = { common: {} } }) => {
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Tax Class</DialogTitle>
+        <DialogTitle>{common?.deleteTaxClass || 'Delete Tax Class'}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the tax class "{taxToDelete?.name}"? This action cannot be undone.
+            {(
+              common?.deleteTaxClassMessage ||
+              'Are you sure you want to delete the tax class "{name}"? This action cannot be undone.'
+            ).replace('{name}', taxToDelete?.name || '')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
-            Cancel
+            {common?.cancel || 'Cancel'}
           </Button>
           <Button onClick={confirmDeleteTax} variant='contained' color='error'>
-            Delete
+            {common?.delete || 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

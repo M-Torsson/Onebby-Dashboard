@@ -28,6 +28,7 @@ import {
 
 // Component Imports
 import Link from '@components/Link'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -53,12 +54,12 @@ const OrderTable = ({ orderData }) => {
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const dictionary = useDictionary()
 
   // Convert API items to table format
   useEffect(() => {
     if (orderData?.items && Array.isArray(orderData.items)) {
       const formattedItems = orderData.items.map(item => {
-        // Parse delivery_option and warranty_option if they exist
         let deliveryOption = null
         let warrantyOption = null
 
@@ -68,8 +69,8 @@ const OrderTable = ({ orderData }) => {
           } else if (item.delivery_option && typeof item.delivery_option === 'object') {
             deliveryOption = item.delivery_option
           }
-        } catch (e) {
-          console.error('[OrderDetailsCard] Failed to parse delivery_option:', e)
+        } catch (error) {
+          console.error('[OrderDetailsCard] Failed to parse delivery_option:', error)
         }
 
         try {
@@ -78,24 +79,25 @@ const OrderTable = ({ orderData }) => {
           } else if (item.warranty_option && typeof item.warranty_option === 'object') {
             warrantyOption = item.warranty_option
           }
-        } catch (e) {
-          console.error('[OrderDetailsCard] Failed to parse warranty_option:', e)
+        } catch (error) {
+          console.error('[OrderDetailsCard] Failed to parse warranty_option:', error)
         }
 
         return {
           productName: item.product_name_en || item.product_title?.split(' – ')[0] || item.product_title,
           productImage: item.product_image || '/images/apps/ecommerce/product-1.png',
-          brand: item.product_sku || 'N/A',
-          price: parseFloat(item.unit_price),
-          quantity: item.quantity,
-          total: parseFloat(item.subtotal),
-          deliveryOption: deliveryOption,
-          warrantyOption: warrantyOption
+          brand: item.product_sku || dictionary?.orders?.notAvailable || 'N/A',
+          price: parseFloat(item.unit_price || 0),
+          quantity: item.quantity || 0,
+          total: parseFloat(item.subtotal || 0),
+          deliveryOption,
+          warrantyOption
         }
       })
+
       setData(formattedItems)
     }
-  }, [orderData])
+  }, [orderData, dictionary])
 
   const columns = useMemo(
     () => [
@@ -122,7 +124,7 @@ const OrderTable = ({ orderData }) => {
         )
       },
       columnHelper.accessor('productName', {
-        header: 'Product',
+        header: dictionary?.orders?.productColumn || 'PRODUCT',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <img src={row.original.productImage} alt={row.original.productName} height={34} className='rounded' />
@@ -152,20 +154,20 @@ const OrderTable = ({ orderData }) => {
         )
       }),
       columnHelper.accessor('price', {
-        header: 'Price',
+        header: dictionary?.orders?.priceColumn || 'PRICE',
         cell: ({ row }) => <Typography>€{row.original.price.toFixed(2)}</Typography>
       }),
       columnHelper.accessor('quantity', {
-        header: 'Qty',
+        header: dictionary?.orders?.qtyColumn || 'QTY',
         cell: ({ row }) => <Typography>{`${row.original.quantity}`}</Typography>
       }),
       columnHelper.accessor('total', {
-        header: 'Total',
+        header: dictionary?.orders?.totalColumn || 'TOTAL',
         cell: ({ row }) => <Typography>€{row.original.total.toFixed(2)}</Typography>
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [dictionary]
   )
 
   const table = useReactTable({
@@ -230,7 +232,7 @@ const OrderTable = ({ orderData }) => {
           <tbody>
             <tr>
               <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                No data available
+                {dictionary?.common?.noDataAvailable || 'No data available'}
               </td>
             </tr>
           </tbody>
@@ -256,6 +258,7 @@ const OrderTable = ({ orderData }) => {
 }
 
 const OrderDetailsCard = ({ orderData }) => {
+  const dictionary = useDictionary()
   // Calculate totals from API data
   const subtotal = orderData?.subtotal ? parseFloat(orderData.subtotal) : 0
   const shippingCost = orderData?.shipping_cost ? parseFloat(orderData.shipping_cost) : 0
@@ -296,13 +299,13 @@ const OrderDetailsCard = ({ orderData }) => {
 
   return (
     <Card>
-      <CardHeader title='Order Details' />
+      <CardHeader title={dictionary?.orders?.orderDetails || 'Order Details'} />
       <OrderTable orderData={orderData} />
       <CardContent className='flex justify-end'>
         <div>
           <div className='flex items-center gap-12'>
             <Typography color='text.primary' className='min-is-[100px]'>
-              Subtotal:
+              {dictionary?.orders?.subtotal || 'Subtotal:'}
             </Typography>
             <Typography color='text.primary' className='font-medium'>
               {currency === 'EUR' ? '€' : '$'}
@@ -312,7 +315,7 @@ const OrderDetailsCard = ({ orderData }) => {
           {deliveryTotal > 0 && (
             <div className='flex items-center gap-12'>
               <Typography color='text.primary' className='min-is-[100px]'>
-                Delivery Services:
+                {dictionary?.orders?.deliveryServices || 'Delivery Services:'}
               </Typography>
               <Typography color='text.primary' className='font-medium text-success'>
                 {currency === 'EUR' ? '€' : '$'}
@@ -323,7 +326,7 @@ const OrderDetailsCard = ({ orderData }) => {
           {warrantyTotal > 0 && (
             <div className='flex items-center gap-12'>
               <Typography color='text.primary' className='min-is-[100px]'>
-                Warranty Services:
+                {dictionary?.orders?.warrantyServices || 'Warranty Services:'}
               </Typography>
               <Typography color='text.primary' className='font-medium text-info'>
                 {currency === 'EUR' ? '€' : '$'}
@@ -333,7 +336,7 @@ const OrderDetailsCard = ({ orderData }) => {
           )}
           <div className='flex items-center gap-12'>
             <Typography color='text.primary' className='min-is-[100px]'>
-              Shipping Fee:
+              {dictionary?.orders?.shippingFee || dictionary?.orders?.shippingCost || 'Shipping Fee:'}
             </Typography>
             <Typography color='text.primary' className='font-medium'>
               {currency === 'EUR' ? '€' : '$'}
@@ -342,7 +345,7 @@ const OrderDetailsCard = ({ orderData }) => {
           </div>
           <div className='flex items-center gap-12'>
             <Typography color='text.primary' className='min-is-[100px]'>
-              Tax:
+              {dictionary?.orders?.tax || 'Tax:'}
             </Typography>
             <Typography color='text.primary' className='font-medium'>
               {currency === 'EUR' ? '€' : '$'}
@@ -351,7 +354,7 @@ const OrderDetailsCard = ({ orderData }) => {
           </div>
           <div className='flex items-center gap-12'>
             <Typography color='text.primary' className='font-medium min-is-[100px]'>
-              Total:
+              {dictionary?.orders?.total || 'Total:'}
             </Typography>
             <Typography color='text.primary' className='font-medium'>
               {currency === 'EUR' ? '€' : '$'}

@@ -6,19 +6,25 @@
 import Pagination from '@mui/material/Pagination'
 import Typography from '@mui/material/Typography'
 
-const TablePaginationComponent = ({ table, totalCount }) => {
+const TablePaginationComponent = ({ table, totalCount, labels }) => {
   const pageIndex = table.getState().pagination.pageIndex
   const pageSize = table.getState().pagination.pageSize
 
   // Use totalCount for manual pagination, or filtered rows for client-side pagination
   const total = totalCount !== undefined ? totalCount : table.getFilteredRowModel().rows.length
   const pageCount = Math.ceil(total / pageSize)
+  const paginationLabels = {
+    showing: labels?.showing || 'Showing',
+    to: labels?.to || 'to',
+    of: labels?.of || 'of',
+    entries: labels?.entries || 'entries'
+  }
 
   return (
     <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
       <Typography color='text.disabled'>
-        {`Showing ${total === 0 ? 0 : pageIndex * pageSize + 1}
-        to ${Math.min((pageIndex + 1) * pageSize, total)} of ${total} entries`}
+        {`${paginationLabels.showing} ${total === 0 ? 0 : pageIndex * pageSize + 1}
+        ${paginationLabels.to} ${Math.min((pageIndex + 1) * pageSize, total)} ${paginationLabels.of} ${total} ${paginationLabels.entries}`}
       </Typography>
       <Pagination
         shape='rounded'

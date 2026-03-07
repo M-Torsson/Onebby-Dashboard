@@ -46,6 +46,7 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { useDictionary } from '@/hooks/useDictionary'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -81,6 +82,15 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 const columnHelper = createColumnHelper()
 
 const UserListTable = () => {
+  const dictionary = useDictionary()
+  const userDictionary = dictionary?.users || {}
+  const actionDictionary = dictionary?.actions || {}
+  const paginationLabels = {
+    showing: userDictionary.showing || 'Showing',
+    to: userDictionary.to || 'to',
+    of: userDictionary.of || 'of',
+    entries: userDictionary.entries || 'entries'
+  }
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [rowSelection, setRowSelection] = useState({})
@@ -175,7 +185,7 @@ const UserListTable = () => {
         )
       },
       columnHelper.accessor('first_name', {
-        header: 'User',
+        header: userDictionary.user || 'USER',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
             <CustomAvatar skin='light' size={34}>
@@ -183,7 +193,7 @@ const UserListTable = () => {
             </CustomAvatar>
             <div className='flex flex-col items-start'>
               <Typography color='text.primary' className='font-medium'>
-                {row.original.title && `${row.original.title} `}
+                {row.original.title && `${userDictionary.sig || row.original.title} `}
                 {row.original.first_name} {row.original.last_name}
               </Typography>
               <Typography variant='body2'>{row.original.email}</Typography>
@@ -192,7 +202,7 @@ const UserListTable = () => {
         )
       }),
       columnHelper.accessor('id', {
-        header: 'User ID',
+        header: userDictionary.userId || 'USER ID',
         cell: ({ row }) => (
           <Typography color='text.primary' className='font-medium'>
             #{row.original.id}
@@ -200,10 +210,10 @@ const UserListTable = () => {
         )
       }),
       columnHelper.accessor('is_active', {
-        header: 'Status',
+        header: userDictionary.status || 'STATUS',
         cell: ({ row }) => (
           <Chip
-            label={row.original.is_active ? 'Active' : 'Inactive'}
+            label={row.original.is_active ? userDictionary.active || 'Active' : userDictionary.inactive || 'Inactive'}
             color={row.original.is_active ? 'success' : 'secondary'}
             size='small'
             variant='tonal'
@@ -211,14 +221,14 @@ const UserListTable = () => {
         )
       }),
       columnHelper.accessor('created_at', {
-        header: 'Registered',
+        header: userDictionary.registered || 'REGISTERED',
         cell: ({ row }) => {
           const date = new Date(row.original.created_at)
-          return <Typography>{date.toLocaleDateString()}</Typography>
+          return <Typography>{date.toLocaleDateString(locale)}</Typography>
         }
       }),
       columnHelper.accessor('actions', {
-        header: 'Actions',
+        header: userDictionary.actions || 'ACTIONS',
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton onClick={() => handleEditUser(row.original)}>
@@ -229,12 +239,12 @@ const UserListTable = () => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Edit',
+                  text: actionDictionary.edit || 'Edit',
                   icon: 'tabler-edit',
                   menuItemProps: { onClick: () => handleEditUser(row.original) }
                 },
                 {
-                  text: 'Delete',
+                  text: actionDictionary.delete || 'Delete',
                   icon: 'tabler-trash',
                   menuItemProps: { onClick: () => handleDeleteUser(row.original) }
                 }
@@ -245,7 +255,19 @@ const UserListTable = () => {
         enableSorting: false
       })
     ],
-    []
+    [
+      actionDictionary.delete,
+      actionDictionary.edit,
+      locale,
+      userDictionary.actions,
+      userDictionary.active,
+      userDictionary.inactive,
+      userDictionary.registered,
+      userDictionary.sig,
+      userDictionary.status,
+      userDictionary.user,
+      userDictionary.userId
+    ]
   )
 
   const table = useReactTable({
@@ -280,7 +302,7 @@ const UserListTable = () => {
     return (
       <Card>
         <CardContent>
-          <Typography>Loading users...</Typography>
+          <Typography>{userDictionary.loadingUsers || 'Loading users...'}</Typography>
         </CardContent>
       </Card>
     )
@@ -288,111 +310,112 @@ const UserListTable = () => {
 
   return (
     <>
-    <Card>
-      <CardContent className='flex justify-between flex-wrap max-sm:flex-col sm:items-center gap-4'>
-        <DebouncedInput
-          value={globalFilter ?? ''}
-          onChange={value => setGlobalFilter(String(value))}
-          placeholder='Search Users'
-          className='max-sm:is-full'
-        />
-        <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
-          <CustomTextField
-            select
-            value={table.getState().pagination.pageSize}
-            onChange={e => table.setPageSize(Number(e.target.value))}
-            className='is-full sm:is-[70px]'
-          >
-            <MenuItem value='10'>10</MenuItem>
-            <MenuItem value='25'>25</MenuItem>
-            <MenuItem value='50'>50</MenuItem>
-            <MenuItem value='100'>100</MenuItem>
-          </CustomTextField>
-          <Button
-            variant='tonal'
+      <Card>
+        <CardContent className='flex justify-between flex-wrap max-sm:flex-col sm:items-center gap-4'>
+          <DebouncedInput
+            value={globalFilter ?? ''}
+            onChange={value => setGlobalFilter(String(value))}
+            placeholder={userDictionary.searchUsers || 'Search Users'}
             className='max-sm:is-full'
-            color='secondary'
-            startIcon={<i className='tabler-upload' />}
-          >
-            Export
-          </Button>
+          />
+          <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+            <CustomTextField
+              select
+              value={table.getState().pagination.pageSize}
+              onChange={e => table.setPageSize(Number(e.target.value))}
+              className='is-full sm:is-[70px]'
+            >
+              <MenuItem value='10'>10</MenuItem>
+              <MenuItem value='25'>25</MenuItem>
+              <MenuItem value='50'>50</MenuItem>
+              <MenuItem value='100'>100</MenuItem>
+            </CustomTextField>
+            <Button
+              variant='tonal'
+              className='max-sm:is-full'
+              color='secondary'
+              startIcon={<i className='tabler-upload' />}
+            >
+              {userDictionary.export || actionDictionary.export || 'Export'}
+            </Button>
+          </div>
+        </CardContent>
+        <div className='overflow-x-auto'>
+          <table className={tableStyles.table}>
+            <thead>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id}>
+                      {header.isPlaceholder ? null : (
+                        <>
+                          <div
+                            className={classnames({
+                              'flex items-center': header.column.getIsSorted(),
+                              'cursor-pointer select-none': header.column.getCanSort()
+                            })}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {{
+                              asc: <i className='tabler-chevron-up text-xl' />,
+                              desc: <i className='tabler-chevron-down text-xl' />
+                            }[header.column.getIsSorted()] ?? null}
+                          </div>
+                        </>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            {table.getFilteredRowModel().rows.length === 0 ? (
+              <tbody>
+                <tr>
+                  <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
+                    {dictionary?.discounts?.noDataAvailable || 'No data available'}
+                  </td>
+                </tr>
+              </tbody>
+            ) : (
+              <tbody>
+                {table
+                  .getRowModel()
+                  .rows.slice(0, table.getState().pagination.pageSize)
+                  .map(row => {
+                    return (
+                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            )}
+          </table>
         </div>
-      </CardContent>
-      <div className='overflow-x-auto'>
-        <table className={tableStyles.table}>
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          className={classnames({
-                            'flex items-center': header.column.getIsSorted(),
-                            'cursor-pointer select-none': header.column.getCanSort()
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <i className='tabler-chevron-up text-xl' />,
-                            desc: <i className='tabler-chevron-down text-xl' />
-                          }[header.column.getIsSorted()] ?? null}
-                        </div>
-                      </>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          {table.getFilteredRowModel().rows.length === 0 ? (
-            <tbody>
-              <tr>
-                <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                  No data available
-                </td>
-              </tr>
-            </tbody>
-          ) : (
-            <tbody>
-              {table
-                .getRowModel()
-                .rows.slice(0, table.getState().pagination.pageSize)
-                .map(row => {
-                  return (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  )
-                })}
-            </tbody>
-          )}
-        </table>
-      </div>
-      <TablePaginationComponent table={table} />
-    </Card>
+        <TablePaginationComponent table={table} labels={paginationLabels} />
+      </Card>
 
-    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-      <DialogTitle>Delete User</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          Are you sure you want to delete this user? This action cannot be undone.
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
-          Cancel
-        </Button>
-        <Button onClick={confirmDeleteUser} color='error' variant='contained'>
-          Delete
-        </Button>
-      </DialogActions>
-    </Dialog>
-  </>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>{userDictionary.deleteUserTitle || 'Delete User'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {userDictionary.deleteUserMessage ||
+              'Are you sure you want to delete this user? This action cannot be undone.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
+            {dictionary?.delivery?.cancel || 'Cancel'}
+          </Button>
+          <Button onClick={confirmDeleteUser} color='error' variant='contained'>
+            {actionDictionary.delete || 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }
 
